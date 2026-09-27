@@ -1,0 +1,19 @@
+{
+  "name": "persona-onboarding",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Hosted conversational onboarding (text + browser voice call) for an AI assistant — Persona trial",
+  "workspaces": ["apps/web"],
+  "scripts": {
+    "qa": "node harness/qa.mjs --tier all",
+    "qa:fast": "node harness/qa.mjs --tier fast",
+    "qa:flow": "node harness/qa.mjs --tier flow",
+    "qa:convo": "node harness/qa.mjs --tier convo",
+    "qa:voice": "node harness/qa.mjs --tier voice",
+    "qa:e2e": "node harness/qa.mjs --tier e2e",
+    "qa:visual": "node harness/qa.mjs --tier visual",
+    "qa:live": "node harness/qa.mjs --tier live",
+    "qa:harness": "node harness/qa.mjs --tier harness"
+  },
+  "engines": { "node": ">=22" }
+}

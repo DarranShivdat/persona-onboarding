@@ -1,0 +1,30 @@
+# deps / builds
+node_modules/
+.next/
+dist/
+out/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+*.egg-info/
+
+# secrets — never commit
+.env
+.env.*
+!.env.example
+
+# local orchestration + QA state
+.persona-worker/
+.persona-qa/
+.persona-mock-activity
+
+# test artifacts
+playwright-report/
+test-results/
+harness/voice/audio/*.wav
+harness/convo/fixtures/recordings/*.raw
+
+.DS_Store
+.idea/
+.vscode/*
