@@ -23,9 +23,12 @@ services/agent/agent/brain/**, services/agent/tests/**, packages/flow/**, script
 ## READ
 - CLAUDE.md (invariants); packages/flow/flow.yaml + README.md; docs/ARCHITECTURE.md §3–§5
 - services/agent/agent/brain/{spec,state,engine}.py; harness/edge-cases.yaml (flow-tier cases)
+- Optional (copy allowed, Darran's IP): /Users/darranshivdat/IdeaProjects/persona-onboarding-ref/penciled-voice-agent/flow_engine.py, flow.py,
+  tests/test_flow_structure.py, tests/test_confirmation_gate.py — structural-invariant test
+  patterns. Our brain stays pure Python (no Pipecat import).
 
 ## DO NOT READ
-- .env*, secrets; any Penciled repository; apps/**
+- .env*, secrets; Penciled sensitive paths (.env*, transcripts/, data/, demo patients, PHI) + other Penciled repos; never modify penciled-emr; apps/**
 
 ## REQUIREMENTS
 - Validators: agent_name (1–40 chars, flags joke/profane → confirm; abusive → reject),

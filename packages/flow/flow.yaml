@@ -46,7 +46,7 @@ slots:
     channels: [text, voice]
     validator: gmail_oauth      # filled ONLY by the OAuth callback (verified). Spoken capture yields
                                 # a *candidate* that still requires OAuth to be 'connected'.
-    why: "Your assistant works out of your inbox; connecting Gmail lets it read and draft for you."
+    why: "Your assistant works out of your inbox; connecting Gmail lets it read, sort, draft and send for you (always with your OK)."
     confirm: never
 
 # Order in which the machine asks for missing slots, per channel.

@@ -1,7 +1,7 @@
 # Architecture — Persona onboarding
 
 Status: M0 design (scaffold). Decisions marked **[decided]** came from Darran; **[proposed]**
-are this design's choices; open items live in `ROADMAP.md` → Open decisions.
+are this design's choices; resolved decisions and open items live in `ROADMAP.md` → Decisions / Still open.
 
 ## 1. Product surfaces
 
@@ -66,7 +66,7 @@ Source of truth: `infra/supabase/migrations/0001_init.sql`; Python mirror
 | `call_lease_holder`, `call_lease_expires_at` | one live call per session (double-dial lock) |
 | `session_events` | append-only log of utterances, extractions, transitions, UI pushes, call events (+ trace_id) |
 | `calls` | per-call rows with end_reason and reconnect count |
-| `gmail_connections` | verified Google identity (+ encrypted refresh token only if Gmail scopes are granted) |
+| `gmail_connections` | verified Google identity, granted scopes, encrypted refresh token (required — Gmail read+write), revoked_at |
 
 ## 5. Turn loop (both channels)
 
@@ -102,7 +102,7 @@ if the LLM exceeds ~1.2s, hard timeout → templated re-ask.
 - UI pushes from the brain (SSE): `transcript`, `state` (checklist), `gmail_connect_card`,
   `call_state` (ringing/connected/reconnecting/ended), `graduate`.
 - Gmail during a call: the brain's `push_gmail_connect` emits the card; the user clicks;
-  Google OAuth (testing mode, reviewers as test users) → Next.js callback → server-to-server
+  Google OAuth (testing mode, reviewers as test users; scopes in §11) → Next.js callback → server-to-server
   `POST /v1/sessions/{id}/gmail` with the verified address → brain fills `gmail` → the live
   call hears "Got it — connected as p…@gmail.com". Fallback on voice: chunked spoken capture
   (Deepgram keyterm boost for domains/NATO words, code normalization "at"/"dot", chunked NATO
@@ -121,7 +121,8 @@ Cartesia TTS ⇄ ServiceSwitcher(failover → Deepgram TTS) → SmallWebRTC out 
 - Silence floor: every node has spoken nudges (≈7s, ≈15s), then offers text and ends politely.
 - Warmup at process boot (VAD/turn models, TLS to vendors).
 - Graceful goodbye: end only after playout completes.
-- Patterns are reimplemented from Pipecat docs; see `docs/penciled-reference-map.md`.
+- Patterns (and, where useful, code — Darran's IP, copied from the sanitized mirror, never
+  modifying penciled-emr) come from the Penciled voice-agent; see `docs/penciled-reference-map.md`.
 
 ## 8. Channel handoff, hangup resume, locking
 
@@ -142,7 +143,7 @@ Cartesia TTS ⇄ ServiceSwitcher(failover → Deepgram TTS) → SmallWebRTC out 
 | Piece | Host | Notes |
 |---|---|---|
 | web | Vercel | preview URL per branch (design-review gate) |
-| agent | Fly.io [proposed] / Railway / Pipecat Cloud | long-lived, `min_machines_running=1`, no scale-to-zero mid-call |
+| agent | **EM decides after INFRA-001** (Fly.io+TURN / Railway / Pipecat Cloud) | long-lived, `min_machines_running=1`, no scale-to-zero mid-call |
 | db | Supabase Postgres | migrations in `infra/supabase` |
 | tracing/evals | Langfuse Cloud or self-hosted | optional; system runs with `PERSONA_TRACING=noop` |
 
@@ -171,8 +172,20 @@ TURN service or Pipecat Cloud. INFRA-001 spikes this before any deploy.
 
 - Session token on every mutating call; per-IP and per-session rate limits on session
   creation, turns, and call starts (vendor spend protection).
-- OAuth: least scopes needed (open decision: identity-only vs `gmail.readonly`); tokens
-  encrypted at rest; disconnect/revoke path; testing mode with reviewer test users.
+- **Gmail OAuth scopes [decided 2026-09-26 — read + write; half the product is automation]:**
+  `openid email profile` (verify which account connected) + `gmail.readonly` (read inbox) +
+  `gmail.modify` (organize: labels, archive, mark read, drafts) + `gmail.send` (send, only
+  after explicit user confirmation). `access_type=offline`, `prompt=consent`,
+  `include_granted_scopes=true`; handle partial grants (user unticks a scope → connected
+  with reduced capability, stated plainly).
+- **Google testing mode**: restricted scopes are fine unverified; reviewers are added as
+  **test users** (≤100; Darran supplies emails). Expect Google's "unverified app" screen
+  (design copy prepares for it) and **refresh tokens expire after 7 days** in testing mode →
+  reconnect prompt on `invalid_grant`.
+- Tokens: refresh token encrypted at rest (app-level key, AES-GCM; key in env, never in DB),
+  access tokens in memory only; disconnect = Google revoke + delete stored tokens.
+- Automation guard: no send/modify during onboarding without an explicit confirm turn; the
+  value demo is read-only (never fabricates inbox facts — reads real metadata or says less).
 - Prompt-injection resistance is structural (code-owned progress); the output guard blocks
   system-prompt disclosure and tool/JSON leakage.
 - Product facts for privacy answers are a fixed, reviewed file (`docs/product-facts.md`).

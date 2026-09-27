@@ -25,7 +25,7 @@ harness/convo/**, harness/evals/**, harness/qa.mjs (convo tier only), services/a
 - harness/evals/interface.py; services/agent/agent/brain/*.py; services/agent/agent/llm/*.py
 
 ## DO NOT READ
-- .env*, secrets; any Penciled repository; apps/**
+- .env*, secrets; Penciled sensitive paths (.env*, transcripts/, data/, demo patients, PHI) + other Penciled repos; never modify penciled-emr; apps/**
 
 ## REQUIREMENTS
 - Modes: `mock` (fixture extractor keyed by utterance), `replay` (recorded Anthropic

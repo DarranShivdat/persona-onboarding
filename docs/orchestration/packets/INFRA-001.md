@@ -12,6 +12,8 @@ Prove (or disprove) that a minimal Pipecat SmallWebRTC echo/greeting bot deploye
 long-lived service can hold a browser call from a normal home network and from a
 restrictive network (UDP blocked), and document the required ICE/TURN configuration.
 Produce a decision record with a recommendation: Fly.io (+TURN) vs Railway vs Pipecat Cloud.
+The EM (Grok) picks the voice host from this record (Darran delegated the call); it must
+fit the deadline (hosted URL live by Mon Sep 28 noon PT) — favor the fastest reliable path.
 
 ## WHY
 Top hosting risk: SmallWebRTC is peer-to-peer (aiortc); container hosts often lack
@@ -23,9 +25,12 @@ infra/**, services/agent/agent/voice/spike_echo.py, docs/decisions/0001-voice-ho
 ## READ
 - CLAUDE.md; docs/ARCHITECTURE.md §7, §9; infra/README.md; Pipecat public docs for
   SmallWebRTCTransport and Pipecat Cloud.
+- Optional (copy allowed, Darran's IP): /Users/darranshivdat/IdeaProjects/persona-onboarding-ref/penciled-voice-agent/bot.py (transport setup,
+  idempotent teardown, security middleware), warmup.py, static/phone.html (fresh client per
+  call), tests/test_hosting_hardening.py.
 
 ## DO NOT READ
-- .env*, secrets; any Penciled repository
+- .env*, secrets; Penciled sensitive paths (.env*, transcripts/, data/, demo patients, PHI) + other Penciled repos; never modify penciled-emr
 
 ## REQUIREMENTS
 - Local-only proof first (no deploy without Darran's go-ahead; this packet must not

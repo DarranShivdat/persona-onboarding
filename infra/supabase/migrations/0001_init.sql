@@ -51,6 +51,6 @@ create table gmail_connections (
   google_sub        text not null,
   email             text not null,
   scopes            text[] not null,
-  refresh_token_enc bytea,          -- encrypted at rest (app-level key); null if scopes are identity-only
+  refresh_token_enc bytea,          -- encrypted at rest (app-level key); required: Gmail read+write automation
   connected_at      timestamptz not null default now()
 );
