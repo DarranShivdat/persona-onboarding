@@ -31,16 +31,16 @@ Repo, flow spec + invariants, edge-case catalog, QA tiers, ported supervisor, do
 ## M1 — Brain (text-first, fully tested)
 | ID | Title | Class/role | Depends | Acceptance |
 |---|---|---|---|---|
-| **FLOW-001** ▶running | Pure flow engine + validators + TS types | B-high / impl | — | qa:flow 0 PENDING; flow-tier ECs implemented |
-| FLOW-002 | LLM adapter: `record_slots` extraction + constrained phrasing + output guard (Anthropic SDK), prompt caching, model choice by eval | B-high / impl | FLOW-001 | extraction contract tests; recorded-fixture tests; guard table tests |
-| FLOW-003 | Agent API (FastAPI) + Postgres store (version-checked turns, events, SSE) | B-high / impl | FLOW-001 | API tests w/ ephemeral Postgres; concurrency test (two writers) |
+| **FLOW-001** ✅ merged | Pure flow engine + validators + TS types | B-high / impl | — | qa:flow 0 PENDING; flow-tier ECs implemented |
+| **FLOW-002** ▶launching | LLM adapter: `record_slots` extraction + constrained phrasing + output guard (Anthropic SDK), prompt caching, model choice by eval | B-high / impl | FLOW-001 | extraction contract tests; recorded-fixture tests; guard table tests |
+| **FLOW-003** ▶launching | Agent API (FastAPI) + Postgres store (version-checked turns, events, SSE) | B-high / impl | FLOW-001 | API tests w/ ephemeral Postgres; concurrency test (two writers) |
 | OBS-001 | Langfuse tracer adapter + Pipecat OTel routing | B-low→B-high / impl | FLOW-002 | traces visible with PERSONA_TRACING=langfuse; noop default unchanged |
 
 ## M2 — Web experience
 | ID | Title | Class/role | Depends | Acceptance |
 |---|---|---|---|---|
-| **DESIGN-001** ▶running | Research Persona's product/onboarding UI; spec + mockups | B-high / design | — | 11 states × 2 viewports; spec checklist; tokens.json |
-| **FE-001** ▶ready (after DESIGN-001) | Next.js shell from spec with mock driver; visual harness; Playwright | B-high / frontend | DESIGN-001 | build + e2e + qa:visual ≤3% diff |
+| **DESIGN-001** ✅ merged | Research Persona's product/onboarding UI; spec + mockups | B-high / design | — | 11 states × 2 viewports; spec checklist; tokens.json |
+| **FE-001** ▶launching | Next.js shell from spec with mock driver; visual harness; Playwright | B-high / frontend | DESIGN-001 | build + e2e + qa:visual ≤3% diff |
 | FE-002 | Real SessionDriver: chat wired to agent API + SSE; refresh/resume | B-high / frontend | FE-001, FLOW-003 | EC-08, EC-30, EC-31 e2e |
 | FE-003 | Google OAuth (testing mode, reviewers as test users; `openid email profile` + `gmail.readonly` + `gmail.modify` + `gmail.send`, offline refresh token) + Gmail card states + wrong-account + partial-grant flow | B-high / frontend | FE-002 | EC-20, 21, 22 e2e |
 | GMAIL-001 | Server Gmail client: encrypted refresh-token store, refresh/`invalid_grant` → reconnect, revoke; read-only value demo from real metadata; draft/send/modify only behind an explicit confirm turn | B-high / impl | FLOW-003, FE-003 | unit tests w/ recorded Gmail API fixtures; no-send-without-confirm test |
@@ -49,7 +49,7 @@ Repo, flow spec + invariants, edge-case catalog, QA tiers, ported supervisor, do
 ## M3 — Voice
 | ID | Title | Class/role | Depends | Acceptance |
 |---|---|---|---|---|
-| **INFRA-001** ▶running (spike) | SmallWebRTC hosting spike (Fly+TURN vs Pipecat Cloud) → EM decides voice host | B-high / impl | — | decision record |
+| **INFRA-001** ✅ merged (voice host: Fly+Cloudflare TURN) | SmallWebRTC hosting spike (Fly+TURN vs Pipecat Cloud) → EM decides voice host | B-high / impl | — | decision record |
 | VOICE-001 | Pipecat pipeline: SmallWebRTC, Deepgram, Claude, Cartesia⇄Deepgram TTS failover, VAD/turn, warmup, idempotent teardown, graceful goodbye | B-high / impl | INFRA-001 | local call works; failover unit tests |
 | VOICE-002 | Pipecat Flows adapter over brain (nodes from spec; record_slots on every node) | B-high / impl | VOICE-001, FLOW-002 | shared-brain tests: same script text vs voice → same state |
 | VOICE-003 | Call lease, reconnect grace window, hangup resume, typing-during-call merge, silence floor | C? → B-high / impl | VOICE-002, FLOW-003 | EC-01, 02, 04, 10, 28 |
@@ -76,8 +76,7 @@ Grok adversarial), latency tuning, reviewer README + Loom-style walkthrough scri
 READY FOR PRODUCT TEST to Darran.
 
 ## Parallelism
-Now: DESIGN-001 ∥ FLOW-001 ∥ INFRA-001 (disjoint scopes). Then FE-001 (after DESIGN-001),
-FLOW-002/003, HARNESS-001.
+Now: FE-001 ∥ FLOW-002 ∥ FLOW-003 (DESIGN-001 / FLOW-001 / INFRA-001 merged 2026-09-26 evening PT; voice host accepted: Fly.io + Cloudflare TURN). Then HARNESS-001 (after FLOW-002), VOICE-001.
 
 ## Decisions (resolved by Darran, 2026-09-26)
 1. **Gmail scopes: read + write** (half the product is automation): `openid email profile`
