@@ -1,5 +1,6 @@
-// Same-origin proxy: acquire the call lease. SDP offer/answer lands with FE-004/VOICE-001
-// (the agent answers `answer: null` until then).
+// Same-origin proxy: acquire the call lease and exchange SDP. The browser POSTs its offer
+// `{sdp, type}`; the agent answers `{call_id, answer: {sdp, type} | null, ...}` or 409
+// `call_in_progress` when another tab/device holds the lease (EC-02/EC-09).
 import type { NextRequest } from "next/server";
 import { SESSION_COOKIE, agentFetch, agentBaseUrl, decodeSession, jsonError, relay, sessionPath } from "@/lib/session/server";
 

@@ -50,7 +50,10 @@ export function App({ initialState, capture, live }: { initialState: StateName; 
   const agent = snap.agentName ?? "your assistant";
   const act = (a: UIAction) => void driver.act(a);
   const send = (t: string) => void driver.sendText(t);
-  const call = () => void driver.startCall();
+  const call = () => {
+    setRailHidden(false); // layout only: a collapsed rail comes back when the user calls
+    void driver.startCall();
+  };
 
   if (snap.surface === "landing") {
     return (

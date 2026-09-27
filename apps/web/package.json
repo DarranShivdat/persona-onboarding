@@ -17,7 +17,7 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
-  "//": "FE-002 real driver uses fetch/EventSource only (no new deps). FE-004 adds the Pipecat JS client.",
+  "//": "FE-002 real driver uses fetch/EventSource only (no new deps). FE-004 speaks SmallWebRTC with the browser's RTCPeerConnection (lib/session/webrtc.ts), no Pipecat JS dep.",
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@types/node": "^22.20.4",
