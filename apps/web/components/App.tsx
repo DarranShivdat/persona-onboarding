@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ApiSessionDriver } from "@/lib/session/api-driver";
+import type { AgentState } from "@/lib/session/agent-state";
 import { MockSessionDriver } from "@/lib/session/mock-driver";
 import type { StateName } from "@/lib/session/fixtures";
 import { applyPush, type SessionDriver, type UIAction } from "@/lib/session/types";
@@ -10,9 +12,18 @@ import { Ring } from "./Ring";
 import { Thread } from "./Thread";
 import { Checklist, TopBar } from "./TopBar";
 
+/** Live mode: the real agent session resolved server-side from the httpOnly cookie. */
+export interface LiveBoot {
+  state: AgentState | null;
+}
+
 /** Renders whatever the driver's snapshot says. No transition logic lives here. */
-export function App({ initialState, capture }: { initialState: StateName; capture: boolean }) {
-  const driver: SessionDriver = useMemo(() => new MockSessionDriver(initialState, { fakeLevels: !capture }), [initialState, capture]);
+export function App({ initialState, capture, live }: { initialState: StateName; capture: boolean; live?: LiveBoot }) {
+  const driver: SessionDriver = useMemo(
+    () => (live ? new ApiSessionDriver(live.state) : new MockSessionDriver(initialState, { fakeLevels: !capture })),
+    // `live` is fixed for the page's lifetime; refresh re-resolves it on the server.
+    [initialState, capture, !!live],
+  );
   const [snap, setSnap] = useState(() => driver.snapshot());
   const [level, setLevel] = useState<number | undefined>(undefined);
   const [railHidden, setRailHidden] = useState(false);
