@@ -18,7 +18,8 @@
           "channels": {"type": "array", "items": {"enum": ["text", "voice"]}, "minItems": 1},
           "validator": {"type": "string"},
           "why": {"type": "string"},
-          "confirm": {"enum": ["never", "on_suspicious", "voice_low_confidence", "always"]}
+          "confirm": {"enum": ["never", "on_suspicious", "voice_low_confidence", "always"]},
+          "explain_on_first_ask": {"type": "boolean"}
         }
       }
     },
