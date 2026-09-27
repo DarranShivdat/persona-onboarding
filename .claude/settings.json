@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Edit(//Users/darranshivdat/IdeaProjects/penciled-emr/**)",
+      "Write(//Users/darranshivdat/IdeaProjects/penciled-emr/**)",
+      "Edit(//Users/darranshivdat/IdeaProjects/persona-onboarding-ref/**)",
+      "Write(//Users/darranshivdat/IdeaProjects/persona-onboarding-ref/**)",
+      "Read(//Users/darranshivdat/IdeaProjects/penciled-emr/voice-agent/.env*)",
+      "Read(//Users/darranshivdat/IdeaProjects/penciled-emr/voice-agent/transcripts/**)",
+      "Read(//Users/darranshivdat/IdeaProjects/penciled-emr/voice-agent/data/**)",
+      "Read(//Users/darranshivdat/IdeaProjects/penciled-emr/voice-agent/components/**)",
+      "Read(//Users/darranshivdat/IdeaProjects/penciled-emr/voice-agent/flows/**)",
+      "Read(//Users/darranshivdat/IdeaProjects/penciled-emr/voice-agent/README.md)",
+      "Read(//Users/darranshivdat/IdeaProjects/penciled-emr/voice-agent/KNOWN_ISSUES.md)",
+      "Read(//Users/darranshivdat/IdeaProjects/penciled-emr/voice-agent/JUSTIN-WALKTHROUGH.md)",
+      "Read(//Users/darranshivdat/IdeaProjects/penciled-emr/.env*)",
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.env.production)",
+      "Read(**/.env.development)",
+      "Bash(git push:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Read|Edit|Write|MultiEdit|Grep|Glob|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/guard-tool-use.py\""
+          }
+        ]
+      }
+    ]
+  }
+}
