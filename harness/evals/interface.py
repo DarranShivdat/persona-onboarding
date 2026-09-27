@@ -48,15 +48,28 @@ class LocalEvalBackend:
     def sync_dataset(self, name: str, cases: list[dict]) -> None:
         (self.root / f"dataset-{name}.json").write_text(json.dumps(cases, indent=2, default=str))
 
+    def _path(self, run_name: str) -> Path:
+        return self.root / f"run-{run_name.replace('|', '_').replace('/', '_')}.json"
+
     def record_run(self, run_name: str, dataset: str, results: list[ItemResult], metadata: dict) -> None:
-        safe = run_name.replace("|", "_").replace("/", "_")
         doc = {"run": run_name, "dataset": dataset, "at": time.time(), "metadata": metadata,
                "results": [asdict(r) for r in results]}
-        (self.root / f"run-{safe}.json").write_text(json.dumps(doc, indent=2))
+        self._path(run_name).write_text(json.dumps(doc, indent=2))
+
+    def load_run(self, run_name: str) -> dict:
+        return json.loads(self._path(run_name).read_text())
+
+    def list_runs(self) -> list[str]:
+        """Run names, oldest first (by recorded time)."""
+        docs = [json.loads(p.read_text()) for p in self.root.glob("run-*.json")]
+        return [d["run"] for d in sorted(docs, key=lambda d: d.get("at", 0))]
 
     def compare(self, run_a: str, run_b: str) -> dict[str, dict[str, float]]:
+        """Per-case score deltas b - a. A case missing from a run scores 0 there, so a
+        newly added case shows as a gain and a dropped case as a regression."""
         def load(r: str) -> dict[str, dict[str, float]]:
-            doc = json.loads((self.root / f"run-{r.replace('|', '_').replace('/', '_')}.json").read_text())
-            return {x["case_id"]: x["scores"] for x in doc["results"]}
+            return {x["case_id"]: x["scores"] for x in self.load_run(r)["results"]}
         a, b = load(run_a), load(run_b)
-        return {cid: {s: b.get(cid, {}).get(s, 0.0) - a[cid].get(s, 0.0) for s in SCORES} for cid in a}
+        scores = [s for s in SCORES if any(s in x for x in (*a.values(), *b.values()))]
+        return {cid: {s: b.get(cid, {}).get(s, 0.0) - a.get(cid, {}).get(s, 0.0) for s in scores}
+                for cid in sorted(set(a) | set(b))}
