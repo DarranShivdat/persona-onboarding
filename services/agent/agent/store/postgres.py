@@ -31,7 +31,12 @@ class VersionConflictError(RuntimeError):
 
 
 class LeaseHeldError(RuntimeError):
-    """A live call already holds this session's voice lease (API maps to 409)."""
+    """A live call already holds this session's voice lease (API maps to 409 with a
+    take-over option)."""
+
+    def __init__(self, session_id: str, call_id: Optional[str] = None):
+        super().__init__(f"session {session_id}: call {call_id} holds the lease")
+        self.session_id, self.call_id = session_id, call_id
 
 
 @dataclass(frozen=True)
@@ -48,6 +53,7 @@ class StoredEvent:
 class CallLease:
     call_id: str
     expires_at: datetime
+    replaced: Optional[str] = None     # call id this lease took over from (EC-02)
 
 
 def apply_migrations(dsn: str, directory: Path = MIGRATIONS_DIR) -> None:
@@ -191,23 +197,56 @@ class PgStore:
 
     # --- call lease ----------------------------------------------------------
 
-    def acquire_call_lease(self, session_id: str, *, ttl_s: float) -> CallLease:
+    def acquire_call_lease(self, session_id: str, *, ttl_s: float, take_over: bool = False) -> CallLease:
+        """New call + lease. A live lease blocks (LeaseHeldError) unless `take_over`, which
+        ends the old call (`taken_over`) and hands the lease to the new one atomically."""
         sid = _uuid(session_id)
         with self.pool.connection() as conn, conn.transaction():
-            row = conn.execute("select id from sessions where id = %s for update", (sid,)).fetchone()
+            row = conn.execute(
+                "select call_lease_holder, call_lease_expires_at > now() as live from sessions"
+                " where id = %s for update",
+                (sid,),
+            ).fetchone()
             if row is None:
                 raise NotFoundError(session_id)
+            held = row["call_lease_holder"] if row["live"] else None
+            if held and not take_over:
+                raise LeaseHeldError(session_id, held)
+            if held:
+                conn.execute(
+                    "update calls set ended_at = coalesce(ended_at, now()),"
+                    " end_reason = coalesce(end_reason, 'taken_over') where id = %s and session_id = %s",
+                    (_uuid(held), sid),
+                )
             call_id = conn.execute("insert into calls (session_id) values (%s) returning id", (sid,)).fetchone()["id"]
             got = conn.execute(
                 "update sessions set call_lease_holder = %s,"
                 " call_lease_expires_at = now() + make_interval(secs => %s)"
-                " where id = %s and (call_lease_holder is null or call_lease_expires_at <= now())"
-                " returning call_lease_expires_at",
+                " where id = %s returning call_lease_expires_at",
                 (str(call_id), ttl_s, sid),
             ).fetchone()
-            if got is None:
-                raise LeaseHeldError(session_id)  # rolls back the calls row too
-        return CallLease(str(call_id), got["call_lease_expires_at"])
+        return CallLease(str(call_id), got["call_lease_expires_at"], replaced=held)
+
+    def renew_call_lease(self, session_id: str, call_id: str, *, ttl_s: float,
+                         reconnect: bool = False) -> Optional[CallLease]:
+        """Heartbeat / grace / reconnect: set the lease to expire `ttl_s` from now iff
+        `call_id` still holds a live lease. None = lost (taken over, released, expired)."""
+        sid = _uuid(session_id)
+        with self.pool.connection() as conn, conn.transaction():
+            got = conn.execute(
+                "update sessions set call_lease_expires_at = now() + make_interval(secs => %s)"
+                " where id = %s and call_lease_holder = %s and call_lease_expires_at > now()"
+                " returning call_lease_expires_at",
+                (ttl_s, sid, call_id),
+            ).fetchone()
+            if got is not None and reconnect:
+                conn.execute("update calls set reconnects = reconnects + 1 where id = %s and session_id = %s",
+                             (_uuid(call_id), sid))
+        return CallLease(call_id, got["call_lease_expires_at"]) if got else None
+
+    def lease_holder(self, session_id: str) -> Optional[str]:
+        """The lease holder even if expired (orphaned-call reconciliation)."""
+        return self._row(session_id)["call_lease_holder"]
 
     def release_call_lease(self, session_id: str, call_id: str, *, reason: str) -> bool:
         sid = _uuid(session_id)
