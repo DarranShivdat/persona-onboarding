@@ -33,6 +33,6 @@ def test_every_case_is_complete_and_tiered():
 
 def test_pending_engine_tests_reference_real_cases():
     ids = {c["id"] for c in load()["cases"]}
-    src = (Path(__file__).resolve().parents[2] / "services/agent/tests/test_engine_pending.py").read_text()
+    src = (Path(__file__).resolve().parents[2] / "services/agent/tests/test_engine.py").read_text()
     for ref in re.findall(r"EC-\d\d", src):
         assert ref in ids, ref
