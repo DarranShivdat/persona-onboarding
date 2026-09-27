@@ -38,11 +38,15 @@ const TIERS = {
   flow: () => [pytest("flow engine (pure, no LLM)", ["services/agent/tests"])],
   convo: () => [pendingCheck("scripted text conversations (mock/replay LLM)", "HARNESS-001")],
   voice: () => [pendingCheck("headless Pipecat voice client + fault injection", "HARNESS-003")],
-  e2e: () => [
-    existsSync(join(ROOT, "apps/web/node_modules"))
-      ? pendingCheck("Playwright flow tests", "FE-001")
-      : pendingCheck("Playwright flow tests (apps/web not installed)", "FE-001"),
-  ],
+  e2e: () => {
+    if (!existsSync(join(ROOT, "node_modules/@playwright/test"))) {
+      return [{ check: "Playwright flow tests (mock driver)", status: "fail", summary: "deps not installed: run npm install" }];
+    }
+    const r = run("npm", ["-w", "apps/web", "run", "e2e"]);
+    const summary = r.out.split("\n").filter((l) => /\d+ (passed|failed|flaky|skipped)/.test(l)).map((l) => l.trim()).join(", ");
+    if (r.code !== 0) process.stdout.write(r.out);
+    return [{ check: "Playwright flow tests (mock driver)", status: r.code === 0 ? "pass" : "fail", summary }];
+  },
   visual: () => {
     const passthru = args.filter((a, i) => a !== "--tier" && args[i - 1] !== "--tier");
     const r = run("node", ["harness/visual/capture.mjs", ...passthru]);
