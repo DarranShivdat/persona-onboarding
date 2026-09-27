@@ -133,8 +133,9 @@ def test_stale_client_version_is_409(client):
     assert r.status_code == 409 and r.json()["error"] == "version_conflict"
 
 
-def test_two_concurrent_turns_one_wins_one_conflicts(client, llm, store):
-    sid, auth, _ = new_session(client)
+def test_two_concurrent_turns_one_wins_one_conflicts(store, llm):
+    """Two processes (two apps, no shared in-process lock) racing on one version: the DB
+    version check lets exactly one commit."""
     barrier = threading.Barrier(2, timeout=10)
 
     def slow(value):
@@ -144,15 +145,31 @@ def test_two_concurrent_turns_one_wins_one_conflicts(client, llm, store):
         return extract
 
     llm.push(slow("Nova"), slow("Juno"))
-    codes = []
-    ts = [threading.Thread(target=lambda t=t: codes.append(turn(client, sid, auth, t).status_code))
-          for t in ("Nova", "Juno")]
-    [t.start() for t in ts]
-    [t.join() for t in ts]
-    assert sorted(codes) == [200, 409]
-    snap = client.get(f"/v1/sessions/{sid}", headers=auth).json()
+    with TestClient(make_app(store, llm)) as c1, TestClient(make_app(store, llm)) as c2:
+        sid, auth, _ = new_session(c1)
+        codes = []
+        ts = [threading.Thread(target=lambda c=c, t=t: codes.append(turn(c, sid, auth, t).status_code))
+              for c, t in ((c1, "Nova"), (c2, "Juno"))]
+        [t.start() for t in ts]
+        [t.join() for t in ts]
+        assert sorted(codes) == [200, 409]
+        snap = c1.get(f"/v1/sessions/{sid}", headers=auth).json()
     assert snap["version"] == 2 and snap["slots"]["agent_name"]["value"] in ("Nova", "Juno")
     assert [e.kind for e in store.events_after(sid, limit=1000)].count("user_utterance") == 1
+
+
+def test_concurrent_turns_in_one_process_are_serialized(client, llm, store):
+    """In-process turns on one session queue behind a per-session lock: both land, in order."""
+    sid, auth, _ = new_session(client)
+    llm.push(Extraction(slots={"agent_name": "Nova"}), Extraction(intents=["decline_call"]))
+    codes = []
+    ts = [threading.Thread(target=lambda t=t: codes.append(turn(client, sid, auth, t).status_code))
+          for t in ("Nova", "I'd rather type")]
+    [t.start() for t in ts]
+    [t.join() for t in ts]
+    assert codes == [200, 200]
+    assert client.get(f"/v1/sessions/{sid}", headers=auth).json()["version"] == 3
+    assert [e.kind for e in store.events_after(sid, limit=1000)].count("user_utterance") == 2
 
 
 def test_fake_llm_path_needs_no_network(client, monkeypatch):
