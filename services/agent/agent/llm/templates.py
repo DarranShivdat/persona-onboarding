@@ -1,0 +1,128 @@
+"""Templated lines: critical content (readbacks, NATO email chunks, graduation
+summary) and the fallback for every free-text line when the LLM fails or the guard
+drops everything. These are constants — never LLM output — so they are not guarded.
+"""
+from __future__ import annotations
+
+from typing import Optional
+
+from ..brain.spec import FlowSpec
+from ..brain.state import Channel, SessionState
+
+ASK: dict[str, dict[str, str]] = {
+    "agent_name": {"text": "What would you like to call your assistant?"},
+    "user_name": {"text": "What should I call you?", "voice": "What should I call you?"},
+    "need": {
+        "text": "What's one thing you'd most like help with first?",
+        "voice": "What's one thing you'd most like help with first?",
+    },
+    "gmail": {
+        "text": "Next, connect your Gmail with the Connect Gmail button whenever you're ready.",
+        "voice": "I've put a Connect Gmail button on your screen. Tap it whenever you're ready.",
+    },
+}
+OFFER_CALL = "Want to finish setup on a quick call? Typing works just as well."
+GREET = "Hi! Let's get your Persona assistant set up. It's four quick things, and you can finish by call if you'd rather talk."
+RESUME = {"text": "Welcome back, let's pick up where we left off.", "voice": "Hey, we got cut off. Let's pick up where we left off."}
+ACK = "Got it."
+CHANGED = "Updated."
+SKIPPED = "No problem, we can come back to that later."
+SUGGEST = "A few ideas: getting your inbox under control, drafting replies, or keeping your calendar in check."
+REJECTED = {
+    "abusive": "Let's pick a different one.",
+    "too_long": "That's a bit long. Something shorter?",
+    "not_an_email": "That didn't look like an email address.",
+}
+RESPOND = {
+    "privacy_question": (
+        "Gmail connects through Google sign-in, so your assistant never sees your password, "
+        "and nothing is sent without your OK."
+    ),
+    "prompt_injection": "I can't do that, but I'm happy to keep going with setup.",
+    "abuse": "Let's keep it friendly.",
+    "off_topic": "Good question. Let's finish getting you set up first.",
+    "other_language": "Sorry, I can only do English for now.",
+}
+REASK = "Sorry, I missed that."
+
+NATO = {
+    "a": "Alpha", "b": "Bravo", "c": "Charlie", "d": "Delta", "e": "Echo", "f": "Foxtrot",
+    "g": "Golf", "h": "Hotel", "i": "India", "j": "Juliett", "k": "Kilo", "l": "Lima",
+    "m": "Mike", "n": "November", "o": "Oscar", "p": "Papa", "q": "Quebec", "r": "Romeo",
+    "s": "Sierra", "t": "Tango", "u": "Uniform", "v": "Victor", "w": "Whiskey", "x": "X-ray",
+    "y": "Yankee", "z": "Zulu",
+}
+SYMBOLS = {".": "dot", "_": "underscore", "-": "dash", "+": "plus"}
+EMAIL_CHUNK = 4
+
+
+def ask_line(slot: str, channel: Channel) -> str:
+    lines = ASK[slot]
+    return lines.get(channel) or lines["text"]
+
+
+def spell(value: str) -> str:
+    """'Sam' -> 'S, A, M' (spoken spell-back)."""
+    return ", ".join(c.upper() for c in value if not c.isspace())
+
+
+def _say_char(c: str) -> str:
+    low = c.lower()
+    if low in NATO:
+        return f"{low} as in {NATO[low]}"
+    return SYMBOLS.get(c, c)
+
+
+def email_chunks(email: str, size: int = EMAIL_CHUNK) -> list[str]:
+    """Chunked NATO readback of the local part; the domain is read as words."""
+    local, _, domain = email.partition("@")
+    chunks = [", ".join(_say_char(c) for c in local[i:i + size]) for i in range(0, len(local), size)]
+    if domain:
+        chunks.append("at " + " dot ".join(domain.split(".")))
+    return chunks
+
+
+def email_readback(email: str) -> str:
+    return "I have " + "; ".join(email_chunks(email)) + ". Is that right?"
+
+
+def confirm_line(slot: str, value: Optional[str], channel: Channel) -> str:
+    value = value or ""
+    if slot == "agent_name":
+        return f"Just checking, you'd like to call your assistant {value}?"
+    if slot == "user_name":
+        return f"I want to get your name right. I heard {spell(value)}. Is that right?"
+    if slot == "gmail":
+        return email_readback(value)
+    return f"Just checking: {value}. Is that right?"
+
+
+def why_line(spec: FlowSpec, slot: str) -> str:
+    return spec.slots[slot]["why"]
+
+
+DEFERRED = {
+    "agent_name": "name your assistant",
+    "user_name": "tell your assistant your name",
+    "need": "share what you'd like help with",
+    "gmail": "connect Gmail",
+}
+
+
+def graduation_summary(state: SessionState, deferred: list[str]) -> str:
+    """value_demo + graduated: one templated summary (no fabricated inbox facts)."""
+    agent = state.slots.get("agent_name")
+    user = state.slots.get("user_name")
+    need = state.slots.get("need")
+    who = agent.value if agent and agent.status == "filled" and agent.value else "Your assistant"
+    hi = f"You're all set, {user.value}." if user and user.status == "filled" and user.value else "You're all set."
+    parts = [hi]
+    if need and need.status == "filled" and need.value:
+        parts.append(f"{who} is ready to start on this: {need.value.rstrip('.')}.")
+    else:
+        parts.append(f"{who} is ready when you are.")
+    todo = [DEFERRED[s] for s in deferred if s in DEFERRED]
+    if todo:
+        items = todo[0] if len(todo) == 1 else ", ".join(todo[:-1]) + " and " + todo[-1]
+        parts.append(f"Whenever you like, you can {items} from the main screen.")
+    return " ".join(parts)

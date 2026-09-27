@@ -1,0 +1,248 @@
+{
+ "about": "SYNTHETIC: hand-authored responses in Anthropic Messages API shape (not live model output). Exercises adapter parse + brain.apply + phrasing/guard end to end, offline.",
+ "channel": "text",
+ "initial": {
+  "node": "greet"
+ },
+ "turns": [
+  {
+   "event": "open",
+   "phrase": {
+    "id": "msg_synthetic",
+    "type": "message",
+    "role": "assistant",
+    "model": "synthetic",
+    "stop_reason": "end_turn",
+    "content": [
+     {
+      "type": "text",
+      "text": "Hi! Let's get your Persona assistant set up. What would you like to call it?"
+     }
+    ],
+    "usage": {
+     "input_tokens": 120,
+     "output_tokens": 30,
+     "cache_read_input_tokens": 1800
+    }
+   },
+   "expect": {
+    "node": "agent_name",
+    "reply": "Hi! Let's get your Persona assistant set up. What would you like to call it?"
+   }
+  },
+  {
+   "utterance": "Let's call it Nova",
+   "extract": {
+    "id": "msg_synthetic",
+    "type": "message",
+    "role": "assistant",
+    "model": "synthetic",
+    "stop_reason": "tool_use",
+    "content": [
+     {
+      "type": "tool_use",
+      "id": "toolu_synthetic",
+      "name": "record_slots",
+      "input": {
+       "slots": {
+        "agent_name": "Nova",
+        "user_name": null,
+        "need": null,
+        "gmail": null
+       },
+       "confidence": {
+        "agent_name": 0.95,
+        "user_name": 0.0,
+        "need": 0.0,
+        "gmail": 0.0
+       },
+       "intents": []
+      }
+     }
+    ],
+    "usage": {
+     "input_tokens": 40,
+     "output_tokens": 60,
+     "cache_read_input_tokens": 1500
+    }
+   },
+   "phrase": {
+    "id": "msg_synthetic",
+    "type": "message",
+    "role": "assistant",
+    "model": "synthetic",
+    "stop_reason": "end_turn",
+    "content": [
+     {
+      "type": "text",
+      "text": "Nova it is! Want to finish setup on a quick call, or keep typing?"
+     }
+    ],
+    "usage": {
+     "input_tokens": 120,
+     "output_tokens": 30,
+     "cache_read_input_tokens": 1800
+    }
+   },
+   "expect": {
+    "node": "call_offer",
+    "filled": [
+     "agent_name"
+    ],
+    "reply_contains": [
+     "Nova it is"
+    ]
+   }
+  },
+  {
+   "utterance": "I'd rather type. I'm Sam",
+   "extract": {
+    "id": "msg_synthetic",
+    "type": "message",
+    "role": "assistant",
+    "model": "synthetic",
+    "stop_reason": "tool_use",
+    "content": [
+     {
+      "type": "tool_use",
+      "id": "toolu_synthetic",
+      "name": "record_slots",
+      "input": {
+       "slots": {
+        "agent_name": null,
+        "user_name": "Sam",
+        "need": null,
+        "gmail": null
+       },
+       "confidence": {
+        "agent_name": 0.0,
+        "user_name": 0.95,
+        "need": 0.0,
+        "gmail": 0.0
+       },
+       "intents": [
+        "prefer_typing"
+       ]
+      }
+     }
+    ],
+    "usage": {
+     "input_tokens": 40,
+     "output_tokens": 60,
+     "cache_read_input_tokens": 1500
+    }
+   },
+   "phrase": {
+    "id": "msg_synthetic",
+    "type": "message",
+    "role": "assistant",
+    "model": "synthetic",
+    "stop_reason": "end_turn",
+    "content": [
+     {
+      "type": "text",
+      "text": "Nice to meet you, Sam. What's one thing you'd love Nova to help with first?"
+     }
+    ],
+    "usage": {
+     "input_tokens": 120,
+     "output_tokens": 30,
+     "cache_read_input_tokens": 1800
+    }
+   },
+   "expect": {
+    "node": "need",
+    "filled": [
+     "agent_name",
+     "user_name"
+    ],
+    "reply_contains": [
+     "Sam"
+    ]
+   }
+  },
+  {
+   "utterance": "getting to inbox zero honestly",
+   "extract": {
+    "id": "msg_synthetic",
+    "type": "message",
+    "role": "assistant",
+    "model": "synthetic",
+    "stop_reason": "tool_use",
+    "content": [
+     {
+      "type": "tool_use",
+      "id": "toolu_synthetic",
+      "name": "record_slots",
+      "input": {
+       "slots": {
+        "agent_name": null,
+        "user_name": null,
+        "need": "getting to inbox zero",
+        "gmail": null
+       },
+       "confidence": {
+        "agent_name": 0.0,
+        "user_name": 0.0,
+        "need": 0.95,
+        "gmail": 0.0
+       },
+       "intents": []
+      }
+     }
+    ],
+    "usage": {
+     "input_tokens": 40,
+     "output_tokens": 60,
+     "cache_read_input_tokens": 1500
+    }
+   },
+   "phrase": {
+    "id": "msg_synthetic",
+    "type": "message",
+    "role": "assistant",
+    "model": "synthetic",
+    "stop_reason": "end_turn",
+    "content": [
+     {
+      "type": "text",
+      "text": "Great goal. Nova works out of your inbox, so connecting Gmail lets it read, sort, draft and send for you, always with your OK. Tap the Connect Gmail button when you're ready."
+     }
+    ],
+    "usage": {
+     "input_tokens": 120,
+     "output_tokens": 30,
+     "cache_read_input_tokens": 1800
+    }
+   },
+   "expect": {
+    "node": "gmail",
+    "filled": [
+     "agent_name",
+     "user_name",
+     "need"
+    ],
+    "push_ui": [
+     "gmail_connect_card"
+    ],
+    "reply_contains": [
+     "Connect Gmail button"
+    ]
+   }
+  },
+  {
+   "oauth_email": "sam@gmail.com",
+   "phrase": null,
+   "expect": {
+    "graduated": true,
+    "filled": [
+     "agent_name",
+     "user_name",
+     "need",
+     "gmail"
+    ],
+    "reply": "You're all set, Sam. Nova is ready to start on this: getting to inbox zero."
+   }
+  }
+ ]
+}
