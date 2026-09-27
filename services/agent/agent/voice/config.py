@@ -12,6 +12,10 @@
     PERSONA_VOICE_FAKE_VENDORS 1 = offline pipeline (tone TTS, no STT) for local transport proofs
     PERSONA_VOICE_MAX_CALL_SECS  hard cap per call, default 900
 
+LLM slot (`llm_mode`): `flows` (Claude under Pipecat Flows over the shared brain) when
+the call is live, ANTHROPIC_API_KEY is set and PERSONA_VOICE_STUB_LLM is off; otherwise
+`stub` (templated echo, never moves session state).
+
 The mode is decided once per process (`VoiceConfig.from_env()`), so the call route
 can say up front whether it will return a real SDP answer.
 """
@@ -75,6 +79,10 @@ class VoiceConfig:
     def use_claude(self) -> bool:
         return self.mode == "live" and bool(self.anthropic_key) and not self.stub_llm
 
+    @property
+    def llm_mode(self) -> str:
+        return "flows" if self.use_claude else "stub"
+
     def describe(self) -> dict:
         """Log-safe summary (never includes key values)."""
         return {
@@ -82,4 +90,5 @@ class VoiceConfig:
             "stt": "deepgram" if self.mode == "live" else None,
             "tts": (["cartesia", "deepgram"] if self.cartesia_key else ["deepgram"]) if self.mode == "live" else ["tone"],
             "llm": "anthropic" if self.use_claude else "stub",
+            "llm_mode": self.llm_mode,
         }
