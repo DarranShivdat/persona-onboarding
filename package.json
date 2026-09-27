@@ -13,7 +13,8 @@
     "qa:e2e": "node harness/qa.mjs --tier e2e",
     "qa:visual": "node harness/qa.mjs --tier visual",
     "qa:live": "node harness/qa.mjs --tier live",
-    "qa:harness": "node harness/qa.mjs --tier harness"
+    "qa:harness": "node harness/qa.mjs --tier harness",
+    "flow:types": "node scripts/flow-types.mjs"
   },
   "engines": { "node": ">=22" }
 }
