@@ -36,6 +36,21 @@ from .services import build_llm, build_stt, build_tts
 
 OnEnded = Callable[[str], Awaitable[None]]
 
+
+def tracing_kwargs(cfg: VoiceConfig, *, call_id: str, session_id: Optional[str] = None) -> dict:
+    """PipelineWorker OTel kwargs. Off unless PERSONA_TRACING=langfuse AND the OTLP exporter
+    could be installed (agent/obs/langfuse_adapter.py); otherwise the call runs untraced."""
+    if not cfg.otel_langfuse:
+        return {}
+    from ..obs.langfuse_adapter import configure_pipecat_otel  # lazy: no OTel imports by default
+
+    if not configure_pipecat_otel():
+        return {}
+    attrs = {"persona.channel": "voice", "persona.call_id": call_id}
+    if session_id:
+        attrs["langfuse.session.id"] = session_id
+    return {"enable_tracing": True, "conversation_id": call_id, "additional_span_attributes": attrs}
+
 GREETING = "Hi, it's Persona! Thanks for calling. What should I call you?"
 GOODBYE_MAX_DURATION = "We're just about out of time on this call. Everything so far is saved, so you can pick up in the chat. Bye for now!"
 GOODBYE_STT_DOWN = "Sorry, I'm having trouble hearing you. Everything so far is saved, so let's keep going in the chat. Bye for now!"
@@ -147,6 +162,7 @@ class CallSession:
                                   enable_metrics=True),
             observers=[self._playout],
             idle_timeout_secs=None,  # silence floors are spoken per node (VOICE-002); max duration caps calls
+            **tracing_kwargs(self.cfg, call_id=self.stats.call_id),
         )
 
         @transport.event_handler("on_client_connected")

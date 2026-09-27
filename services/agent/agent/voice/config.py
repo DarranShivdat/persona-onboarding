@@ -11,6 +11,7 @@
     PERSONA_VOICE_STUB_LLM   1 = force the stub turn even with an Anthropic key
     PERSONA_VOICE_FAKE_VENDORS 1 = offline pipeline (tone TTS, no STT) for local transport proofs
     PERSONA_VOICE_MAX_CALL_SECS  hard cap per call, default 900
+    PERSONA_TRACING          langfuse = export Pipecat OTel spans to Langfuse OTLP (agent/obs)
 
 The mode is decided once per process (`VoiceConfig.from_env()`), so the call route
 can say up front whether it will return a real SDP answer.
@@ -42,6 +43,7 @@ class VoiceConfig:
     stub_llm: bool = False
     fake_vendors: bool = False
     max_call_secs: float = 900.0
+    otel_langfuse: bool = False
 
     @classmethod
     def from_env(cls, env: Optional[Mapping[str, str]] = None) -> "VoiceConfig":
@@ -58,6 +60,7 @@ class VoiceConfig:
             stub_llm=_flag(env, "PERSONA_VOICE_STUB_LLM"),
             fake_vendors=_flag(env, "PERSONA_VOICE_FAKE_VENDORS"),
             max_call_secs=float(env.get("PERSONA_VOICE_MAX_CALL_SECS") or cls.max_call_secs),
+            otel_langfuse=(env.get("PERSONA_TRACING") or "").strip().lower() == "langfuse",
         )
 
     @property
