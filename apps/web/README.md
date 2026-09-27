@@ -1,6 +1,13 @@
 # apps/web — Next.js (Vercel)
 
-Scaffold only; FE-001 builds the shell from `docs/design/spec.md`.
+Shell from `docs/design/spec.md` (FE-001), running on `MockSessionDriver`.
+
+- `lib/session/types.ts`: `SessionDriver` contract (ARCHITECTURE §6) + `applyPush` render reducer.
+- `lib/session/mock-driver.ts` + `fixtures.ts`: replays fixed spec states; `/?state=<name>`
+  opens any of them (used by `harness/visual`). FE-002 adds the real driver.
+- `app/tokens.css` is generated from `docs/design/tokens.json` (`npm -w apps/web run tokens`;
+  `prebuild` fails if stale).
+- `<meta name="build-sha">` comes from `VERCEL_GIT_COMMIT_SHA` / `PERSONA_BUILD_SHA` / git.
 
 Surfaces (one page, one session):
 - **Chat** — the text-adaptive onboarding conversation (server-driven; renders the
