@@ -26,18 +26,26 @@ docs/design/** only (+ harness/visual/capture.mjs if you need a capture helper).
 - docs/ARCHITECTURE.md §1 (product surfaces) and §6 (UI pushes)
 - harness/edge-cases.yaml (only to enumerate UI states: EC-01..04, 08, 20-22, 29-31)
 - .claude/skills/frontend-design/SKILL.md (mandatory), .claude/skills/webapp-testing/SKILL.md
+- docs/product-facts.md (Gmail read+write scopes, testing mode — drives consent copy)
 
 ## DO NOT READ
-- .env*, secrets; any Penciled repository; services/** internals
+- .env*, secrets; Penciled sensitive paths (.env*, transcripts/, data/, demo patients, PHI) + other Penciled repos; never modify penciled-emr; services/** internals
 
 ## REFERENCES
-- Primary candidate: https://usepersona.app (AI assistant that emails on your behalf;
-  Gmail + phone number; matches "Persona" CTO trial context). Confirm it is the right
-  company from the site content; also check linkedin.com/company/personaassistant.
-- Other same-name products to rule out: thepersona.io, withpersona.com (identity verification).
-- Darran has a browser tab titled "Persona — CTO Trial"; if identity is ambiguous, stop
-  and report OPEN_DESIGN_QUESTIONS rather than guessing.
-- Public pages only. Do not sign up, log in, or submit forms.
+- Company (confirmed by Darran): **Persona** by Zach Yadegari (after Cal AI) — a personal
+  AI assistant "that gets things done". You text it (iMessage / iOS app) and it acts across
+  Gmail, Google Calendar, Notion, Slack, Uber, DoorDash, etc., confirming before it acts.
+  Darran calls the wearable the "personal band" = **Persona Band** (screenless wristband
+  with mics + speaker + LED ring; preorders, ships Dec 2026).
+- Primary: https://yourpersona.com (home) and https://yourpersona.com/band.
+- iOS App Store listing "Persona - Your AI" (Iris Assistant, Inc.) — screenshots show the
+  in-app look and onboarding. Launch coverage (Band announced Sep 15, 2026) for tone.
+- Their core UX is *texting an assistant*: study chat bubbles, message cadence, tone, and
+  how they explain integrations/permissions (Gmail consent!) and privacy.
+- NOT these (different companies): usepersona.app, thepersona.io, withpersona.com
+  (identity verification), linkedin.com/company/personaassistant.
+- Public pages only. Do not sign up, log in, join waitlists/preorders, or submit forms.
+  If a page blocks automated capture, note it and use what is public (App Store, press).
 
 ## DELIVERABLES
 - docs/design/references/*.png — full-page + key-section screenshots (desktop + mobile)
@@ -61,6 +69,11 @@ docs/design/** only (+ harness/visual/capture.mjs if you need a capture helper).
   desktop; stacked on mobile. Live captions always visible.
 - Gmail card can appear mid-call without covering the call controls.
 - Graduation shows deferred items as gentle, dismissible prompts.
+- Gmail card consent copy: Persona asks for **read and write** Gmail access (read, organize,
+  draft, send — nothing sent or changed without the user's OK); prepare the user for
+  Google's "unverified app" testing-mode screen (reviewers are test users).
+- Timeline: FE-001 starts from this spec Sunday morning PT — prefer a complete, clear spec
+  over exhaustive research.
 
 ## ACCEPTANCE
 - [ ] all 11 states × 2 viewports rendered to PNG
