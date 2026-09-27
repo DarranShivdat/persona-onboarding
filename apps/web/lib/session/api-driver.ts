@@ -5,6 +5,7 @@
 import {
   agentNameOf,
   composerFor,
+  initialsOf,
   landingSnapshot,
   offerItem,
   toChecklist,
@@ -13,7 +14,7 @@ import {
   type AgentTranscript,
 } from "./agent-state";
 import type { SlotName } from "@/lib/flow-types";
-import type { GmailCard, SessionDriver, SessionSnapshot, ThreadItem, UIAction, UIPush } from "./types";
+import type { GmailCapability, GmailCard, SessionDriver, SessionSnapshot, ThreadItem, UIAction, UIPush } from "./types";
 
 const PUSH_TYPES = ["transcript", "state", "gmail_connect_card", "gmail_connected", "start_call", "end_call", "call_state", "graduate"] as const;
 const JUST_FILLED_MS = 1600;
@@ -26,9 +27,22 @@ const ACTION_TEXT: Partial<Record<UIAction, string>> = {
   gmail_keep: "Keep this account",
 };
 
+/** What the OAuth popup reports (app/api/oauth/google/callback). Rendering data only. */
+type OAuthResult =
+  | { type: "persona:gmail"; status: "connected" | "wrong_account"; email: string; name: string; missing: GmailCapability[] }
+  | { type: "persona:gmail"; status: "error"; reason: string };
+const CLOSED_GRACE_MS = 1500;
+
+function isOAuthResult(d: unknown): d is OAuthResult {
+  const r = d as Partial<OAuthResult> | null;
+  return !!r && r.type === "persona:gmail" && (r.status === "error" || ((r.status === "connected" || r.status === "wrong_account") && typeof (r as { email?: unknown }).email === "string"));
+}
+
 export interface ApiDriverOptions {
   /** Base path of the same-origin proxy. */
   basePath?: string;
+  /** Base path of the Google OAuth routes (popup). */
+  oauthPath?: string;
   /** Reconnect backoff after the stream is closed for good (ms). */
   reconnectMs?: number;
 }
@@ -46,14 +60,22 @@ export class ApiSessionDriver implements SessionDriver {
   private listeners = new Set<(p: UIPush) => void>();
   private timers = new Set<ReturnType<typeof setTimeout>>();
   private starting: Promise<void> | null = null;
+  private popup: Window | null = null;
+  private switchAccount = false;
+  /** An OAuth attempt is in flight: its popup result is still owed to the card. */
+  private oauthPending = false;
+  private offOAuth: (() => void) | null = null;
   private readonly base: string;
+  private readonly oauthBase: string;
   private readonly reconnectMs: number;
 
   constructor(initial: AgentState | null, opts: ApiDriverOptions = {}) {
     this.state = initial;
     this.base = opts.basePath ?? "/api/session";
+    this.oauthBase = opts.oauthPath ?? "/api/oauth/google";
     this.reconnectMs = opts.reconnectMs ?? 1500;
     this.snap = this.compose();
+    if (typeof window !== "undefined") this.listenOAuth();
   }
 
   snapshot(): SessionSnapshot {
@@ -68,9 +90,17 @@ export class ApiSessionDriver implements SessionDriver {
 
   async act(action: UIAction): Promise<void> {
     if (action === "begin") return this.begin();
+    // OAuth actions open the popup synchronously (inside the click) so it isn't blocked.
+    if (action === "gmail_connect" || action === "gmail_retry") return this.startOAuth(false);
+    if (action === "gmail_disconnect") return this.startOAuth(true); // EC-22: re-run OAuth with the account chooser
+    if (action === "gmail_reopen") return this.reopenOAuth();
+    if (action === "gmail_keep") {
+      const c = this.gmailCard();
+      if (c?.state === "wrong_account") this.upsertGmail({ ...c, state: "connected" });
+    }
     const text = ACTION_TEXT[action];
     if (text) return this.sendText(text);
-    // gmail_* OAuth actions: FE-003. call_take_over: FE-004 / VOICE-001.
+    // call_take_over: FE-004 / VOICE-001.
   }
 
   async sendText(text: string): Promise<void> {
@@ -135,6 +165,8 @@ export class ApiSessionDriver implements SessionDriver {
   }
 
   close(): void {
+    this.offOAuth?.();
+    this.offOAuth = null;
     this.es?.close();
     this.es = null;
     this.timers.forEach(clearTimeout);
@@ -199,7 +231,10 @@ export class ApiSessionDriver implements SessionDriver {
         return this.render();
       case "gmail_connected": {
         const email = (data as { email?: string }).email ?? this.state?.slots.gmail?.value ?? "";
-        this.upsertGmail({ state: "connected", account: email ? { name: email, email, initials: email.slice(0, 2).toUpperCase() } : undefined });
+        const cur = this.gmailCard();
+        // The popup's result already drew this account (with its name / partial grant / wrong-account hint).
+        if (cur?.account && cur.account.email === email && cur.state !== "error") return this.render();
+        this.upsertGmail({ state: "connected", account: email ? { name: email, email, initials: initialsOf(email, email) } : undefined });
         return this.render();
       }
       case "call_state": {
@@ -250,6 +285,74 @@ export class ApiSessionDriver implements SessionDriver {
         this.render();
       });
     }
+    this.render();
+  }
+
+  // --- Google OAuth popup (FE-003) ------------------------------------------------------
+
+  private startOAuth(switchAccount: boolean): void {
+    if (typeof window === "undefined") return;
+    this.switchAccount = switchAccount;
+    this.oauthPending = true;
+    this.upsertGmail({ state: "connecting" });
+    this.openPopup();
+    this.render();
+  }
+
+  private reopenOAuth(): void {
+    if (this.popup && !this.popup.closed) this.popup.focus();
+    else this.openPopup();
+  }
+
+  private openPopup() {
+    const url = `${this.oauthBase}/start${this.switchAccount ? "?switch=1" : ""}`;
+    // null when a blocker ate it: the connecting card offers "Open the Google window again".
+    this.popup = window.open(url, "persona-google", "popup,width=520,height=680");
+  }
+
+  private listenOAuth() {
+    const onResult = (d: unknown) => {
+      if (isOAuthResult(d)) this.onOAuthResult(d);
+    };
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin === window.location.origin) onResult(e.data);
+    };
+    // The popup reports via postMessage and a BroadcastChannel (Google's COOP can sever `opener`).
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel("persona-gmail");
+      bc.onmessage = (e) => onResult(e.data);
+    } catch {
+      bc = null;
+    }
+    // EC-21: the window was closed without finishing. Checked when focus comes back to us.
+    const onFocus = () => {
+      if (this.gmailCard()?.state !== "connecting" || !this.popup?.closed) return;
+      this.later(CLOSED_GRACE_MS, () => {
+        if (this.gmailCard()?.state !== "connecting" || !this.popup?.closed) return;
+        this.popup = null;
+        this.upsertGmail({ state: "error" });
+        this.render();
+      });
+    };
+    window.addEventListener("message", onMessage);
+    window.addEventListener("focus", onFocus);
+    this.offOAuth = () => {
+      window.removeEventListener("message", onMessage);
+      window.removeEventListener("focus", onFocus);
+      bc?.close();
+    };
+  }
+
+  private onOAuthResult(r: OAuthResult) {
+    // Once per attempt: ignores the duplicate (postMessage + BroadcastChannel) and other tabs.
+    // It may land after the brain's `gmail_connected` push (or after we assumed the window was
+    // closed) and then enriches the card with the name / partial grant / wrong-account hint.
+    if (!this.oauthPending) return;
+    this.oauthPending = false;
+    this.popup = null;
+    if (r.status === "error") this.upsertGmail({ state: "error" });
+    else this.upsertGmail({ state: r.status, account: { name: r.name, email: r.email, initials: initialsOf(r.name, r.email) }, missing: r.missing });
     this.render();
   }
 

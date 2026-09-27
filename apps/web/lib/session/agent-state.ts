@@ -106,3 +106,10 @@ export function landingSnapshot(): SessionSnapshot {
     home: null,
   };
 }
+
+/** Avatar initials for the Gmail account row ("Maya Reyes" -> "MR", "maya.r@gmail.com" -> "MA"). */
+export function initialsOf(name: string, email: string): string {
+  const words = name.includes("@") ? [] : name.trim().split(/\s+/).filter(Boolean);
+  const s = words.length >= 2 ? words[0]![0]! + words[words.length - 1]![0]! : (words[0] ?? email).slice(0, 2);
+  return s.toUpperCase();
+}
