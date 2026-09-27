@@ -105,14 +105,28 @@ def check_bash(cmd):
         block("recursive/wildcard access to penciled-emr could sweep in transcripts/data/.env; "
               "read or copy individual files, or use the sanitized mirror "
               "../persona-onboarding-ref/penciled-voice-agent (recursive copy from the mirror is fine).")
-    if "penciled-emr" in c or "persona-onboarding-ref" in c:
-        # Allow read-only inspection and copying OUT; block anything that mutates there.
-        mutators = r"(\brm\b|\bmv\b|\bchmod\b|\bchown\b|\btouch\b|\bsed\s+-i|\bperl\s+-[a-z]*i|\btee\b|\btruncate\b|"
-        mutators += r"\bgit\s+(commit|checkout|reset|clean|stash|add|rm|mv|restore|switch|merge|rebase|pull|apply|am|cherry-pick|branch|tag)\b|"
-        mutators += r"\bnpm\b|\bpip\b|\buv\b|\bpython3?\b[^|;&]*\bpenciled-emr|>\s*\S*(penciled-emr|persona-onboarding-ref))"
-        if re.search(mutators, c):
-            # cp/rsync FROM penciled into the repo is fine: allow when penciled appears only as source.
+    # Segment-wise mutation check: a segment is a violation only if it mutates AND targets
+    # penciled-emr / the mirror (by path, or because an earlier `cd` moved into them).
+    base_mut = (r"\brm\b|\bmv\b|\bln\b|\bchmod\b|\bchown\b|\btouch\b|\bmkdir\b|\bsed\s+-i|"
+                r"\bperl\s+-[a-z]*i|\btee\b|\btruncate\b|\bpatch\b|"
+                r"\bgit\s+(-C\s+\S+\s+)?(commit|checkout|reset|clean|stash|add|rm|mv|restore|switch|merge|"
+                r"rebase|pull|apply|am|cherry-pick|branch|tag|init|config|worktree|submodule|gc|prune)\b")
+    install_mut = r"\bnpm\b|\bnpx\b|\bpip3?\b|\buv\b|\bmake\b|\bpython3?\s+-m\s+(pip|venv)|\bpoetry\b"
+    redirect = r"(?<![0-9&])>>?\s*(?!/dev/null|&)"
+    in_pen = False
+    for seg in re.split(r"&&|\|\||;|\||\n", c):
+        seg = seg.strip()
+        m = re.match(r"(?:builtin\s+)?(?:cd|pushd)\s+(\S+)", seg)
+        if m:
+            in_pen = bool(re.search(r"penciled-emr|persona-onboarding-ref", m.group(1)))
+        refs = bool(re.search(r"penciled-emr|persona-onboarding-ref", seg))
+        if (refs or in_pen) and re.search(base_mut, seg):
             block("command could modify penciled-emr or the reference mirror; only read/copy-out is allowed.")
+        if in_pen and (re.search(install_mut, seg) or re.search(redirect, seg)):
+            block("installs/writes while cd'd into penciled-emr or the mirror are forbidden.")
+        if re.search(redirect + r"\S*(penciled-emr|persona-onboarding-ref)", seg):
+            block("redirecting output into penciled-emr or the mirror is forbidden.")
+    if "penciled-emr" in c or "persona-onboarding-ref" in c:
         for m in re.finditer(r"\b(cp|rsync|ditto|install)\b([^;&|]*)", c):
             args = m.group(2).split()
             args = [a for a in args if not a.startswith("-")]

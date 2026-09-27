@@ -53,6 +53,14 @@ CASES = [
     ("block", "Bash", {"command": "git push origin main"}),
     ("allow", "Bash", {"command": "git commit -m wip && npm run qa:fast"}),
     ("block", "Bash", {"command": "cat .env"}),
+    ("allow", "Bash", {"command": f"ls {M}/; which python3 uv; python3 --version"}),
+    ("allow", "Bash", {"command": f"cd {M} && sed -n 1,50p bot.py; which coturn"}),
+    ("allow", "Bash", {"command": f"python3 -c 'print(open(\"{M}/bot.py\").read()[:100])'"}),
+    ("block", "Bash", {"command": f"cd {M} && echo x > y.py"}),
+    ("block", "Bash", {"command": f"cd {P} && pip install -r requirements.txt"}),
+    ("block", "Bash", {"command": f"echo x >> {P}/bot.py"}),
+    ("block", "Bash", {"command": f"git -C {P} stash"}),
+    ("block", "Bash", {"command": f"rm -rf {M}"}),
 ]
 
 
