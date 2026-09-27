@@ -1,0 +1,253 @@
+{
+ "about": "SYNTHETIC: hand-authored responses in Anthropic Messages API shape (not live model output). Exercises adapter parse + brain.apply + phrasing/guard end to end, offline.",
+ "channel": "voice",
+ "initial": {
+  "node": "call_offer",
+  "slots": {
+   "agent_name": "Nova"
+  }
+ },
+ "turns": [
+  {
+   "event": "call_started",
+   "phrase": {
+    "id": "msg_synthetic",
+    "type": "message",
+    "role": "assistant",
+    "model": "synthetic",
+    "stop_reason": "end_turn",
+    "content": [
+     {
+      "type": "text",
+      "text": "Hey, it's Nova, thanks for hopping on. What should I call you?"
+     }
+    ],
+    "usage": {
+     "input_tokens": 120,
+     "output_tokens": 30,
+     "cache_read_input_tokens": 1800
+    }
+   },
+   "expect": {
+    "node": "user_name"
+   }
+  },
+  {
+   "utterance": "it's Shivon",
+   "extract": {
+    "id": "msg_synthetic",
+    "type": "message",
+    "role": "assistant",
+    "model": "synthetic",
+    "stop_reason": "tool_use",
+    "content": [
+     {
+      "type": "tool_use",
+      "id": "toolu_synthetic",
+      "name": "record_slots",
+      "input": {
+       "slots": {
+        "agent_name": null,
+        "user_name": "Shivon",
+        "need": null,
+        "gmail": null
+       },
+       "confidence": {
+        "agent_name": 0.0,
+        "user_name": 0.5,
+        "need": 0.0,
+        "gmail": 0.0
+       },
+       "intents": []
+      }
+     }
+    ],
+    "usage": {
+     "input_tokens": 40,
+     "output_tokens": 60,
+     "cache_read_input_tokens": 1500
+    }
+   },
+   "phrase": null,
+   "expect": {
+    "node": "user_name",
+    "filled": [
+     "agent_name"
+    ],
+    "reply": "I want to get your name right. I heard S, H, I, V, O, N. Is that right?"
+   }
+  },
+  {
+   "utterance": "yes",
+   "extract": {
+    "id": "msg_synthetic",
+    "type": "message",
+    "role": "assistant",
+    "model": "synthetic",
+    "stop_reason": "tool_use",
+    "content": [
+     {
+      "type": "tool_use",
+      "id": "toolu_synthetic",
+      "name": "record_slots",
+      "input": {
+       "slots": {
+        "agent_name": null,
+        "user_name": null,
+        "need": null,
+        "gmail": null
+       },
+       "confidence": {
+        "agent_name": 0.0,
+        "user_name": 0.0,
+        "need": 0.0,
+        "gmail": 0.0
+       },
+       "intents": [
+        "affirm"
+       ]
+      }
+     }
+    ],
+    "usage": {
+     "input_tokens": 40,
+     "output_tokens": 60,
+     "cache_read_input_tokens": 1500
+    }
+   },
+   "phrase": {
+    "id": "msg_synthetic",
+    "type": "message",
+    "role": "assistant",
+    "model": "synthetic",
+    "stop_reason": "end_turn",
+    "content": [
+     {
+      "type": "text",
+      "text": "Thanks, Shivon. What's one thing you'd most like help with first?"
+     }
+    ],
+    "usage": {
+     "input_tokens": 120,
+     "output_tokens": 30,
+     "cache_read_input_tokens": 1800
+    }
+   },
+   "expect": {
+    "node": "need",
+    "filled": [
+     "agent_name",
+     "user_name"
+    ]
+   }
+  },
+  {
+   "utterance": "my calendar is a mess",
+   "extract": {
+    "id": "msg_synthetic",
+    "type": "message",
+    "role": "assistant",
+    "model": "synthetic",
+    "stop_reason": "tool_use",
+    "content": [
+     {
+      "type": "tool_use",
+      "id": "toolu_synthetic",
+      "name": "record_slots",
+      "input": {
+       "slots": {
+        "agent_name": null,
+        "user_name": null,
+        "need": "my calendar is a mess",
+        "gmail": null
+       },
+       "confidence": {
+        "agent_name": 0.0,
+        "user_name": 0.0,
+        "need": 0.95,
+        "gmail": 0.0
+       },
+       "intents": []
+      }
+     }
+    ],
+    "usage": {
+     "input_tokens": 40,
+     "output_tokens": 60,
+     "cache_read_input_tokens": 1500
+    }
+   },
+   "phrase": {
+    "id": "msg_synthetic",
+    "type": "message",
+    "role": "assistant",
+    "model": "synthetic",
+    "stop_reason": "end_turn",
+    "content": [
+     {
+      "type": "text",
+      "text": "Got it, let's tame that calendar. Connecting Gmail lets Nova read, sort, draft and send for you, always with your OK. I've put a Connect Gmail button on your screen."
+     }
+    ],
+    "usage": {
+     "input_tokens": 120,
+     "output_tokens": 30,
+     "cache_read_input_tokens": 1800
+    }
+   },
+   "expect": {
+    "node": "gmail",
+    "filled": [
+     "agent_name",
+     "user_name",
+     "need"
+    ]
+   }
+  },
+  {
+   "utterance": "it's sam dot lee at gmail dot com",
+   "extract": {
+    "id": "msg_synthetic",
+    "type": "message",
+    "role": "assistant",
+    "model": "synthetic",
+    "stop_reason": "tool_use",
+    "content": [
+     {
+      "type": "tool_use",
+      "id": "toolu_synthetic",
+      "name": "record_slots",
+      "input": {
+       "slots": {
+        "agent_name": null,
+        "user_name": null,
+        "need": null,
+        "gmail": "sam.lee@gmail.com"
+       },
+       "confidence": {
+        "agent_name": 0.0,
+        "user_name": 0.0,
+        "need": 0.0,
+        "gmail": 0.95
+       },
+       "intents": []
+      }
+     }
+    ],
+    "usage": {
+     "input_tokens": 40,
+     "output_tokens": 60,
+     "cache_read_input_tokens": 1500
+    }
+   },
+   "phrase": null,
+   "expect": {
+    "node": "gmail",
+    "candidate": [
+     "gmail"
+    ],
+    "reply": "I have s as in Sierra, a as in Alpha, m as in Mike, dot; l as in Lima, e as in Echo, e as in Echo; at gmail dot com. Is that right?"
+   }
+  }
+ ]
+}
