@@ -1,5 +1,7 @@
-import type { GmailCard as Card, UIAction } from "@/lib/session/types";
+import type { GmailCard as Card, GmailCapability, UIAction } from "@/lib/session/types";
 import { AlertIcon, CheckIcon, MailIcon } from "./icons";
+
+const CAN: Record<GmailCapability, string> = { read: "read your email", organize: "organize your inbox", send: "send email" };
 
 /** Gmail connect card (spec §4.5). `inCall` enables the compact variant on mobile (CSS). */
 export function GmailCard({ card, agent, inCall, onAct }: { card: Card; agent: string; inCall: boolean; onAct: (a: UIAction) => void }) {
@@ -93,11 +95,24 @@ export function GmailCard({ card, agent, inCall, onAct }: { card: Card; agent: s
             </div>
           </>
         ) : (
-          <div className="actions">
-            <button type="button" className="btn quiet" onClick={() => onAct("gmail_disconnect")}>
-              Not you? Use a different account
-            </button>
-          </div>
+          <>
+            {!!card.missing?.length && (
+              // Partial grant (ARCHITECTURE §11): connected, with the reduced capability stated plainly.
+              <p className="limited" data-testid="gmail-limited">
+                Connected without permission to {card.missing.map((c) => CAN[c]).join(" or ")}. {agent} can still do the rest. Reconnect anytime to allow it.
+              </p>
+            )}
+            <div className="actions">
+              {!!card.missing?.length && (
+                <button type="button" className="btn quiet" onClick={() => onAct("gmail_retry")}>
+                  Allow full access
+                </button>
+              )}
+              <button type="button" className="btn quiet" onClick={() => onAct("gmail_disconnect")}>
+                Not you? Use a different account
+              </button>
+            </div>
+          </>
         )}
       </div>
     );

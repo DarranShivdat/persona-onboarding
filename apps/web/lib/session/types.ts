@@ -19,9 +19,13 @@ export type ThreadItem =
   | { id: string; kind: "gmail"; card: GmailCard };
 
 export type GmailCardState = "idle" | "connecting" | "connected" | "error" | "wrong_account";
+/** Gmail capabilities a partial grant left out (the user unticked scopes on Google's screen). */
+export type GmailCapability = "read" | "organize" | "send";
 export interface GmailCard {
   state: GmailCardState;
   account?: { name: string; email: string; initials: string };
+  /** Connected with reduced capability; absent or empty = full access. */
+  missing?: GmailCapability[];
 }
 
 export type CallStatus = "ringing" | "connected" | "muted" | "reconnecting" | "ended" | "elsewhere";

@@ -21,6 +21,7 @@ const REPLIES: Partial<Record<StateName, Partial<Record<UIAction | "call" | "han
   "gmail-card-idle": { gmail_connect: "gmail-card-connecting", hangup: "call-ended" },
   "gmail-card-connecting": { gmail_reopen: "gmail-card-connecting", hangup: "call-ended" },
   "gmail-card-connected": { gmail_disconnect: "gmail-card-idle", hangup: "call-ended" },
+  "gmail-card-partial": { gmail_retry: "gmail-card-connecting", gmail_disconnect: "gmail-card-idle", hangup: "call-ended" },
   "gmail-card-error": { gmail_retry: "gmail-card-connecting", gmail_skip: "graduation" },
   "gmail-card-wrong-account": { gmail_disconnect: "gmail-card-idle", gmail_keep: "graduation" },
   "welcome-back": { call: "call-ringing" },

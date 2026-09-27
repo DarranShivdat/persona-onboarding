@@ -20,3 +20,10 @@ export async function seedSession(context: BrowserContext, baseURL: string, seed
   await context.addCookies([{ name: SESSION_COOKIE, value: `${id}.${token}`, url: baseURL, httpOnly: true, sameSite: "Lax" }]);
   return id;
 }
+
+/** A session parked at the Gmail step (name, user and need already filled). */
+export const AT_GMAIL: Seed = {
+  node: "gmail",
+  slots: { agent_name: "Juno", user_name: "Maya", need: "Inbox triage" },
+  transcript: [["assistant", "Last step: connect your Gmail with the button below."]],
+};

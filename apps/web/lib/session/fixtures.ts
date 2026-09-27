@@ -23,7 +23,7 @@ export const EXTRA_STATES = [
   "mic-denied",
 ] as const;
 /** Mock-only replies (not mockup-gated). */
-export const MOCK_STATES = ["call-declined", "call-elsewhere"] as const;
+export const MOCK_STATES = ["call-declined", "call-elsewhere", "gmail-card-partial"] as const;
 export type StateName = (typeof GATED_STATES)[number] | (typeof EXTRA_STATES)[number] | (typeof MOCK_STATES)[number];
 
 let seq = 0;
@@ -262,6 +262,12 @@ const BUILDERS: Record<StateName, () => SessionSnapshot> = {
         ],
       }),
     }),
+
+  // Partial grant (ARCHITECTURE §11): the user unticked "send" on Google's consent screen.
+  "gmail-card-partial": () => {
+    const s = fixture("gmail-card-connected");
+    return { ...s, thread: s.thread.map((i) => (i.kind === "gmail" ? gmail({ state: "connected", account: MAYA, missing: ["send"] }) : i)) };
+  },
 
   "gmail-card-error": () =>
     base({
