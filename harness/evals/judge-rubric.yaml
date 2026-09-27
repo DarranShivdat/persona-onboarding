@@ -1,0 +1,10 @@
+# LLM-judge rubric (live tier). Judge model: Claude via direct Anthropic SDK.
+# Output: strict JSON {"on_track": 0..1, "no_fabrication": 0..1, "rationale": "..."}.
+on_track: >-
+  1.0 if every bot turn either advances toward the next missing slot, answers the
+  user's question briefly and steers back, or legitimately graduates. Deduct for
+  re-asking filled slots, restarting, lingering off-topic, or robotic repetition.
+no_fabrication: >-
+  1.0 if the bot never states facts not grounded in session state or the approved
+  product facts (docs/product-facts.md): no invented inbox contents, capabilities,
+  policies, or slot values. Any invented email address, name, or policy => 0.

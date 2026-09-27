@@ -1,0 +1,84 @@
+#!/usr/bin/env node
+// QA tier runner. Zero npm dependencies so it runs on a fresh clone.
+//   node harness/qa.mjs --tier fast|flow|convo|voice|e2e|visual|live|harness|all
+// Writes .persona-qa/last-report.json. Unimplemented tiers report PENDING (exit 0);
+// a tier FAILS only if something implemented fails.
+import { spawnSync } from "node:child_process";
+import { mkdirSync, writeFileSync, existsSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import os from "node:os";
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const PY = process.env.PERSONA_PYTHON || "python3";
+const args = process.argv.slice(2);
+const tier = args[args.indexOf("--tier") + 1] || "fast";
+
+function run(cmd, argv, opts = {}) {
+  const r = spawnSync(cmd, argv, { cwd: ROOT, encoding: "utf8", env: { ...process.env, ...(opts.env || {}) } });
+  return { code: r.status ?? 1, out: (r.stdout || "") + (r.stderr || "") };
+}
+
+function pytest(name, paths, extra = []) {
+  const r = run(PY, ["-m", "pytest", "-q", "-rs", ...paths, ...extra]);
+  const skipped = Number((r.out.match(/(\d+) skipped/) || [0, 0])[1]);
+  const pending = /PENDING/.test(r.out) ? skipped : 0;
+  const summary = (r.out.trim().split("\n").filter((l) => /passed|failed|error|skipped|no tests/.test(l)).pop() || "").trim();
+  const status = r.code === 0 ? "pass" : r.code === 5 ? "pending" : "fail";
+  if (status === "fail") process.stdout.write(r.out);
+  return { check: name, status, summary: pending ? `${summary} [${pending} PENDING]` : summary, pending };
+}
+
+const pendingCheck = (name, packet) => ({ check: name, status: "pending", summary: `not implemented yet (${packet})` });
+
+const TIERS = {
+  fast: () => [
+    pytest("flow-spec + edge-case catalog", ["services/agent/tests/test_spec.py", "harness/tests"]),
+  ],
+  flow: () => [pytest("flow engine (pure, no LLM)", ["services/agent/tests"])],
+  convo: () => [pendingCheck("scripted text conversations (mock/replay LLM)", "HARNESS-001")],
+  voice: () => [pendingCheck("headless Pipecat voice client + fault injection", "HARNESS-003")],
+  e2e: () => [
+    existsSync(join(ROOT, "apps/web/node_modules"))
+      ? pendingCheck("Playwright flow tests", "FE-001")
+      : pendingCheck("Playwright flow tests (apps/web not installed)", "FE-001"),
+  ],
+  visual: () => {
+    const passthru = args.filter((a, i) => a !== "--tier" && args[i - 1] !== "--tier");
+    const r = run("node", ["harness/visual/capture.mjs", ...passthru]);
+    return [{ check: "screenshot capture + diff vs docs/design/mockups", status: /PENDING/.test(r.out) ? "pending" : r.code === 0 ? "pass" : "fail", summary: r.out.trim() }];
+  },
+  live: () => {
+    if (process.env.PERSONA_QA_LIVE !== "1") {
+      return [{ check: "live LLM + judge -> eval backend", status: "skipped", summary: "set PERSONA_QA_LIVE=1 (spends real API calls)" }];
+    }
+    return [pendingCheck("live LLM + judge -> Langfuse dataset run", "OBS-002")];
+  },
+  harness: () => {
+    const r = run("bash", ["scripts/test-persona-harness.sh"]);
+    const line = r.out.split("\n").filter((l) => /SUMMARY|HARNESS TESTS/.test(l)).join(" | ");
+    if (r.code !== 0) process.stdout.write(r.out);
+    return [{ check: "supervisor mock harness (no Claude)", status: r.code === 0 ? "pass" : "fail", summary: line }];
+  },
+};
+TIERS.all = () => ["fast", "flow", "convo", "voice", "e2e", "visual", "live"].flatMap((t) => TIERS[t]().map((c) => ({ tier: t, ...c })));
+
+if (!TIERS[tier]) {
+  console.error(`unknown tier ${tier}; one of ${Object.keys(TIERS).join(", ")}`);
+  process.exit(2);
+}
+const started = Date.now();
+const checks = TIERS[tier]().map((c) => ({ tier: c.tier || tier, ...c }));
+const failed = checks.filter((c) => c.status === "fail");
+const report = {
+  tier,
+  ok: failed.length === 0,
+  execution: { host: os.hostname(), cwd: ROOT, at: new Date().toISOString(), ms: Date.now() - started },
+  checks,
+};
+mkdirSync(join(ROOT, ".persona-qa"), { recursive: true });
+writeFileSync(join(ROOT, ".persona-qa/last-report.json"), JSON.stringify(report, null, 2) + "\n");
+for (const c of checks) console.log(`[qa:${c.tier}] ${c.status.toUpperCase().padEnd(7)} ${c.check}${c.summary ? " — " + c.summary : ""}`);
+const pendingItems = checks.reduce((n, c) => n + (c.status === "pending" ? 1 : 0) + (c.pending || 0), 0);
+console.log(`[qa:${tier}] ${report.ok ? "OK" : "FAILED"} (${pendingItems} pending items) -> .persona-qa/last-report.json`);
+process.exit(report.ok ? 0 : 1);
