@@ -29,6 +29,19 @@ function pytest(name, paths, extra = []) {
   return { check: name, status, summary: pending ? `${summary} [${pending} PENDING]` : summary, pending };
 }
 
+// qa:convo: one eval run per offline mode (mock, replay); fails on any failed case or network call.
+function convo(mode) {
+  const r = run(PY, ["-m", "harness.convo", "run", "--mode", mode]);
+  const line = r.out.split("\n").find((l) => l.startsWith("CONVO_SUMMARY "));
+  const s = line ? JSON.parse(line.slice("CONVO_SUMMARY ".length)) : null;
+  const status = r.code === 0 && s && s.ok ? "pass" : "fail";
+  if (status === "fail") process.stdout.write(r.out);
+  const summary = s
+    ? `${s.pass} passed, ${s.fail} failed, ${s.network_calls} network calls, run ${s.run} [${s.pending} PENDING]`
+    : "no CONVO_SUMMARY (runner crashed)";
+  return { check: `scripted text conversations (${mode} LLM)`, status, summary, pending: s ? s.pending : 0 };
+}
+
 const pendingCheck = (name, packet) => ({ check: name, status: "pending", summary: `not implemented yet (${packet})` });
 
 const TIERS = {
@@ -36,7 +49,7 @@ const TIERS = {
     pytest("flow-spec + edge-case catalog", ["services/agent/tests/test_spec.py", "harness/tests"]),
   ],
   flow: () => [pytest("flow engine (pure, no LLM)", ["services/agent/tests"])],
-  convo: () => [pendingCheck("scripted text conversations (mock/replay LLM)", "HARNESS-001")],
+  convo: () => [pytest("convo runner + scoring + eval plumbing", ["harness/convo/tests"]), convo("mock"), convo("replay")],
   voice: () => [pendingCheck("headless Pipecat voice client + fault injection", "HARNESS-003")],
   e2e: () => {
     if (!existsSync(join(ROOT, "node_modules/@playwright/test"))) {
