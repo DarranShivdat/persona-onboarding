@@ -22,3 +22,11 @@ Workspace account / cancel, `/__oauth/token` with PKCE check). The Playwright co
 `GOOGLE_OAUTH_AUTH_URL` / `GOOGLE_OAUTH_TOKEN_URL` / `GOOGLE_OAUTH_ISSUER` at it with fake
 test-only client values, so `qa:e2e` never touches Google. `gmail-card-mock.spec.ts` keeps the
 `?state=gmail-card-*` fixtures covered.
+
+Call specs (FE-004: EC-03 live, EC-09 / EC-02 lease) drive the real WebRTC path with no mic
+and no vendors: `e2e/call.ts` swaps `getUserMedia` for an oscillator stream (or a
+`NotAllowedError` for EC-03) and starts a "bot" page that long-polls the stub agent's
+signaling double (`GET/POST /__test/sessions/{id}/bot/{offer,answer}`) and answers each
+offer like the Pipecat bot would. The browser under test does the real offer -> `POST
+/api/session/call` -> answer -> ICE -> `connected`. The build uses host-only ICE
+(`NEXT_PUBLIC_PERSONA_ICE_URLS=none`) and Chromium runs without mDNS host obfuscation.

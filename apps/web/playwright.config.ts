@@ -27,7 +27,13 @@ export default defineConfig({
   fullyParallel: true,
   reporter: [["list"]],
   outputDir: "../../.persona-qa/e2e/test-results",
-  use: { baseURL: external ?? `http://localhost:${PORT}`, trace: "retain-on-failure" },
+  use: {
+    baseURL: external ?? `http://localhost:${PORT}`,
+    trace: "retain-on-failure",
+    // FE-004 call specs connect two local peers: keep host candidates plain (no mDNS) and let
+    // the fake tone play without a gesture.
+    launchOptions: { args: ["--disable-features=WebRtcHideLocalIpsWithMdns", "--autoplay-policy=no-user-gesture-required"] },
+  },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
     { name: "mobile", use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 }, hasTouch: true } },
@@ -41,7 +47,8 @@ export default defineConfig({
         {
           command: `npm run build && npx next start -p ${PORT}`,
           port: PORT,
-          env: { PERSONA_AGENT_BASE_URL: agentUrl, ...(useStub ? oauthEnv : {}) },
+          // Host-only ICE: e2e never reaches a public STUN server.
+          env: { PERSONA_AGENT_BASE_URL: agentUrl, NEXT_PUBLIC_PERSONA_ICE_URLS: "none", ...(useStub ? oauthEnv : {}) },
           reuseExistingServer: !process.env.CI,
           timeout: 240_000,
         },

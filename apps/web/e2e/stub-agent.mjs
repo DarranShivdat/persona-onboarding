@@ -12,6 +12,12 @@
 // so `qa:e2e` never touches Google: the consent page offers allow / partial grant / other
 // (Workspace) account / cancel, and the token endpoint checks PKCE and returns an unsigned
 // ID token (the web callback trusts the token endpoint over TLS, per OIDC Core 3.1.3.7).
+//
+// FE-004 makes it a call-signaling double: `POST .../call {sdp, type}` acquires the lease and,
+// when a test "bot" page is polling `GET /__test/sessions/{id}/bot/offer`, relays the offer to
+// it and returns the bot's answer from `POST /__test/sessions/{id}/bot/answer` — a real
+// browser-to-browser WebRTC leg standing in for the Pipecat bot. No bot -> `answer: null`
+// (the lease-only contract). Seed `{call: true}` = a call already live on another device.
 import { createServer } from "node:http";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 
@@ -111,7 +117,8 @@ function create(seed = {}) {
     slots: emptySlots(),
     deferred: seed.deferred ?? [],
     graduated: !!seed.graduated,
-    callId: null,
+    callId: seed.call ? randomUUID() : null,
+    bot: null,
     events: [],
     seq: 0,
     waiters: new Set(),
@@ -127,6 +134,44 @@ function create(seed = {}) {
   push(s, "state", snapshot(s));
   if (s.node === "gmail") push(s, "gmail_connect_card", { node: "gmail" });
   return { s, reply: hello };
+}
+
+const BOT_WAIT_MS = 10000;
+
+/** Hand the caller's offer to the polling bot page and wait for its answer. */
+function botAnswer(s, callId, offer) {
+  return new Promise((resolve) => {
+    const t = setTimeout(() => resolve(null), BOT_WAIT_MS);
+    s.bot.answers.set(callId, (a) => {
+      clearTimeout(t);
+      s.bot.answers.delete(callId);
+      resolve(a);
+    });
+    s.bot.offers.push({ call_id: callId, sdp: offer.sdp, type: offer.type ?? "offer" });
+    for (const w of s.bot.waiters) w();
+  });
+}
+
+/** Long-poll: the next offer for this session (204 after a while so the bot re-polls). */
+function botOffer(s, req, res) {
+  const flush = () => {
+    const o = s.bot.offers.shift();
+    if (!o) return false;
+    s.bot.waiters.delete(flush);
+    clearTimeout(t);
+    send(res, 200, o);
+    return true;
+  };
+  const t = setTimeout(() => {
+    s.bot.waiters.delete(flush);
+    res.writeHead(204).end();
+  }, 15000);
+  if (flush()) return;
+  s.bot.waiters.add(flush);
+  res.on("close", () => {
+    clearTimeout(t);
+    s.bot.waiters.delete(flush);
+  });
 }
 
 function send(res, status, body) {
@@ -207,6 +252,18 @@ const server = createServer(async (req, res) => {
     const { s } = create((await readJson(req)) ?? {});
     return send(res, 201, { id: s.id, token: s.token });
   }
+  const bot = url.pathname.match(/^\/__test\/sessions\/([^/]+)\/bot\/(offer|answer)$/);
+  if (bot) {
+    const s = sessions.get(bot[1]);
+    if (!s) return send(res, 404, { error: "not_found" });
+    s.bot ??= { offers: [], waiters: new Set(), answers: new Map() };
+    if (req.method === "GET" && bot[2] === "offer") return botOffer(s, req, res);
+    if (req.method === "POST" && bot[2] === "answer") {
+      const body = (await readJson(req)) ?? {};
+      s.bot.answers.get(body.call_id)?.({ sdp: body.sdp, type: body.type ?? "answer" });
+      return send(res, 200, { ok: true });
+    }
+  }
   if (req.method === "POST" && url.pathname === "/v1/sessions") {
     const { s, reply } = create();
     return send(res, 201, { id: s.id, token: s.token, reply, state: snapshot(s), push_ui: [], trace_id: "stub" });
@@ -242,13 +299,22 @@ const server = createServer(async (req, res) => {
     return send(res, 200, { reply, state: snapshot(s), push_ui: [], trace_id: "stub" });
   }
   if (req.method === "POST" && sub === "call") {
+    const body = (await readJson(req)) ?? {};
     if (s.callId) return send(res, 409, { error: "call_in_progress" });
-    s.callId = randomUUID();
-    return send(res, 201, { call_id: s.callId, lease_expires_at: null, answer: null, status: "lease_acquired" });
+    const callId = (s.callId = randomUUID());
+    push(s, "call_state", { state: "ringing", call_id: callId });
+    push(s, "state", snapshot(s));
+    const answer = typeof body.sdp === "string" && s.bot ? await botAnswer(s, callId, body) : null;
+    return send(res, 201, { call_id: callId, lease_expires_at: null, answer, status: "lease_acquired" });
   }
   if (req.method === "DELETE" && parts[3] === "call" && parts[4]) {
+    const body = (await readJson(req)) ?? {};
     const ok = s.callId === parts[4];
-    if (ok) s.callId = null;
+    if (ok) {
+      s.callId = null;
+      push(s, "call_state", { state: "ended", call_id: parts[4], reason: body.reason ?? "user_hangup" });
+      push(s, "state", snapshot(s));
+    }
     return send(res, 200, { released: ok });
   }
   if (req.method === "GET" && sub === "events") {
