@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "persona-onboarding/flow.schema.json",
+  "title": "Persona onboarding flow spec",
+  "type": "object",
+  "required": ["version", "id", "slots", "ask_order", "retry_budget", "graduation", "intents", "nodes"],
+  "properties": {
+    "version": {"type": "integer", "minimum": 1},
+    "id": {"type": "string"},
+    "slots": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["description", "required", "channels", "validator", "why", "confirm"],
+        "properties": {
+          "description": {"type": "string"},
+          "required": {"type": "boolean"},
+          "channels": {"type": "array", "items": {"enum": ["text", "voice"]}, "minItems": 1},
+          "validator": {"type": "string"},
+          "why": {"type": "string"},
+          "confirm": {"enum": ["never", "on_suspicious", "voice_low_confidence", "always"]}
+        }
+      }
+    },
+    "ask_order": {
+      "type": "object",
+      "properties": {
+        "text": {"type": "array", "items": {"type": "string"}},
+        "voice": {"type": "array", "items": {"type": "string"}}
+      },
+      "required": ["text", "voice"]
+    },
+    "retry_budget": {
+      "type": "object",
+      "required": ["default"],
+      "additionalProperties": {"type": "integer", "minimum": 1}
+    },
+    "graduation": {"type": "object", "required": ["when_any"]},
+    "intents": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "nodes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["kind", "channel", "goal", "tools"],
+        "properties": {
+          "kind": {"enum": ["say", "collect", "choice", "terminal"]},
+          "channel": {"enum": ["text", "voice", "any"]},
+          "slot": {"type": "string"},
+          "goal": {"type": "string"},
+          "tools": {"type": "array", "items": {"type": "string"}},
+          "next": {"type": "string"},
+          "next_when_filled": {"type": "string"},
+          "on_intent": {"type": "object", "additionalProperties": {"type": "string"}}
+        }
+      }
+    }
+  }
+}

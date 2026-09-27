@@ -1,0 +1,148 @@
+# Persona onboarding flow spec — THE single source of truth for the state machine.
+#
+# Owner: services/agent/agent/brain (Python) is the ONLY runtime that executes this
+# spec. Text chat (apps/web -> agent HTTP API) and voice (Pipecat pipeline in the
+# same service) both call the same brain. TypeScript consumes this file only for
+# types/labels (generated), never to make transition decisions.
+#
+# Principle: code owns progress; the LLM owns phrasing and extraction.
+#   - Every user utterance runs extraction for ALL slots (out-of-order answers fill
+#     and skip nodes).
+#   - A slot counts as filled only after its validator passes.
+#   - Graduation is legal from any node once `need` is filled OR the user insists.
+#   - Each node has a retry budget: reask -> explain_why -> skip (slot deferred).
+#
+# Schema: packages/flow/flow.schema.json. Structural invariants are tested in
+# services/agent/tests/test_spec.py (run by `npm run qa:flow`).
+
+version: 1
+id: persona-onboarding
+
+slots:
+  agent_name:
+    description: What the user wants to call their assistant.
+    required: true
+    channels: [text]            # collected in text BEFORE the call offer, never on the call
+    validator: agent_name       # 1-40 chars, not profane/abusive; joke names allowed after one confirm
+    why: "It's how your assistant will introduce itself to you and sign off emails."
+    confirm: on_suspicious      # confirm only if validator flags (joke/profane/very long)
+  user_name:
+    description: The user's own name (what the assistant should call them).
+    required: true
+    channels: [text, voice]
+    validator: person_name      # letters/space/hyphen/apostrophe; voice path needs spell-back on low confidence
+    why: "So your assistant knows who it's working for."
+    confirm: voice_low_confidence
+  need:
+    description: One concrete thing the user wants help with.
+    required: true
+    channels: [text, voice]
+    validator: need             # non-empty, actionable enough; 'not sure' triggers suggestion sub-flow
+    why: "Knowing what you need lets your assistant get useful on day one."
+    confirm: never
+  gmail:
+    description: A connected, verified Gmail address.
+    required: true
+    channels: [text, voice]
+    validator: gmail_oauth      # filled ONLY by the OAuth callback (verified). Spoken capture yields
+                                # a *candidate* that still requires OAuth to be 'connected'.
+    why: "Your assistant works out of your inbox; connecting Gmail lets it read and draft for you."
+    confirm: never
+
+# Order in which the machine asks for missing slots, per channel.
+ask_order:
+  text:  [agent_name, user_name, need, gmail]
+  voice: [user_name, need, gmail]
+
+retry_budget:
+  default: 3                  # attempts per node: 1 = reask, 2 = explain why, 3 = mark skipped/deferred
+  gmail: 2                    # never nag on Gmail; defer to post-graduation card
+
+graduation:
+  # Graduation is a legal transition from ANY non-terminal node when either holds.
+  when_any:
+    - slot_filled: need
+    - intent: insist_graduate
+  deferred_prompts_for_missing: true   # missing slots become gentle prompts in the main experience
+
+intents:
+  # Classified on every utterance alongside slot extraction.
+  - insist_graduate       # "just let me in", "skip this"
+  - refuse_slot           # "I'd rather not say"
+  - change_answer         # "actually call it Nova instead"
+  - unsure_need           # "I don't know what I need"
+  - off_topic
+  - privacy_question      # "what do you do with my email?"
+  - accept_call
+  - decline_call
+  - prefer_typing
+  - abuse
+  - prompt_injection
+  - other_language
+  - noise_or_fragment     # absorb silently; do not reask (patience window)
+
+nodes:
+  greet:
+    kind: say
+    channel: text
+    goal: Warm hello; explain in one line what's about to happen (four quick things, can call).
+    next: agent_name
+    tools: []
+
+  agent_name:
+    kind: collect
+    channel: text
+    slot: agent_name
+    goal: Invite the user to name their assistant; offer 2-3 suggestions if they hesitate.
+    tools: [record_slots]
+    next_when_filled: call_offer
+
+  call_offer:
+    kind: choice
+    channel: text
+    goal: Offer a quick phone call (browser voice) to finish setup; typing is equally fine.
+    tools: [record_slots, start_call]
+    on_intent:
+      accept_call: user_name          # handed to voice channel; brain continues with voice ask_order
+      decline_call: user_name         # continues in text
+      prefer_typing: user_name
+
+  user_name:
+    kind: collect
+    channel: any
+    slot: user_name
+    goal: Ask what they'd like to be called.
+    tools: [record_slots]
+    next_when_filled: need
+
+  need:
+    kind: collect
+    channel: any
+    slot: need
+    goal: Ask what they'd most like help with first; if unsure, offer 3 concrete examples.
+    tools: [record_slots]
+    next_when_filled: gmail
+
+  gmail:
+    kind: collect
+    channel: any
+    slot: gmail
+    goal: >-
+      Ask them to connect Gmail. Default: push the on-screen "Connect Gmail" button
+      (works during a call). Fallback: spoken capture -> chunked NATO readback ->
+      partial correction -> "type it" escape. Spoken capture never counts as connected.
+    tools: [record_slots, push_gmail_connect, capture_spoken_email, request_typed_email]
+    next_when_filled: value_demo
+
+  value_demo:
+    kind: say
+    channel: any
+    goal: One-sentence proof of value using agent_name + need (no fabricated inbox facts).
+    tools: []
+    next: graduated
+
+  graduated:
+    kind: terminal
+    channel: any
+    goal: Hand off to the main experience; list any deferred prompts gently.
+    tools: []

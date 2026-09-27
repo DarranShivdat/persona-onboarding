@@ -1,0 +1,38 @@
+[project]
+name = "persona-agent"
+version = "0.0.1"
+description = "Persona onboarding agent: shared brain (flow engine) + Pipecat voice pipeline + text turn API"
+requires-python = ">=3.11"
+# Core deps needed by the pure brain + tests. Heavy runtime deps live in extras so
+# `qa:fast` / `qa:flow` run with only pyyaml + pytest.
+dependencies = [
+  "pyyaml>=6",
+]
+
+[project.optional-dependencies]
+runtime = [
+  # Direct Anthropic SDK (no LangChain/LangGraph).
+  "anthropic>=0.60",
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "psycopg[binary]>=3.2",
+  "httpx>=0.27",
+  "loguru>=0.7",
+]
+voice = [
+  # Pipecat v1.x: Deepgram STT, Anthropic LLM, Cartesia TTS, Silero VAD,
+  # SmallWebRTC transport, Smart Turn. Pin exact versions in VOICE-001.
+  "pipecat-ai[deepgram,anthropic,cartesia,silero,webrtc,local-smart-turn]>=1.0",
+  "pipecat-ai-flows",
+]
+observability = [
+  # Only agent/obs/langfuse_adapter.py may import this. Core never depends on it.
+  "langfuse>=3",
+]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "pending: scaffolded test for behavior not implemented yet (skipped, reported as PENDING)",
+]
