@@ -48,6 +48,7 @@ slots:
                                 # a *candidate* that still requires OAuth to be 'connected'.
     why: "Your assistant works out of your inbox; connecting Gmail lets it read, sort, draft and send for you (always with your OK)."
     confirm: never
+    explain_on_first_ask: true  # the value line rides on the first ask, so one refusal = respected
 
 # Order in which the machine asks for missing slots, per channel.
 ask_order:
@@ -80,6 +81,8 @@ intents:
   - prompt_injection
   - other_language
   - noise_or_fragment     # absorb silently; do not reask (patience window)
+  - affirm                # "yes", "that's right" (answers a pending confirm)
+  - deny                  # "no", "that's wrong" (rejects a pending confirm)
 
 nodes:
   greet:
