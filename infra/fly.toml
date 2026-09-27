@@ -1,0 +1,26 @@
+# Fly.io app for services/agent (long-lived; NOT on Vercel).
+# INFRA-001 must prove SmallWebRTC media works from Fly (UDP/ICE) — likely needs a
+# TURN service (ice_servers) or a switch to Pipecat Cloud. Do not deploy before that.
+app = "persona-onboarding-agent"
+primary_region = "sjc"
+
+[build]
+  dockerfile = "agent.Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"     # voice sessions are long-lived; no scale-to-zero mid-call
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-2x"
+  memory = "2gb"                 # Silero + Smart Turn ONNX models resident
+
+[checks]
+  [checks.health]
+    type = "http"
+    port = 8080
+    path = "/health"
+    interval = "15s"
+    timeout = "3s"
