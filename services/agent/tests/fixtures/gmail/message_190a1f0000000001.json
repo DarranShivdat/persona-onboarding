@@ -1,0 +1,41 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages/190a1f0000000001"
+  },
+  "response": {
+    "status": 200,
+    "json": {
+      "id": "190a1f0000000001",
+      "threadId": "190a1f0000000001",
+      "labelIds": [
+        "INBOX",
+        "UNREAD"
+      ],
+      "snippet": "Hey! Are we still on for Thursday at 7? I can book the place on 5th.",
+      "sizeEstimate": 4812,
+      "internalDate": "1790000000000",
+      "payload": {
+        "mimeType": "multipart/alternative",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Sam Rivera <sam@example.com>"
+          },
+          {
+            "name": "Subject",
+            "value": "Dinner Thursday?"
+          },
+          {
+            "name": "Date",
+            "value": "Wed, 24 Sep 2026 18:02:11 -0700"
+          },
+          {
+            "name": "X-Fixture-Private",
+            "value": "must-not-leak"
+          }
+        ]
+      }
+    }
+  }
+}

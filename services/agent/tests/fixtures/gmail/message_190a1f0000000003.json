@@ -1,0 +1,41 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages/190a1f0000000003"
+  },
+  "response": {
+    "status": 200,
+    "json": {
+      "id": "190a1f0000000003",
+      "threadId": "190a1f0000000003",
+      "labelIds": [
+        "INBOX",
+        "UNREAD"
+      ],
+      "snippet": "Looks good \u2014 can you add the hiring slide before Friday?",
+      "sizeEstimate": 4812,
+      "internalDate": "1790000000000",
+      "payload": {
+        "mimeType": "multipart/alternative",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Jordan Lee <jordan@example.net>"
+          },
+          {
+            "name": "Subject",
+            "value": "Re: Q4 planning deck"
+          },
+          {
+            "name": "Date",
+            "value": "Mon, 22 Sep 2026 16:40:27 -0400"
+          },
+          {
+            "name": "X-Fixture-Private",
+            "value": "must-not-leak"
+          }
+        ]
+      }
+    }
+  }
+}

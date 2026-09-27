@@ -1,0 +1,41 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages/190a1f0000000002"
+  },
+  "response": {
+    "status": 200,
+    "json": {
+      "id": "190a1f0000000002",
+      "threadId": "190a1f0000000002",
+      "labelIds": [
+        "INBOX",
+        "UNREAD"
+      ],
+      "snippet": "Your September invoice is ready.   Amount due: $42.00. Pay by Oct 5 to avoid a late fee. Pay by Oct 5 to avoid a late fee. Pay by Oct 5 to avoid a late fee. Pay by Oct 5 to avoid a late fee. Pay by Oct 5 to avoid a late fee. Pay by Oct 5 to avoid a late fee. ",
+      "sizeEstimate": 4812,
+      "internalDate": "1790000000000",
+      "payload": {
+        "mimeType": "multipart/alternative",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Acme Billing <billing@example.org>"
+          },
+          {
+            "name": "Subject",
+            "value": "Your invoice #4821 is ready"
+          },
+          {
+            "name": "Date",
+            "value": "Tue, 23 Sep 2026 09:15:00 +0000"
+          },
+          {
+            "name": "X-Fixture-Private",
+            "value": "must-not-leak"
+          }
+        ]
+      }
+    }
+  }
+}

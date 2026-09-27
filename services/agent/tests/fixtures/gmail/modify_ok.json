@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages/190a1f0000000001/modify"
+  },
+  "response": {
+    "status": 200,
+    "json": {
+      "id": "190a1f0000000001",
+      "labelIds": [
+        "INBOX"
+      ]
+    }
+  }
+}

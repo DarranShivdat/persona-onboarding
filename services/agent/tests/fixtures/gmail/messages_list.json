@@ -1,0 +1,26 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages"
+  },
+  "response": {
+    "status": 200,
+    "json": {
+      "messages": [
+        {
+          "id": "190a1f0000000001",
+          "threadId": "190a1f0000000001"
+        },
+        {
+          "id": "190a1f0000000002",
+          "threadId": "190a1f0000000002"
+        },
+        {
+          "id": "190a1f0000000003",
+          "threadId": "190a1f0000000002"
+        }
+      ],
+      "resultSizeEstimate": 3
+    }
+  }
+}

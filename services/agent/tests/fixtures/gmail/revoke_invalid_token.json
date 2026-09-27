@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "https://oauth2.googleapis.com/revoke"
+  },
+  "response": {
+    "status": 400,
+    "json": {
+      "error": "invalid_token",
+      "error_description": "Token expired or revoked"
+    }
+  }
+}
