@@ -12,6 +12,7 @@ generations for LLM calls, scores for evals.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import time
 import uuid
@@ -67,17 +68,31 @@ class JsonlTracer:
 _tracer: Optional[Tracer] = None
 
 
+def tracing_mode() -> str:
+    return os.environ.get("PERSONA_TRACING", "noop").lower()
+
+
 def get_tracer() -> Tracer:
     """Resolve the backend from PERSONA_TRACING = noop | jsonl | langfuse."""
     global _tracer
     if _tracer is not None:
         return _tracer
-    mode = os.environ.get("PERSONA_TRACING", "noop").lower()
+    mode = tracing_mode()
     if mode == "jsonl":
         _tracer = JsonlTracer(os.environ.get("PERSONA_TRACE_FILE", ".persona-qa/traces.jsonl"))
     elif mode == "langfuse":
-        from .langfuse_adapter import LangfuseTracer  # optional dependency, imported lazily
-        _tracer = LangfuseTracer()
+        try:
+            from .langfuse_adapter import LangfuseTracer  # optional dependency, imported lazily
+            _tracer = LangfuseTracer()
+        except Exception as e:  # noqa: BLE001 - missing keys/SDK must not take turns down
+            logging.getLogger(__name__).warning("PERSONA_TRACING=langfuse unavailable (%s); using noop", e)
+            _tracer = NoopTracer()
     else:
         _tracer = NoopTracer()
     return _tracer
+
+
+def reset_tracer() -> None:
+    """Forget the resolved backend (tests; env changes)."""
+    global _tracer
+    _tracer = None
