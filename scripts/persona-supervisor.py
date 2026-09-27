@@ -705,7 +705,7 @@ Git dirty summary:
         self.launch_finish_continuation(doc, reason="checkpoint")
 
     def handle_hard_cap(self, doc: dict) -> None:
-        if doc.get("_hard_cap_handled"):
+        if doc.get("hard_cap_handled"):
             return
         wid = doc["id"]
         append_event(self.status_dir, "WORKER_HARD_CAP", worker_id=wid)
@@ -724,7 +724,7 @@ Git dirty summary:
         if not launched:
             append_event(self.status_dir, "QA_READY", worker_id=wid, reason="hard_cap_preserve")
         doc = self.load_workers().get(wid, doc)
-        doc["_hard_cap_handled"] = True
+        doc["hard_cap_handled"] = True
         doc["state"] = "HARD_CAP"
         self.save_worker(doc)
 
@@ -744,9 +744,9 @@ Git dirty summary:
                 self.handle_stale(doc)
             elif state == "HARD_CAP":
                 self.handle_hard_cap(doc)
-            elif state in ("EXITED_SUCCESS",) and not doc.get("_exit_evented"):
+            elif state in ("EXITED_SUCCESS",) and not doc.get("exit_evented"):
                 append_event(self.status_dir, "WORKER_EXITED", worker_id=wid, state=state, exit_code=doc.get("exit_code"))
-                doc["_exit_evented"] = True
+                doc["exit_evented"] = True
                 self.save_worker(doc)
 
         self.update_caffeinate()
