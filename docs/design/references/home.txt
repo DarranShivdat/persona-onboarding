@@ -1,0 +1,73 @@
+iMessage
+Today 9:41 AM
+What am I paying for that I don't use?
+Persona
+iMessage
+Your personal
+intelligence
+Get Started
+Log in to the dashboard
+Persona Band
+
+Personal intelligence, on your wrist.
+
+Learn more
+The most personal AI
+is the most private one.
+SOC 2 Type I
+certified
+AES-256
+Encrypted
+ESOF verified
+and secured
+Independently audited.
+Checked by outside auditors.
+
+SOC 2 Type I. AES-256. ESOF verified. Independent auditors look at how we handle your data, so you don't have to take our word for it.
+
+Encrypted at rest.
+Sealed before it's stored.
+
+Every message, document and recap is sealed with envelope encryption before it reaches our storage, and travels over TLS on the way. Each record gets its own key, and those keys are locked again with a master key kept apart from the data.
+
+Never sold, never traded.
+Not a product, not to anyone.
+
+Your conversations are not a product. Not to advertisers, not to data brokers, not to anyone.
+
+Yours to delete.
+Gone means gone.
+
+Export everything in one tap, or wipe a task, a day, or all of it. Gone means gone, on our servers too.
+
+Create your Persona today.
+
+First AI assistant you can wear.
+Made to get it done.
+
+Start on iMessage
+
+© 2026 Persona. All rights reserved.
+Made in Miami, USA.
+
+Product
+
+Persona App
+Persona Band
+
+Resources
+
+Privacy
+Terms
+Contact
+
+SECURITY & PRIVACY
+
+Encrypted at rest and in transit.
+Your data stays yours.
+
+Security & Bug Bounty
+
+Found a security vulnerability? Please report it through our Bug Bounty Program.
+
+Report a Security Issue →

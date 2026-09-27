@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Persona onboarding — reference mockups</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<!-- Static reference mockups for DESIGN-001. Open with ?state=<name>&vp=desktop|mobile.
+     All content is illustrative sample copy (spec.md §Copy). No third-party assets. -->
+<div id="root"></div>
+<script>
+const I = {
+  send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>',
+  end: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15.5c5-4.7 13-4.7 18 0l-2.2 2.4-3.3-1.6v-2.6a12 12 0 0 0-7 0v2.6L5.2 18z"/></svg>',
+  mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/></svg>',
+  micoff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20M9 9v1a3 3 0 0 0 5.1 2.1M15 9.3V5a3 3 0 0 0-5.9-.7M17 16.9A7 7 0 0 1 5 10m14 0a7 7 0 0 1-.1 1.2M12 19v3"/></svg>',
+  keys: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M7 15h10"/></svg>',
+  mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>',
+  x: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+};
+
+const P = new URLSearchParams(location.search);
+const state = P.get('state') || 'landing';
+const vp = P.get('vp') || 'desktop';
+if (vp === 'mobile') document.body.classList.add('mobile');
+
+/* checklist: A=assistant name, U=user name, G=gmail, N=need. value | null | 'deferred' */
+function checklist(c, just) {
+  const items = [
+    ['A', 'Assistant name', c.A, 'Assistant'], ['U', 'Your name', c.U, 'You'],
+    ['N', 'What you need', c.N, 'Need'], ['G', 'Gmail', c.G, 'Gmail'],
+  ];
+  return `<ul class="checklist" aria-label="Setup progress">${items.map(([id, long, v, short]) => {
+    const k = vp === 'mobile' ? short : long;
+    const cls = v === 'deferred' ? 'deferred' : v ? 'done' : '';
+    const val = v === 'deferred' ? 'Later' : v || 'Not yet';
+    return `<li aria-label="${long}: ${val}" class="check ${cls} ${just === id ? 'just' : ''}"><div class="k"><span class="dot"></span>${k}</div><div class="v">${val}</div><div class="bar"><i></i></div></li>`;
+  }).join('')}</ul>`;
+}
+
+function shell(c, just, main) {
+  const cl = checklist(c, just);
+  const top = `<header class="topbar"><span class="wordmark">Persona</span>${vp === 'desktop' ? '<span class="spacer"></span>' + cl + '<span class="spacer"></span><span class="help">Setting up</span>' : ''}</header>`;
+  return `<div class="app">${top}${vp === 'mobile' ? cl : ''}${main}</div>`;
+}
+
+const a = (t) => `<div class="msg agent">${t}</div>`;
+const u = (t) => `<div class="msg user">${t}</div>`;
+const av = (t) => `<div class="msg agent voice">${t}</div>`;
+const uv = (t) => `<div class="msg user voice">${t}</div>`;
+const stamp = (t) => `<div class="stamp">${t}</div>`;
+const divider = (t) => `<div class="divider">${t}</div>`;
+
+function composer(ph, opts = {}) {
+  return `<div class="composer">${opts.call ? `<button class="iconbtn call" aria-label="Call ${opts.call}">${I.phone}</button>` : ''}<div class="field ${opts.filled ? 'filled' : ''}">${ph}</div><button class="iconbtn send" aria-label="Send">${I.send}</button></div>`;
+}
+
+function chat(thread, comp) {
+  return `<section class="chat" aria-label="Conversation"><div class="thread" role="log" aria-live="polite">${thread}</div>${comp}</section>`;
+}
+
+function device(o) {
+  const ctl = (cls, icon, label, dis) => `<button class="ctl ${cls}" ${dis ? 'disabled' : ''} aria-label="${label}"><span class="b">${icon}</span>${label}</button>`;
+  const caps = o.caps.map(([who, t, live]) => `<div class="cap ${live ? 'live' : ''}"><b>${who}</b>${t}</div>`).join('');
+  return `<aside class="rail" aria-label="Call with Juno"><div class="device">
+    <div class="who"><div class="name">Juno</div><div class="status ${o.warn ? 'warn' : ''}">${o.status}</div>${o.badge ? `<div class="badge">${o.badge}</div>` : ''}</div>
+    <div class="stage"><div class="ring ${o.ring}" aria-hidden="true"></div></div>
+    <div class="captions" aria-live="polite" aria-label="Live captions"><div class="label"><span>Live captions</span></div>${caps}</div>
+    <div class="controls">
+      ${o.ended ? ctl('accept', I.phone, 'Call again') + ctl('', I.keys, 'Keep typing')
+        : ctl(o.muted ? 'on' : '', o.muted ? I.micoff : I.mic, o.muted ? 'Unmute' : 'Mute', o.ring === 'ringing') + ctl('', I.keys, 'Type instead') + ctl('end', I.end, o.ring === 'ringing' ? 'Cancel' : 'End')}
+    </div></div></aside>`;
+}
+
+function gcard(kind, inCall) {
+  const compact = inCall && vp === 'mobile';
+  const head = (title, sub, glyph = I.mail) => `<div class="head"><div class="glyph">${glyph}</div><div><h3>${title}</h3>${sub ? `<div class="sub">${sub}</div>` : ''}</div></div>`;
+  if (kind === 'idle' || kind === 'connecting') return `<div class="gcard" role="group" aria-label="Connect Gmail">
+    ${head('Connect Gmail', 'So Juno can work in your inbox')}
+    ${compact ? `<p>Juno will read, organize, draft, and send email for you. Nothing is sent or changed without your OK.</p>` : `<ul>
+      <li><b>Read</b><span>to see what needs your attention</span></li>
+      <li><b>Organize</b><span>labels, archive, mark as read, drafts</span></li>
+      <li><b>Send</b><span>only after you say OK</span></li>
+    </ul>
+    <p>Nothing is sent or changed without your OK. You sign in on Google, so Juno never sees your password.</p>`}
+    <div class="note"><b>Heads up:</b> this is a trial, so Google will say it hasn't verified the app. Choose <b>Continue</b> to go on.</div>
+    <div class="actions">${kind === 'connecting'
+      ? `<button class="btn primary" aria-busy="true"><span class="spinner"></span>Waiting for Google…</button><button class="btn quiet">Open the Google window again</button>`
+      : `<button class="btn primary">Continue with Google</button><button class="btn quiet">Not now</button>`}</div>
+    ${compact ? '' : '<div class="fine">You can disconnect Gmail anytime in Settings.</div>'}</div>`;
+  if (kind === 'connected' || kind === 'wrong') return `<div class="gcard ok" role="group" aria-label="Gmail connected">
+    ${head('Gmail connected', null, I.check)}
+    <div class="acct"><div class="avatar">MR</div><div class="who"><b>Maya Reyes</b><span>maya.r@gmail.com</span></div></div>
+    ${kind === 'wrong'
+      ? `<p>Wrong account? Disconnect it and pick another one on Google.</p><div class="actions"><button class="btn primary">Use a different account</button><button class="btn quiet">Keep this one</button></div>`
+      : `<div class="actions"><button class="btn quiet">Not you? Use a different account</button></div>`}</div>`;
+  return `<div class="gcard err" role="group" aria-label="Gmail not connected">
+    ${head('Gmail isn’t connected yet', null, I.alert)}
+    <div class="alert" role="alert">Google didn’t finish signing in. The window may have closed, or access wasn’t allowed.</div>
+    <p>Try again and choose <b>Continue</b> on the “unverified app” screen, then <b>Allow</b>.</p>
+    <div class="actions"><button class="btn primary">Try again</button><button class="btn quiet">Skip for now</button></div></div>`;
+}
+
+const earlyThread =
+  stamp('Today 9:41 AM') +
+  a('Hi! I’m your new assistant. I’ll help with email, your calendar, and the everyday stuff.') +
+  a('First things first: what would you like to call me?') +
+  u('Juno') +
+  a('Juno it is. I like it.');
+
+const offer = `<div class="offer"><div class="ring" aria-hidden="true"></div><div><h4>Talk it through with Juno</h4><p>A quick call, about two minutes.</p></div>
+  <div class="row"><button class="btn primary">${I.phone.replace('<svg', '<svg width="16" height="16"')}Call Juno</button><button class="btn secondary">Keep texting</button></div></div>`;
+
+const callThread = earlyThread + a('The rest is easier out loud. Want to hop on a quick call?') + divider('Call started · 9:43 AM');
+
+const S = {
+  'landing': () => `<div class="app"><header class="topbar"><span class="wordmark">Persona</span></header>
+    <main class="landing"><div class="copy"><h1>Meet the assistant that gets things done.</h1>
+      <p class="lede">Give it a name, tell it what you need, and connect Gmail. Text or talk, whichever you like.</p>
+      <button class="btn primary lg">Get started</button><div class="fine">About two minutes. You can stop anytime.</div></div>
+      <div class="art"><div class="plate"><div class="ring" aria-hidden="true"></div></div></div></main></div>`,
+
+  'chat-agent-name': () => shell({}, null, `<main class="main">${chat(
+    stamp('Today 9:41 AM') +
+    a('Hi! I’m your new assistant. I’ll help with email, your calendar, and the everyday stuff.') +
+    a('First things first: what would you like to call me?') +
+    `<div class="chips"><button class="chip">Juno</button><button class="chip">Atlas</button><button class="chip">Surprise me</button></div>`,
+    composer('Type a name…'))}</main>`),
+
+  'call-offer': () => shell({ A: 'Juno' }, 'A', `<main class="main">${chat(
+    earlyThread + a('The rest is easier out loud. Want to hop on a quick call? Or we can keep texting, totally fine either way.') + offer,
+    composer('Message Juno…', { call: 'Juno' }))}</main>`),
+
+  'call-ringing': () => shell({ A: 'Juno' }, null, `<main class="main with-call">${chat(
+    callThread, composer('Message Juno…'))}${device({ status: 'Calling…', ring: 'ringing', caps: [['', '<span style="color:var(--call-ink-2)">Captions appear here when Juno answers.</span>']] })}</main>`),
+
+  'call-connected': () => shell({ A: 'Juno', N: 'Inbox triage' }, 'N', `<main class="main with-call">${chat(
+    callThread + av('Hey, it’s Juno! What should I call you?') + uv('Honestly I just need help with my inbox, it’s a disaster.') + av('Got it, inbox rescue is on the list. And your name?'),
+    composer('Type instead of talking…'))}${device({ status: '0:42', ring: 'speaking', caps: [
+      ['You', 'Honestly I just need help with my inbox, it’s a disaster.'],
+      ['Juno', 'Got it, inbox rescue is on the list. And your name?', true]] })}</main>`),
+
+  'call-muted': () => shell({ A: 'Juno', N: 'Inbox triage' }, null, `<main class="main with-call">${chat(
+    callThread + av('Got it, inbox rescue is on the list. And your name?'),
+    composer('Type instead of talking…'))}${device({ status: '0:58', ring: 'muted', muted: true, badge: 'You’re muted', caps: [
+      ['Juno', 'Got it, inbox rescue is on the list. And your name?']] })}</main>`),
+
+  'call-reconnecting': () => shell({ A: 'Juno', U: 'Maya', N: 'Inbox triage' }, null, `<main class="main with-call">${chat(
+    callThread + av('Nice to meet you, Maya.') + uv('Mostly I want the junk out of the way…'),
+    composer('Type while we reconnect…'))}${device({ status: 'Reconnecting…', warn: true, ring: 'reconnecting', badge: 'Your progress is saved', caps: [
+      ['You', 'Mostly I want the junk out of the way…'],
+      ['', '<span style="color:var(--amber)">The line dropped. Trying to reconnect.</span>']] })}</main>`),
+
+  'call-ended': () => shell({ A: 'Juno', U: 'Maya', N: 'Inbox triage' }, null, `<main class="main with-call">${chat(
+    callThread + av('Nice to meet you, Maya.') + divider('Call ended · 1:36') +
+    a('We got cut off, no worries. I still have your name and what you need. Only Gmail is left. Call back, or connect it right here?'),
+    composer('Message Juno…', { call: 'Juno' }))}${device({ status: 'Call ended · 1:36', ring: 'ended', ended: true, caps: [
+      ['Juno', 'Nice to meet you, Maya.']] })}</main>`),
+
+  'gmail-card-idle': () => shell({ A: 'Juno', U: 'Maya', N: 'Inbox triage' }, null, `<main class="main with-call">${chat(
+    callThread + av('Nice to meet you, Maya. To help with your inbox I’ll need Gmail. I just put a button on your screen.') + gcard('idle', true),
+    composer('Type instead of talking…'))}${device({ status: '1:24', ring: 'speaking', caps: [
+      ['You', 'Maya.'],
+      ['Juno', 'To help with your inbox I’ll need Gmail. I just put a button on your screen.', true]] })}</main>`),
+
+  'gmail-card-connecting': () => shell({ A: 'Juno', U: 'Maya', N: 'Inbox triage' }, null, `<main class="main with-call">${chat(
+    callThread + av('I just put a button on your screen.') + gcard('connecting', true),
+    composer('Type instead of talking…'))}${device({ status: '1:39', ring: 'idle', caps: [
+      ['Juno', 'Take your time. I’ll hang on while you sign in with Google.']] })}</main>`),
+
+  'gmail-card-connected': () => shell({ A: 'Juno', U: 'Maya', N: 'Inbox triage', G: 'maya.r@gmail.com' }, 'G', `<main class="main with-call">${chat(
+    callThread + av('I just put a button on your screen.') + gcard('connected', true) + av('Got it, connected as maya.r@gmail.com.'),
+    composer('Type instead of talking…'))}${device({ status: '2:05', ring: 'speaking', caps: [
+      ['Juno', 'Got it, connected as maya.r at gmail dot com. That’s everything I need.', true]] })}</main>`),
+
+  'gmail-card-error': () => shell({ A: 'Juno', U: 'Maya', N: 'Inbox triage' }, null, `<main class="main">${chat(
+    stamp('Today 9:47 AM') + a('To help with your inbox I’ll need Gmail.') + gcard('error') +
+    a('Looks like Google didn’t finish. Want to try again, or skip it for now? You can always connect later.'),
+    composer('Message Juno…', { call: 'Juno' }))}</main>`),
+
+  'gmail-card-wrong-account': () => shell({ A: 'Juno', U: 'Maya', N: 'Inbox triage', G: 'maya@work.co' }, null, `<main class="main">${chat(
+    stamp('Today 9:48 AM') + u('oops, that’s my work account') + a('No problem. Here’s the account I have. Switch it whenever you’re ready.') + gcard('wrong'),
+    composer('Message Juno…'))}</main>`),
+
+  'mic-denied': () => shell({ A: 'Juno' }, null, `<main class="main">${chat(
+    earlyThread + offer + u('Call Juno') +
+    a('I can’t hear you yet: your browser blocked the microphone. To allow it, click the icon at the left of the address bar, set Microphone to Allow, then call again.') +
+    a('Or we can just keep texting. So, what should I call you?'),
+    composer('Message Juno…', { call: 'Juno' }))}</main>`),
+
+  'graduation': () => `<div class="app">${vp === 'desktop' ? `<header class="topbar"><span class="wordmark">Persona</span><span class="spacer"></span><span class="help">Maya</span></header>` : `<header class="topbar"><span class="wordmark">Persona</span></header>`}
+    <main class="home"><h1>You’re all set, Maya.</h1><p class="lede">Juno is ready. Here’s what it knows so far.</p>
+    <div class="grid">
+      <div class="tile wide"><div class="k">Juno is starting with</div><div class="v">Getting your inbox under control</div><p>First up: a short list of what needs a reply, and the junk ready to archive. Nothing gets sent or changed without your OK.</p></div>
+      <div class="tile"><div class="k">Your assistant</div><div class="v">Juno</div></div>
+      <div class="tile"><div class="k">You</div><div class="v">Maya</div></div>
+    </div>
+    <div class="defer" role="group" aria-label="Suggested next step"><div class="glyph" style="width:40px;height:40px;border-radius:12px;background:#fff;display:grid;place-items:center">${I.mail.replace('<svg', '<svg width="22" height="22"')}</div>
+      <div class="t"><b>Connect Gmail when you’re ready</b><span>Juno needs it to sort your inbox. Takes a minute.</span></div>
+      <button class="btn primary">Connect</button><button class="x" aria-label="Dismiss">${I.x}</button></div>
+    ${composer('Message Juno…')}</main></div>`,
+
+  'welcome-back': () => shell({ A: 'Juno', U: 'Maya', N: 'Inbox triage' }, null, `<main class="main">${chat(
+    stamp('Yesterday 9:41 AM') + a('Got it, inbox rescue is on the list.') + av('Nice to meet you, Maya.') + divider('Call ended · 1:36') +
+    stamp('Today 8:15 AM') +
+    a('Welcome back, Maya! We’re nearly done. Just Gmail left, so I can start on that inbox.') + offer.replace('Talk it through with Juno', 'Finish on a quick call').replace('A quick call, about two minutes.', 'Under a minute. Or connect right here.').replace('Keep texting', 'Connect Gmail here'),
+    composer('Message Juno…', { call: 'Juno' }))}</main>`),
+};
+
+document.getElementById('root').innerHTML = (S[state] || S['landing'])();
+document.title = `${state} @ ${vp}`;
+</script>
+</body>
+</html>
