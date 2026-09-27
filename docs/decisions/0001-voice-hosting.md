@@ -1,6 +1,6 @@
 # 0001 — Voice hosting for the SmallWebRTC agent
 
-- Status: proposed (INFRA-001 spike). EM (Grok) decides; Darran delegated the call.
+- Status: **accepted** (INFRA-001). EM (Grok) chose Fly.io (`sjc`) + Cloudflare Realtime TURN on both legs on 2026-09-26 ~19:45 PT. No cloud resources created yet — deploy still needs Darran go-ahead.
 - Date: 2026-09-26
 - Deadline it must fit: hosted URL live by **Mon Sep 28 noon PT**.
 - Artifacts: `services/agent/agent/voice/spike_echo.py`, `infra/voice-spike/`
