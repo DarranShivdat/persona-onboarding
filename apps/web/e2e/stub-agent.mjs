@@ -7,10 +7,26 @@
 //
 // Test-only seeding: `POST /__test/sessions {slots, node, graduated, deferred, transcript}`
 // -> `{id, token}` so specs can start mid-flow (EC-08/30/31) and set the session cookie.
+//
+// FE-003 also makes it the mock Google OAuth double (`/__oauth/authorize`, `/__oauth/token`)
+// so `qa:e2e` never touches Google: the consent page offers allow / partial grant / other
+// (Workspace) account / cancel, and the token endpoint checks PKCE and returns an unsigned
+// ID token (the web callback trusts the token endpoint over TLS, per OIDC Core 3.1.3.7).
 import { createServer } from "node:http";
-import { randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 
 const PORT = Number(process.env.PORT || 3199);
+const INTERNAL_SECRET = process.env.PERSONA_INTERNAL_SECRET || "";
+const G = "https://www.googleapis.com/auth/";
+const ACCOUNTS = {
+  maya: { sub: "g-maya", email: "maya.r@gmail.com", name: "Maya Reyes" },
+  work: { sub: "g-maya-work", email: "maya@work.co", name: "Maya Reyes", hd: "work.co" },
+};
+const GRANTS = {
+  full: ["openid", "email", "profile", `${G}gmail.readonly`, `${G}gmail.modify`, `${G}gmail.send`],
+  nosend: ["openid", "email", "profile", `${G}gmail.readonly`, `${G}gmail.modify`],
+};
+const codes = new Map();
 const SLOTS = ["agent_name", "user_name", "need", "gmail"];
 const YES = new Set(["yes", "sure", "ok", "okay", "call", "yeah", "call me"]);
 const sessions = new Map();
@@ -109,6 +125,7 @@ function create(seed = {}) {
   if (!seed.transcript) push(s, "transcript", { role: "assistant", text: hello, channel: "text" });
   for (const [role, text] of seed.transcript ?? []) push(s, "transcript", { role, text, channel: "text" });
   push(s, "state", snapshot(s));
+  if (s.node === "gmail") push(s, "gmail_connect_card", { node: "gmail" });
   return { s, reply: hello };
 }
 
@@ -127,6 +144,54 @@ async function readJson(req) {
   }
 }
 
+async function readForm(req) {
+  let raw = "";
+  for await (const c of req) raw += c;
+  return new URLSearchParams(raw);
+}
+
+const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+/** Mock consent screen: each choice is a plain link back to redirect_uri (like Google's redirect). */
+function authorizePage(res, url) {
+  const q = url.searchParams;
+  const redirect = q.get("redirect_uri");
+  const state = q.get("state") ?? "";
+  if (!redirect || q.get("response_type") !== "code" || q.get("code_challenge_method") !== "S256") return send(res, 400, { error: "invalid_request" });
+  const back = (params) => `${redirect}?${new URLSearchParams({ ...params, state })}`;
+  const grant = (acct, scopes) => {
+    const code = randomBytes(12).toString("base64url");
+    codes.set(code, { acct, scopes, nonce: q.get("nonce"), client: q.get("client_id"), challenge: q.get("code_challenge"), redirect });
+    return back({ code, scope: GRANTS[scopes].join(" ") });
+  };
+  const chooser = (q.get("prompt") ?? "").includes("select_account");
+  const links = [
+    [`Allow as ${ACCOUNTS.maya.email}`, grant("maya", "full")],
+    [`Allow as ${ACCOUNTS.maya.email} without send`, grant("maya", "nosend")],
+    [`Allow as ${ACCOUNTS.work.email}`, grant("work", "full")],
+    ["Cancel", back({ error: "access_denied" })],
+  ];
+  res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+  res.end(`<!doctype html><title>Mock Google</title><h1>${chooser ? "Choose an account" : "Sign in with Google (mock)"}</h1>
+<p data-scope="${esc(q.get("scope"))}" data-access-type="${esc(q.get("access_type"))}" data-prompt="${esc(q.get("prompt"))}" data-include-granted="${esc(q.get("include_granted_scopes"))}">Persona wants access to your Gmail.</p>
+<ul>${links.map(([t, h]) => `<li><a href="${esc(h)}">${esc(t)}</a></li>`).join("")}</ul>`);
+}
+
+async function tokenEndpoint(req, res) {
+  const f = await readForm(req);
+  const c = codes.get(f.get("code") ?? "");
+  codes.delete(f.get("code") ?? "");
+  const pkce = createHash("sha256").update(f.get("code_verifier") ?? "").digest("base64url");
+  if (!c || f.get("grant_type") !== "authorization_code" || f.get("client_id") !== c.client || !f.get("client_secret") || f.get("redirect_uri") !== c.redirect || pkce !== c.challenge) {
+    return send(res, 400, { error: "invalid_grant" });
+  }
+  const a = ACCOUNTS[c.acct];
+  const now = Math.floor(Date.now() / 1000);
+  const claims = { iss: `http://127.0.0.1:${PORT}`, aud: c.client, sub: a.sub, email: a.email, email_verified: true, name: a.name, nonce: c.nonce, iat: now, exp: now + 3600, ...(a.hd ? { hd: a.hd } : {}) };
+  return send(res, 200, { access_token: "mock-access", refresh_token: "mock-refresh", expires_in: 3599, token_type: "Bearer", scope: GRANTS[c.scopes].join(" "), id_token: `${b64({ alg: "none" })}.${b64(claims)}.` });
+}
+
 function auth(req, url, s) {
   const h = req.headers.authorization?.replace(/^Bearer /, "") ?? req.headers["x-session-token"];
   return (h ?? url.searchParams.get("token")) === s.token;
@@ -136,6 +201,8 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const parts = url.pathname.split("/").filter(Boolean);
   if (url.pathname === "/health") return send(res, 200, { ok: true, stub: true });
+  if (req.method === "GET" && url.pathname === "/__oauth/authorize") return authorizePage(res, url);
+  if (req.method === "POST" && url.pathname === "/__oauth/token") return tokenEndpoint(req, res);
   if (req.method === "POST" && url.pathname === "/__test/sessions") {
     const { s } = create((await readJson(req)) ?? {});
     return send(res, 201, { id: s.id, token: s.token });
@@ -147,8 +214,24 @@ const server = createServer(async (req, res) => {
   if (parts[0] !== "v1" || parts[1] !== "sessions" || !parts[2]) return send(res, 404, { error: "not_found" });
   const s = sessions.get(parts[2]);
   if (!s) return send(res, 404, { error: "not_found" });
-  if (!auth(req, url, s)) return send(res, 401, { error: "unauthorized" });
   const sub = parts.slice(3).join("/");
+  if (req.method === "POST" && sub === "gmail") {
+    // Server-to-server from the web OAuth callback (shared secret, not the session token).
+    if (!INTERNAL_SECRET) return send(res, 503, { error: "gmail_route_disabled" });
+    if (req.headers["x-persona-internal-secret"] !== INTERNAL_SECRET) return send(res, 401, { error: "invalid_internal_secret" });
+    const body = await readJson(req);
+    if (!body || typeof body.email !== "string" || !body.email.includes("@") || !body.google_sub) return send(res, 422, { error: "invalid_email" });
+    s.slots.gmail = { status: "filled", value: body.email, source: "oauth", needs_confirm: false };
+    s.deferred = s.deferred.filter((d) => d !== "gmail");
+    s.node = nextMissing(s);
+    s.version += 1;
+    const reply = `Got it, connected as ${body.email}.`;
+    push(s, "gmail_connected", { email: body.email });
+    push(s, "transcript", { role: "assistant", text: reply, channel: "text" });
+    push(s, "state", snapshot(s));
+    return send(res, 200, { reply, state: snapshot(s), push_ui: [], trace_id: "stub" });
+  }
+  if (!auth(req, url, s)) return send(res, 401, { error: "unauthorized" });
 
   if (req.method === "GET" && sub === "") return send(res, 200, snapshot(s));
   if (req.method === "POST" && sub === "turns") {

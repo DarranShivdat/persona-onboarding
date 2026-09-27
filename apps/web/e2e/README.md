@@ -15,3 +15,10 @@ FE-001 specs run against the mock session driver (`?state=<name>`): EC-03 (mic d
 EC-29 (decline call), EC-31 (graduated return), plus a11y checks from spec §8. One spec per
 `e2e`-tier case in `harness/edge-cases.yaml` as FE-002/003 wire the real driver. Voice is
 faked with Chromium's `--use-fake-device-for-media-stream --use-file-for-fake-audio-capture`.
+
+Gmail OAuth specs (FE-003: EC-20, EC-21, EC-22, partial grant) use the mock Google double in
+`e2e/stub-agent.mjs` (`/__oauth/authorize` consent page with allow / allow-without-send /
+Workspace account / cancel, `/__oauth/token` with PKCE check). The Playwright config points
+`GOOGLE_OAUTH_AUTH_URL` / `GOOGLE_OAUTH_TOKEN_URL` / `GOOGLE_OAUTH_ISSUER` at it with fake
+test-only client values, so `qa:e2e` never touches Google. `gmail-card-mock.spec.ts` keeps the
+`?state=gmail-card-*` fixtures covered.

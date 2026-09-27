@@ -10,6 +10,16 @@ const external = process.env.PERSONA_WEB_URL;
 const useStub = !process.env.PERSONA_E2E_AGENT_URL;
 const agentUrl = process.env.PERSONA_E2E_AGENT_URL ?? `http://127.0.0.1:${STUB_PORT}`;
 process.env.PERSONA_E2E_AGENT_URL = agentUrl; // read by specs (seeding) — test-only
+// Mock Google OAuth double lives in the stub agent (FE-003); these are fake test-only values.
+const INTERNAL_SECRET = "e2e-internal-secret";
+const oauthEnv = {
+  GOOGLE_OAUTH_CLIENT_ID: "e2e-client.apps.googleusercontent.com",
+  GOOGLE_OAUTH_CLIENT_SECRET: "e2e-not-a-secret",
+  GOOGLE_OAUTH_AUTH_URL: `${agentUrl}/__oauth/authorize`,
+  GOOGLE_OAUTH_TOKEN_URL: `${agentUrl}/__oauth/token`,
+  GOOGLE_OAUTH_ISSUER: agentUrl,
+  PERSONA_INTERNAL_SECRET: INTERNAL_SECRET,
+};
 
 export default defineConfig({
   testDir: "./e2e",
@@ -26,12 +36,12 @@ export default defineConfig({
     ? undefined
     : [
         ...(useStub
-          ? [{ command: "node e2e/stub-agent.mjs", url: `http://127.0.0.1:${STUB_PORT}/health`, env: { PORT: String(STUB_PORT) }, reuseExistingServer: !process.env.CI }]
+          ? [{ command: "node e2e/stub-agent.mjs", url: `http://127.0.0.1:${STUB_PORT}/health`, env: { PORT: String(STUB_PORT), PERSONA_INTERNAL_SECRET: INTERNAL_SECRET }, reuseExistingServer: !process.env.CI }]
           : []),
         {
           command: `npm run build && npx next start -p ${PORT}`,
           port: PORT,
-          env: { PERSONA_AGENT_BASE_URL: agentUrl },
+          env: { PERSONA_AGENT_BASE_URL: agentUrl, ...(useStub ? oauthEnv : {}) },
           reuseExistingServer: !process.env.CI,
           timeout: 240_000,
         },
