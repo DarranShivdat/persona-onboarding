@@ -18,6 +18,7 @@ from ..brain import engine
 from ..brain.engine import Extraction, ResponsePlan, Turn
 from ..brain.spec import FlowSpec
 from ..brain.state import Channel, SessionState
+from ..obs.meta import turn_metadata
 from ..obs.tracing import Tracer
 from ..store import CallLease, PgStore, VersionConflictError
 from .llm import TurnLlm
@@ -137,7 +138,8 @@ class SessionService:
         if expected_version is not None and expected_version != state.version:
             raise VersionConflictError(session_id, expected_version)
         lease = self.store.lease(session_id)
-        tid = self.tracer.start_trace(session_id=session_id, channel=channel, name=name)
+        tid = self.tracer.start_trace(session_id=session_id, channel=channel, name=name,
+                                      metadata=turn_metadata(self.spec, state.node, version=state.version))
         turn = build(state)
         self.tracer.span(tid, name="extract", input=user_text, output=asdict(turn.extraction))
         result = engine.apply(self.spec, state, turn)

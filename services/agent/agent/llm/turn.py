@@ -12,6 +12,7 @@ from typing import Optional
 from ..brain.engine import Extraction, ResponsePlan, Turn, TurnResult, apply
 from ..brain.spec import FlowSpec
 from ..brain.state import Channel, SessionState
+from ..obs.meta import turn_metadata
 from ..obs.tracing import NoopTracer, Tracer
 from . import templates as T
 from .extract import ExtractionResult, Extractor, turn_context
@@ -33,7 +34,7 @@ def run_turn(spec: FlowSpec, state: SessionState, *, channel: Channel, utterance
              last_assistant: Optional[str] = None, tracer: Optional[Tracer] = None) -> TurnOutput:
     tracer = tracer or NoopTracer()
     tid = tracer.start_trace(session_id=state.session_id, channel=channel, name="turn",
-                             metadata={"node": state.node, "event": event})
+                             metadata=turn_metadata(spec, state.node, event=event))
     xres: Optional[ExtractionResult] = None
     if event is not None:
         turn = Turn(channel=channel, event=event)
