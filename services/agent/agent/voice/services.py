@@ -49,7 +49,7 @@ def build_llm(cfg: VoiceConfig) -> FrameProcessor:
             system_instruction=VOICE_SYSTEM_PROMPT,
         ),
         retry_timeout_secs=5.0,
-        retry_on_timeout=True,  # ARCH §7: LLM timeout -> retry once (filler/template: VOICE-002)
+        retry_on_timeout=True,  # ARCH §7: LLM timeout -> retry once; Flows role/task messages override the prompt
     )
 
 

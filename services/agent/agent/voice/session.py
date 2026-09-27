@@ -1,5 +1,5 @@
 """One browser call: SmallWebRTC in -> Deepgram STT -> user aggregator (Silero VAD +
-Smart Turn) -> Claude (or stub turn) -> Cartesia TTS ⇄ failover Deepgram TTS ->
+Smart Turn) -> Claude under Pipecat Flows (or stub turn) -> Cartesia TTS ⇄ failover Deepgram TTS ->
 SmallWebRTC out -> assistant aggregator (ARCHITECTURE §7).
 
 Barge-in: Pipecat interruptions (default user-turn start strategies broadcast an
@@ -10,6 +10,11 @@ Teardown is idempotent and fires on client disconnect, hangup, max duration, pip
 end, or goodbye-after-playout — whichever comes first; `on_ended(reason)` (the lease
 release hook) runs exactly once. Patterns adapted from Penciled voice-agent `bot.py`
 (Darran's IP): per-call teardown, graceful end after playout.
+
+LLM slot (`VoiceConfig.llm_mode`): `flows` = Claude under a Pipecat Flows `FlowManager`
+whose nodes and `record_slots` handler come from `flows.VoiceFlow` over a `BrainPort`
+(the shared brain; pass `brain=ServiceBrain(...)` to share the text session's state);
+`stub` = `StubTurnLLM`, which never touches state.
 """
 from __future__ import annotations
 
@@ -29,7 +34,10 @@ from pipecat.transports.base_transport import TransportParams
 from pipecat.transports.smallwebrtc.transport import SmallWebRTCTransport
 from pipecat.workers.runner import WorkerRunner
 
+from ..brain.spec import FlowSpec, load_spec
+from ..brain.state import SessionState
 from .config import SAMPLE_RATE, VoiceConfig
+from .flows import BrainPort, LocalBrain, VoiceFlow
 from .lifecycle import CallTeardown, Step, end_after_playout
 from .playout import PlayoutObserver
 from .services import build_llm, build_stt, build_tts
@@ -98,8 +106,12 @@ def build_user_params(cfg: VoiceConfig):
 class CallSession:
     def __init__(self, connection, cfg: VoiceConfig, *, call_id: str,
                  on_ended: Optional[OnEnded] = None, heartbeat: Optional[Step] = None,
-                 heartbeat_s: float = 30.0, greeting: str = GREETING):
+                 heartbeat_s: float = 30.0, greeting: str = GREETING,
+                 spec: Optional[FlowSpec] = None, brain: Optional[BrainPort] = None):
         self.connection, self.cfg = connection, cfg
+        self._spec, self._brain = spec, brain
+        self.flow: Optional[VoiceFlow] = None
+        self._flow_manager = None
         self.stats = CallStats(call_id=call_id, pc_id=getattr(connection, "pc_id", "") or "")
         self._on_ended, self._heartbeat, self._heartbeat_s = on_ended, heartbeat, heartbeat_s
         self._greeting = greeting
@@ -151,7 +163,8 @@ class CallSession:
         llm = build_llm(self.cfg)
         tts = build_tts(self.cfg, on_switched=on_tts_switched)
         self.stats.tts_active = getattr(getattr(tts, "strategy", None), "active_service", tts).name
-        aggregators = LLMContextAggregatorPair(LLMContext(), user_params=build_user_params(self.cfg))
+        context = LLMContext()
+        aggregators = LLMContextAggregatorPair(context, user_params=build_user_params(self.cfg))
         self._playout = PlayoutObserver()
         stages = [transport.input(), _AudioInCounter(self.stats), stt, aggregators.user(), llm, tts,
                   transport.output(), aggregators.assistant()]
@@ -161,14 +174,20 @@ class CallSession:
             params=PipelineParams(audio_in_sample_rate=SAMPLE_RATE, audio_out_sample_rate=SAMPLE_RATE,
                                   enable_metrics=True),
             observers=[self._playout],
-            idle_timeout_secs=None,  # silence floors are spoken per node (VOICE-002); max duration caps calls
+            idle_timeout_secs=None,  # per-node spoken silence floors (VOICE-003) + max duration cap calls
             **tracing_kwargs(self.cfg, call_id=self.stats.call_id),
         )
+
+        if self.cfg.llm_mode == "flows":
+            self._build_flow(llm, aggregators, context)
 
         @transport.event_handler("on_client_connected")
         async def _connected(_t, _c):  # noqa: ANN001
             self.stats.connected = True
-            if self._greeting:
+            if self._flow_manager is not None:
+                # The brain's call_started turn picks the node and the opening line.
+                await self._flow_manager.initialize(await self.flow.opening())
+            elif self._greeting:
                 await self._worker.queue_frame(TTSSpeakFrame(self._greeting))
 
         @transport.event_handler("on_client_disconnected")
@@ -186,6 +205,18 @@ class CallSession:
             except Exception:  # noqa: BLE001 - older Pipecat without the event
                 pass
         return transport
+
+    def _build_flow(self, llm, aggregators, context) -> None:
+        from pipecat_flows import FlowManager
+
+        spec = self._spec or load_spec()
+        brain = self._brain or LocalBrain(spec, SessionState(session_id=self.stats.call_id))
+
+        async def graduated(line: str) -> None:
+            await self.say_goodbye(line, "graduated")
+
+        self.flow = VoiceFlow(spec, brain, context=context, on_graduated=graduated)
+        self._flow_manager = FlowManager(llm=llm, context_aggregator=aggregators, worker=self._worker)
 
     async def run(self) -> None:
         self.stats.local_candidates = _candidate_types(self.connection)
