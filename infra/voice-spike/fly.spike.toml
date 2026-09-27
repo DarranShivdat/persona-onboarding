@@ -1,0 +1,32 @@
+# INFRA-001 spike app (echo bot). NOT deployed by the packet — run only after Darran's go-ahead:
+#   fly apps create persona-voice-spike
+#   fly secrets set -a persona-voice-spike CLOUDFLARE_TURN_KEY_ID=... CLOUDFLARE_TURN_API_TOKEN=... PERSONA_SPIKE_TOKEN=...
+#   fly deploy -c infra/voice-spike/fly.spike.toml .      (from repo root)
+# No UDP service / dedicated IPv4 is configured on purpose: media goes through TURN on
+# both legs (aiortc uses random ephemeral UDP ports, which Fly's UDP proxy cannot map).
+app = "persona-voice-spike"
+primary_region = "sjc"
+
+[build]
+  dockerfile = "spike.Dockerfile"
+
+[env]
+  PERSONA_SPIKE_MAX_CALL_SECS = "300"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+[checks]
+  [checks.health]
+    type = "http"
+    port = 8080
+    path = "/health"
+    interval = "15s"
+    timeout = "3s"
