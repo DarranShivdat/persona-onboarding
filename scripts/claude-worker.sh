@@ -44,6 +44,15 @@ USAGE
 }
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Claude CLI binary: prefer the user's native install (~/.local/bin/claude, auto-updates
+# without sudo) over a stale root-owned npm-global /usr/local/bin/claude.
+if [ -z "${PERSONA_CLAUDE_BIN:-}" ]; then
+  if [ -x "$HOME/.local/bin/claude" ]; then
+    PERSONA_CLAUDE_BIN="$HOME/.local/bin/claude"
+  else
+    PERSONA_CLAUDE_BIN="claude"
+  fi
+fi
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 MODEL_ALIAS="opus"
@@ -139,8 +148,8 @@ case "$ROLE" in
 esac
 
 if [ "$PROBE" -eq 1 ]; then
-  echo "probe: claude -p (1 turn) --model $MODEL" >&2
-  claude -p "Reply with exactly: OK" --model "$MODEL" --max-turns 1 \
+  echo "probe: $PERSONA_CLAUDE_BIN ($("$PERSONA_CLAUDE_BIN" --version 2>/dev/null)) -p (1 turn) --model $MODEL" >&2
+  "$PERSONA_CLAUDE_BIN" -p "Reply with exactly: OK" --model "$MODEL" --max-turns 1 \
     --output-format stream-json --verbose </dev/null 2>&1 \
     | python3 -c 'import sys,json
 seen=set()
@@ -213,7 +222,7 @@ if [ "${PERSONA_WORKER_SKIP_PREFLIGHT_CHECK:-0}" != "1" ]; then
     frontend) REQUIRED_KEYS="$REQUIRED_KEYS SPEC VISUAL_ACCEPTANCE" ;;
   esac
   for key in $REQUIRED_KEYS; do
-    if ! printf "%s" "$TASK_BODY" | grep -qiE "(^|[[:space:]])${key}([[:space:]]|:|-)"; then
+    if ! printf "%s" "$TASK_BODY" | grep -qiE "(^|[[:space:]])${key}([[:space:]]|:|-|$)"; then
       missing=1
       break
     fi
@@ -255,7 +264,12 @@ ${ROLE_BLOCK}
 Do NOT rediscover the whole project. Read ONLY the packet READ list
 (plus CLAUDE.md and docs/ARCHITECTURE.md if not already listed).
 Honor DO NOT READ. Stay inside SCOPE. Never read .env files or secrets.
-Never read, copy, or paraphrase code from any Penciled repository (see AGENTS.md).
+Penciled voice-agent code is owned by Darran (his IP): you MAY read and copy it into this repo,
+from the sanitized read-only mirror /Users/darranshivdat/IdeaProjects/persona-onboarding-ref/penciled-voice-agent/
+(see its PROVENANCE.md). NEVER modify anything in penciled-emr or the mirror.
+NEVER read or copy .env*, transcripts/, data/, demo patient info, credentials, or anything
+with PHI; no other Penciled repo. A guard hook enforces this: if a call is blocked, do not
+work around it; report it in OUTPUT. Never git push.
 
 Assigned packet:
 ${TASK_BODY}
@@ -342,7 +356,7 @@ if [ -x "$SCRIPT_DIR/persona-supervisor.sh" ]; then
 fi
 
 if [ "$DRY_RUN" -eq 1 ]; then
-  echo "DRY_RUN model=$MODEL alias=$MODEL_ALIAS role=$ROLE max_turns=$MAX_TURNS packet=${PACKET:-none} worker_id=$WORKER_ID mode=$WORKER_MODE status_dir=$STATUS_DIR"
+  echo "DRY_RUN claude_bin=$PERSONA_CLAUDE_BIN model=$MODEL alias=$MODEL_ALIAS role=$ROLE max_turns=$MAX_TURNS packet=${PACKET:-none} worker_id=$WORKER_ID mode=$WORKER_MODE status_dir=$STATUS_DIR"
   echo "PROMPT_CHARS=${#PROMPT}"
   exit 0
 fi
@@ -465,7 +479,7 @@ if [ "${PERSONA_WORKER_MOCK:-0}" = "1" ]; then
     >/dev/null 2>"$STDERR_LOG" &
   CHILD_PID=$!
 else
-  claude -p "$PROMPT" \
+  "$PERSONA_CLAUDE_BIN" -p "$PROMPT" \
     --model "$MODEL" \
     --output-format stream-json \
     --verbose \
