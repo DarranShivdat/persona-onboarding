@@ -1,7 +1,8 @@
 # agent/voice — Pipecat pipeline (packets VOICE-001..004)
 
-Pipeline (reimplemented from the pattern documented in docs/penciled-reference-map.md;
-no Penciled code is copied):
+Pipeline (pattern in docs/penciled-reference-map.md; code MAY be copied from Darran's
+Penciled voice-agent via the sanitized mirror /Users/darranshivdat/IdeaProjects/persona-onboarding-ref/penciled-voice-agent/ and adapted
+so every handler delegates to the brain; name the source file in the commit):
 
     SmallWebRTC in -> Deepgram STT (keyterm boost) -> user aggregator (Silero VAD +
     Smart Turn) -> Claude (Anthropic) -> Cartesia TTS [ServiceSwitcher failover ->

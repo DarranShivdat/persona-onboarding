@@ -21,7 +21,7 @@ helpers under harness/visual/ if needed for screenshots.
 - .claude/skills/frontend-design/SKILL.md (mandatory), .claude/skills/webapp-testing/SKILL.md
 
 ## DO NOT READ
-- .env*, secrets; any Penciled repository; apps/** implementation details
+- .env*, secrets; Penciled sensitive paths (.env*, transcripts/, data/, demo patients, PHI) + other Penciled repos; never modify penciled-emr; apps/** implementation details
 
 ## REFERENCES
 URLs / products / screenshots to study (public pages only; no logging into accounts

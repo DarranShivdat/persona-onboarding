@@ -22,7 +22,7 @@ docs/design/spec.md @ <commit sha> (frozen). Mockups: docs/design/mockups/ @ sam
 - .claude/skills/frontend-design/SKILL.md, .claude/skills/webapp-testing/SKILL.md
 
 ## DO NOT READ
-- .env*, secrets; any Penciled repository; services/agent internals beyond the API contract
+- .env*, secrets; Penciled sensitive paths (.env*, transcripts/, data/, demo patients, PHI) + other Penciled repos; never modify penciled-emr; services/agent internals beyond the API contract
 
 ## REQUIREMENTS
 

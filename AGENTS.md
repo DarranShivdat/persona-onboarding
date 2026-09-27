@@ -80,7 +80,13 @@ Launch: `./scripts/claude-worker.sh opus --role <role> --packet docs/orchestrati
 Model: `claude-opus-5-5` by default (`PERSONA_OPUS_MODEL` overrides). Before the
 first real worker, run `./scripts/claude-worker.sh opus --probe-model` once.
 
-Every packet's DO NOT READ includes: `.env*`, secrets, and **any Penciled repository**.
+Every packet's DO NOT READ includes: `.env*`, secrets, and **Penciled sensitive paths**
+(`transcripts/`, `data/`, demo patient info, credentials, anything with PHI) plus other
+Penciled repos. Penciled voice-agent code is Darran's IP and **may be copied** into this
+repo — read it from the sanitized read-only mirror `/Users/darranshivdat/IdeaProjects/persona-onboarding-ref/penciled-voice-agent/`.
+**Never modify penciled-emr.** Enforced for every worker by `.claude/settings.json`
+(deny rules) + `scripts/guard-tool-use.py` (PreToolUse hook, exit 2 = block; tested in
+`harness/tests/test_guard_hook.py`). Workers must not route around a block.
 
 ## Budgets and supervision (unchanged from FLOAT)
 

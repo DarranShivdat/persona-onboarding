@@ -1,8 +1,11 @@
 # CLAUDE.md — rules for Claude Code workers in this repo
 
 ## What this is
-A hosted, conversational onboarding for an AI assistant (Persona CTO trial). It
-collects: (1) agent name (text, before the call), (2) the user's name, (3) a
+A hosted, conversational onboarding for **Persona** (https://yourpersona.com), Zach
+Yadegari's personal AI assistant "that gets things done" (you text it via iMessage/iOS app;
+it acts across Gmail, calendar and apps; the Persona Band wearable is its voice device).
+Built for Persona's CTO trial — not usepersona.app / withpersona.com. It collects:
+(1) agent name (text, before the call), (2) the user's name, (3) a
 connected Gmail, (4) one thing they need help with — via adaptive text chat **and**
 a browser "phone call" (voice) that collects everything except the agent name.
 Reviewers will stress-test it (hangups, refusals, nonsense). It must feel like a
@@ -32,10 +35,20 @@ conversation, steer back gently, and allow early graduation.
 8. No transition logic in the browser.
 
 ## Absolute rules
-- **No Penciled code.** Never open, copy, or paraphrase files from any Penciled
-  repository (penciled-emr, penciled-dev, etc.). `docs/penciled-reference-map.md`
-  describes *patterns* in prose; reimplement from Pipecat's public docs.
-  (Darran may later lift this in writing; until then it stands.)
+- **Penciled code is Darran's IP: copy allowed, modify NEVER.** You MAY read and copy
+  code from `penciled-emr/voice-agent` into this repo. Read it from the sanitized,
+  read-only mirror `/Users/darranshivdat/IdeaProjects/persona-onboarding-ref/penciled-voice-agent/`
+  (allowlisted code files, PHI-scrubbed; see its PROVENANCE.md). Adapt copied code to our
+  architecture (the brain owns progress) and name the source file in the commit message.
+  - NEVER modify anything in `penciled-emr` or the mirror (no edits, writes, git commands,
+    installs, or copies *into* them).
+  - NEVER read or copy `.env*`, `transcripts/`, `data/`, `components/`, `flows/`, demo
+    patient info (voice-agent `README.md`, `KNOWN_ISSUES.md`, walkthroughs), `tools.py`/
+    `sms.py`/EMR tests, credentials, or anything with PHI. No other part of penciled-emr and
+    no other Penciled repo (penciled-dev, ...). No recursive/wildcard sweeps of penciled-emr.
+  - Enforced by `.claude/settings.json` (deny rules) + `scripts/guard-tool-use.py`
+    (PreToolUse hook; applies even with --dangerously-skip-permissions). A block is final:
+    do not route around it; report it in OUTPUT. Map: `docs/penciled-reference-map.md`.
 - **Secrets**: never read `.env*`, key files, or credential stores; never print or
   commit secrets; reference env var *names* only (`.env.example`).
 - **No pushes.** Commit locally on your branch; never `git push`, never add remotes.
@@ -58,6 +71,7 @@ Python: `PERSONA_PYTHON` selects the interpreter (needs pyyaml + pytest for fast
 - ACCEPTANCE commands in the packet pass locally; `npm run qa:fast` passes.
 - New behavior is covered by a test in the right tier; any edge case touched has its
   catalog entry's test implemented (remove the PENDING skip).
-- No secrets, no Penciled code, no browser-side transition logic.
+- No secrets, no PHI/demo-patient data, no changes outside this repo (never penciled-emr),
+  no browser-side transition logic.
 - Small commits, one concern each, conventional prefix (`feat(brain): ...`).
 - Final report in the wrapper's STATUS format, including residual risks.

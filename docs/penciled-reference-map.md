@@ -1,18 +1,34 @@
-# Penciled voice-agent — reference map (patterns only, NO code)
+# Penciled voice-agent — reference map (Darran's IP: copy allowed, modify never)
 
-Source inspected read-only on 2026-09-26: `/Users/darranshivdat/IdeaProjects/penciled-emr/voice-agent`
-(checked-out branch of penciled-emr; Pipecat 1.4 + Pipecat Flows, Python 3.11+).
-This is Darran's employer's (healthcare) codebase. **Nothing was copied.** This file
-describes *what exists and the pattern*, so Persona workers can reimplement from Pipecat's
-public docs. Until Darran confirms in writing that verbatim reuse is allowed, workers must
-not open any Penciled repository (see CLAUDE.md).
+Source: `/Users/darranshivdat/IdeaProjects/penciled-emr/voice-agent` (Pipecat 1.4 + Pipecat
+Flows, Python 3.11+). **Policy (Darran, 2026-09-26):** Darran owns this code (his brother's
+company, his code). Persona workers **may copy** code from `penciled-emr/voice-agent` into
+this repo, but must **never modify anything in penciled-emr**, and must **never read or copy**
+`.env*`, `transcripts/`, `data/`, demo patient info, credentials, or anything with PHI.
 
-Not read (by rule): `.env`, `.env.example`, `transcripts/` (real call transcripts),
-`data/*.json` (patient/slot/insurance fixtures), `components/*.json`, flow JSON contents.
+## Sanitized mirror (use this, not penciled-emr)
+`/Users/darranshivdat/IdeaProjects/persona-onboarding-ref/penciled-voice-agent/` —
+outside git, read-only (`chmod a-w`), created 2026-09-26. See its `PROVENANCE.md`.
+- Included (allowlist): `bot.py`, `config.py`, `echo_guard.py`, `flow.py`, `flow_engine.py`,
+  `observers.py`, `services.py`, `text_normalization.py`, `warmup.py`, `requirements.txt`,
+  `RELIABILITY-LAYERS-PLAN.md`, `static/phone.html`, and tests `test_echo_guard`,
+  `test_flow_structure`, `test_prompt_caching`, `test_keyterm_boost`,
+  `test_text_normalization`, `test_router_no_preview`, `test_hosting_hardening`,
+  `test_confirmation_gate`.
+- Excluded: `.env*`, `transcripts/`, `data/`, `components/`, `flows/`, `README.md` (demo
+  patient table), `KNOWN_ISSUES.md`, `JUSTIN-WALKTHROUGH.md`, `tools.py` (live EMR client),
+  `sms.py` (Twilio), EMR/PT-clinic tests, `scripts/`.
+- Redacted in the mirror only: example phone numbers and a personal-looking email address.
+- Enforcement: `.claude/settings.json` deny rules + `scripts/guard-tool-use.py` PreToolUse
+  hook (blocks writes to penciled-emr/mirror, sensitive paths, recursive sweeps of
+  penciled-emr, other Penciled repos, `.env` reads, `git push`). Tests:
+  `harness/tests/test_guard_hook.py`.
+- When copying: adapt to our architecture (Flows handlers delegate to `agent.brain`), drop
+  telephony/EMR specifics, and name the source file in the commit message.
 
 ## Structure
 
-| Path | What it does | Persona reimplementation |
+| Path | What it does | Persona use (copy + adapt, or reimplement) |
 |---|---|---|
 | `bot.py` (~1.2k lines) | Entrypoint. `run_bot(transport, runner_args)` assembles the pipeline; `bot()` is the Pipecat-runner entry; `__main__` warms up, installs middleware/routes, then calls the Pipecat runner `main()`. Also serves a phone UI, a flow builder UI, JSON APIs, Twilio webhook/WS routes. | `agent/voice/pipeline.py` (`build_pipeline(session)`), `agent/main.py` (FastAPI app owning our routes; mount the SmallWebRTC offer endpoint ourselves rather than piggy-backing on the runner's app). No builder UI, no telephony. |
 | Pipeline order (bot.py) | `transport.input → STT → user aggregator → LLM → TTS → transport.output → assistant aggregator` with universal `LLMContext` + `LLMContextAggregatorPair`. | Same order (it is Pipecat's canonical shape). |
@@ -56,7 +72,7 @@ double-emit (seam) detector in the voice harness; idempotent teardown + graceful
 `pipecat-ai-flows`, `pipecat-ai-small-webrtc-prebuilt`, `python-dotenv`, `loguru`, `httpx`, `twilio`.
 Persona drops openai/google/twilio/prebuilt; adds `anthropic`, `fastapi`, `psycopg`, optional `langfuse`.
 
-## Sensitivity notes (described, not quoted)
+## Sensitivity notes (why the mirror exists; described, not quoted)
 - `voice-agent/.env` exists (real vendor credentials presumably) — not read.
 - `voice-agent/transcripts/` holds ~150 call transcripts (Jul 2026), gitignored — may contain
   real names/phone numbers/health details — not read.

@@ -23,7 +23,9 @@ Files/directories you may edit. Anything else: document the narrow expansion in 
 
 ## DO NOT READ
 - .env*, secrets, credential stores
-- any Penciled repository (penciled-emr, penciled-dev, ...)
+- Penciled sensitive paths (.env*, transcripts/, data/, demo patient info, PHI, credentials)
+  and other Penciled repos. NEVER modify penciled-emr. (Copying voice-agent code from the
+  mirror /Users/darranshivdat/IdeaProjects/persona-onboarding-ref/penciled-voice-agent/ is allowed.)
 - unrelated packets, agent transcripts, broad git archaeology
 
 ## REQUIREMENTS
