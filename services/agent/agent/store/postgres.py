@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable, Optional
@@ -42,6 +42,21 @@ class StoredEvent:
     kind: str
     payload: dict
     trace_id: Optional[str]
+
+
+@dataclass(frozen=True)
+class GmailConnection:
+    session_id: str
+    google_sub: str
+    email: str
+    scopes: list[str]
+    token_status: str
+    refresh_token_enc: Optional[bytes] = field(default=None, repr=False)  # ciphertext; never logged
+    token_key_id: Optional[str] = None
+    connected_at: Optional[datetime] = None
+    last_refresh_at: Optional[datetime] = None
+    last_error: Optional[str] = None
+    revoked_at: Optional[datetime] = None
 
 
 @dataclass(frozen=True)
@@ -146,14 +161,68 @@ class PgStore:
                 raise VersionConflictError(state.session_id, expected_version)
             self._insert_events(conn, sid, events)
             if gmail is not None:
-                conn.execute(
-                    "insert into gmail_connections (session_id, google_sub, email, scopes)"
-                    " values (%s, %s, %s, %s) on conflict (session_id) do update set"
-                    " google_sub = excluded.google_sub, email = excluded.email,"
-                    " scopes = excluded.scopes, connected_at = now()",
-                    (sid, gmail["google_sub"], gmail["email"], list(gmail["scopes"])),
-                )
+                self._upsert_gmail(conn, sid, gmail)
         return row["version"]
+
+    # --- gmail connection ----------------------------------------------------
+
+    @staticmethod
+    def _upsert_gmail(conn, sid: uuid.UUID, gmail: dict) -> None:
+        """`gmail` carries ciphertext only (`refresh_token_enc`); plaintext never reaches the store.
+        A reconnect without a new refresh token keeps the old one iff it's the same Google account."""
+        enc = gmail.get("refresh_token_enc")
+        conn.execute(
+            "insert into gmail_connections (session_id, google_sub, email, scopes, refresh_token_enc,"
+            " token_key_id, token_status) values (%(sid)s, %(sub)s, %(email)s, %(scopes)s, %(enc)s, %(kid)s, %(status)s)"
+            " on conflict (session_id) do update set"
+            " refresh_token_enc = case when excluded.refresh_token_enc is not null then excluded.refresh_token_enc"
+            "   when gmail_connections.google_sub = excluded.google_sub and gmail_connections.token_status = 'stored'"
+            "   then gmail_connections.refresh_token_enc end,"
+            " token_key_id = case when excluded.refresh_token_enc is not null then excluded.token_key_id"
+            "   when gmail_connections.google_sub = excluded.google_sub and gmail_connections.token_status = 'stored'"
+            "   then gmail_connections.token_key_id end,"
+            " token_status = case when excluded.refresh_token_enc is not null then excluded.token_status"
+            "   when gmail_connections.google_sub = excluded.google_sub and gmail_connections.token_status = 'stored'"
+            "   then 'stored' else excluded.token_status end,"
+            " google_sub = excluded.google_sub, email = excluded.email, scopes = excluded.scopes,"
+            " connected_at = now(), last_error = null, revoked_at = null",
+            {"sid": sid, "sub": gmail["google_sub"], "email": gmail["email"], "scopes": list(gmail["scopes"]),
+             "enc": enc, "kid": gmail.get("token_key_id") if enc is not None else None,
+             "status": gmail.get("token_status") or ("stored" if enc is not None else "missing")},
+        )
+
+    def gmail_connection(self, session_id: str) -> Optional[GmailConnection]:
+        with self.pool.connection() as conn:
+            row = conn.execute(
+                "select * from gmail_connections where session_id = %s", (_uuid(session_id),)).fetchone()
+        if row is None:
+            return None
+        row["session_id"] = str(row["session_id"])
+        row["refresh_token_enc"] = bytes(row["refresh_token_enc"]) if row["refresh_token_enc"] is not None else None
+        return GmailConnection(**row)
+
+    def mark_gmail_refreshed(self, session_id: str) -> None:
+        with self.pool.connection() as conn:
+            conn.execute("update gmail_connections set last_refresh_at = now(), last_error = null"
+                         " where session_id = %s", (_uuid(session_id),))
+
+    def mark_gmail_invalid(self, session_id: str, *, error: str) -> None:
+        """Google rejected the refresh token (invalid_grant / revoked): drop it, ask for reconnect."""
+        with self.pool.connection() as conn:
+            conn.execute("update gmail_connections set token_status = 'invalid', refresh_token_enc = null,"
+                         " token_key_id = null, last_error = %s where session_id = %s and token_status <> 'revoked'",
+                         (error[:64], _uuid(session_id)))
+
+    def revoke_gmail(self, session_id: str) -> bool:
+        """Clear tokens + set revoked_at. Idempotent: returns True only on the first revoke."""
+        with self.pool.connection() as conn:
+            row = conn.execute(
+                "update gmail_connections set refresh_token_enc = null, token_key_id = null,"
+                " token_status = 'revoked', revoked_at = coalesce(revoked_at, now())"
+                " where session_id = %s and revoked_at is null returning session_id",
+                (_uuid(session_id),),
+            ).fetchone()
+        return row is not None
 
     # --- events ------------------------------------------------------------
 

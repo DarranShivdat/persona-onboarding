@@ -7,6 +7,7 @@ in one transaction.
 from .codec import state_from_row, state_to_columns  # noqa: F401
 from .postgres import (  # noqa: F401
     CallLease,
+    GmailConnection,
     LeaseHeldError,
     NotFoundError,
     PgStore,
