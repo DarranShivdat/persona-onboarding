@@ -34,7 +34,7 @@ Repo, flow spec + invariants, edge-case catalog, QA tiers, ported supervisor, do
 | **FLOW-001** ✅ merged | Pure flow engine + validators + TS types | B-high / impl | — | qa:flow 0 PENDING; flow-tier ECs implemented |
 | **FLOW-002** ✅ merged | LLM adapter: `record_slots` extraction + constrained phrasing + output guard (Anthropic SDK), prompt caching, model choice by eval | B-high / impl | FLOW-001 | extraction contract tests; recorded-fixture tests; guard table tests |
 | **FLOW-003** ✅ merged | Agent API (FastAPI) + Postgres store (version-checked turns, events, SSE) | B-high / impl | FLOW-001 | API tests w/ ephemeral Postgres; concurrency test (two writers) |
-| **OBS-001** ▶running | Langfuse tracer adapter + Pipecat OTel routing | B-high / impl | FLOW-002 | traces visible with PERSONA_TRACING=langfuse; noop default unchanged |
+| **OBS-001** ✅ merged | Langfuse tracer adapter + Pipecat OTel routing | B-high / impl | FLOW-002 | traces visible with PERSONA_TRACING=langfuse; noop default unchanged |
 
 ## M2 — Web experience
 | ID | Title | Class/role | Depends | Acceptance |
@@ -42,8 +42,8 @@ Repo, flow spec + invariants, edge-case catalog, QA tiers, ported supervisor, do
 | **DESIGN-001** ✅ merged | Research Persona's product/onboarding UI; spec + mockups | B-high / design | — | 11 states × 2 viewports; spec checklist; tokens.json |
 | **FE-001** ✅ merged | Next.js shell from spec with mock driver; visual harness; Playwright | B-high / frontend | DESIGN-001 | build + e2e + qa:visual ≤3% diff |
 | **FE-002** ✅ merged | Real SessionDriver: chat wired to agent API + SSE; refresh/resume | B-high / frontend | FE-001, FLOW-003 | EC-08, EC-30, EC-31 e2e |
-| **FE-003** ▶running | Google OAuth (testing mode, reviewers as test users; `openid email profile` + `gmail.readonly` + `gmail.modify` + `gmail.send`, offline refresh token) + Gmail card states + wrong-account + partial-grant flow | B-high / frontend | FE-002 | EC-20, 21, 22 e2e |
-| GMAIL-001 | Server Gmail client: encrypted refresh-token store, refresh/`invalid_grant` → reconnect, revoke; read-only value demo from real metadata; draft/send/modify only behind an explicit confirm turn | B-high / impl | FLOW-003, FE-003 | unit tests w/ recorded Gmail API fixtures; no-send-without-confirm test |
+| **FE-003** ✅ merged | Google OAuth (testing mode, reviewers as test users; `openid email profile` + `gmail.readonly` + `gmail.modify` + `gmail.send`, offline refresh token) + Gmail card states + wrong-account + partial-grant flow | B-high / frontend | FE-002 | EC-20, 21, 22 e2e |
+| **GMAIL-001** ▶running | Server Gmail client: encrypted refresh-token store, refresh/`invalid_grant` → reconnect, revoke; read-only value demo from real metadata; draft/send/modify only behind an explicit confirm turn | B-high / impl | FLOW-003, FE-003 | unit tests w/ recorded Gmail API fixtures; no-send-without-confirm test |
 | DESIGN-002 | Design QA pass on hosted preview; copy tone review | B-high / design | FE-003 | gate report PASS; Darran taste question prepared |
 
 ## M3 — Voice
@@ -51,10 +51,10 @@ Repo, flow spec + invariants, edge-case catalog, QA tiers, ported supervisor, do
 |---|---|---|---|---|
 | **INFRA-001** ✅ merged (voice host: Fly+Cloudflare TURN) | SmallWebRTC hosting spike (Fly+TURN vs Pipecat Cloud) → EM decides voice host | B-high / impl | — | decision record |
 | **VOICE-001** ✅ merged | Pipecat pipeline: SmallWebRTC, Deepgram, Claude, Cartesia⇄Deepgram TTS failover, VAD/turn, warmup, idempotent teardown, graceful goodbye | B-high / impl | INFRA-001 | local call works; failover unit tests |
-| **VOICE-002** ▶running | Pipecat Flows adapter over brain (nodes from spec; record_slots on every node) | B-high / impl | VOICE-001, FLOW-002 | shared-brain tests: same script text vs voice → same state |
-| VOICE-003 | Call lease, reconnect grace window, hangup resume, typing-during-call merge, silence floor | C? → B-high / impl | VOICE-002, FLOW-003 | EC-01, 02, 04, 10, 28 |
+| **VOICE-002** ✅ merged | Pipecat Flows adapter over brain (nodes from spec; record_slots on every node) | B-high / impl | VOICE-001, FLOW-002 | shared-brain tests: same script text vs voice → same state |
+| **VOICE-003** ▶running | Call lease, reconnect grace window, hangup resume, typing-during-call merge, silence floor | C? → B-high / impl | VOICE-002, FLOW-003 | EC-01, 02, 04, 10, 28 |
 | VOICE-004 | Gmail on call: push card (read+write consent via OAuth); spoken email fallback (keyterms, NATO chunks, partial correction, type-it) | B-high / impl | VOICE-002, FE-003 | EC-19/20/21 voice variants |
-| FE-004 | Phone simulator wired to real WebRTC (Pipecat JS client), mic-denied fallback | B-high / frontend | VOICE-001, FE-001 | EC-03, EC-09 e2e |
+| **FE-004** ▶running | Phone simulator wired to real WebRTC (Pipecat JS client), mic-denied fallback | B-high / frontend | VOICE-001, FE-001 | EC-03, EC-09 e2e |
 
 ## M4 — Harness and evals
 | ID | Title | Class/role | Depends | Acceptance |
@@ -76,7 +76,7 @@ Grok adversarial), latency tuning, reviewer README + Loom-style walkthrough scri
 READY FOR PRODUCT TEST to Darran.
 
 ## Parallelism
-Now: OBS-001 ∥ VOICE-002 ∥ FE-003 (HARNESS-001 / FE-002 / VOICE-001 merged 2026-09-26 ~8:45pm PT; earlier FLOW-002/003, FE-001, DESIGN-001, FLOW-001, INFRA-001; voice host Fly.io + Cloudflare TURN — deploy still needs Darran go-ahead + keys Sun ~10am PT). Next: GMAIL-001 after FE-003; FE-004; VOICE-003; OBS-002.
+Now: GMAIL-001 ∥ VOICE-003 ∥ FE-004 (OBS-001 / VOICE-002 / FE-003 merged 2026-09-26 ~11:50pm PT after Mac recovery; earlier HARNESS/FE-002/VOICE-001 + FLOW/DESIGN/INFRA; voice host Fly.io + Cloudflare TURN — deploy still needs Darran go-ahead + keys Sun ~10am PT). Next: OBS-002; VOICE-004; DESIGN-002; INFRA-002/003 when go-ahead.
 
 ## Decisions (resolved by Darran, 2026-09-26)
 1. **Gmail scopes: read + write** (half the product is automation): `openid email profile`
