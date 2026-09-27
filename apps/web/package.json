@@ -17,7 +17,7 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
-  "//": "Mock session driver only (FE-001). FE-002 adds the real driver and the Pipecat JS client.",
+  "//": "FE-002 real driver uses fetch/EventSource only (no new deps). FE-004 adds the Pipecat JS client.",
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@types/node": "^22.20.4",
