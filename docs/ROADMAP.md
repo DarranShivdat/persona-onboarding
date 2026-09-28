@@ -86,8 +86,8 @@ Repo, flow spec + invariants, edge-case catalog, QA tiers, ported supervisor, do
 | ID | Title | Class/role | Depends |
 |---|---|---|---|
 | **INFRA-002** ✅ merged (partial) | Deploy kit (no cloud): env contract, check-env, migrations, Dockerfile/fly.toml, dry-run deploy scripts + smoke | B-high / impl | INFRA-001, FLOW-003 |
-| **INFRA-002c** ✅ merged Sun 8:50pm | local-stack.sh + RUNBOOK.md + google-oauth.md + cloudflare-turn.md (INFRA-002 remainder) | B-high / impl | INFRA-002 |
-| **PUBLIC-001** ✅ inline Sun 9pm | Public `/about` homepage + `/privacy` policy (Google OAuth Branding needs both) + e2e spec | A (EM) | — |
+| **INFRA-002c** ✅ merged Sun 8:36pm | local-stack.sh + RUNBOOK.md + google-oauth.md + cloudflare-turn.md (INFRA-002 remainder) | B-high / impl | INFRA-002 |
+| **PUBLIC-001** ✅ inline Sun 8:37pm | Public `/about` homepage + `/privacy` policy (Google OAuth Branding needs both) + e2e spec | A (EM) | — |
 | **INFRA-002b** ⛔BLOCKED (owner: EM executor; see docs/deploy/DEPLOY-STATE.md) | Execute the runbook (`--apply`) — go-ahead given Sun 8:09pm: Supabase → Fly agent → Vercel web → Google redirect | A (EM) | INFRA-002, VOICE-005 |
 | INFRA-003 | Vercel project + preview URLs (folded into INFRA-002b; gate automation cut) | B-low | FE-002 |
 | INFRA-004 (reduced) | Existing rate limits + vendor spend caps (Darran) + min 1 machine; alerts cut | A (EM) + Darran | INFRA-002b |

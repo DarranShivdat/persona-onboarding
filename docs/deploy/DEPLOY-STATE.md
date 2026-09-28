@@ -6,7 +6,7 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 | Field | Value |
 |---|---|
 | STATE | **BLOCKED** (not started — nothing created in Supabase/Fly/Vercel) |
-| OWNER | EM executor (claimed Sun Sep 27 8:45pm PT) |
+| OWNER | EM executor (claimed Sun Sep 27 8:34pm PT) |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
 ## Env files (gitignored, mode 600, values never committed/printed)
@@ -14,7 +14,7 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 - `.persona-deploy/web.env` (read by vercel-web.sh) = `apps/web/.env.local`
 - Blank until first deploy: `PERSONA_AGENT_BASE_URL`, `GOOGLE_OAUTH_REDIRECT_URL`.
 
-## Key verification (Sun 8:40pm PT)
+## Key verification (Sun 8:33pm PT)
 Anthropic PASS · Deepgram PASS · Cartesia PASS · Cloudflare TURN mint PASS ·
 **Postgres FAIL** — `PERSONA_DATABASE_URL` still contains the Supabase template placeholder
 password, and the direct host `db.<ref>.supabase.co` is IPv6-only (Darran's Mac has no IPv6).
