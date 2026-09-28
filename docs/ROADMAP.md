@@ -4,16 +4,16 @@ Worker-sized packets (≤ ~40 Opus turns each). Class: A (Grok), B-low (Grok Bui
 B-high (Opus 5.5 worker), C (Fable). Role: impl / design / frontend.
 Ready packets live in `docs/orchestration/packets/`.
 
-## Deadline and timeline (all times PT) — revised Sun Sep 27, 10:48pm
+## Deadline and timeline (all times PT) — revised Sun Sep 27, 11:20pm
 **Submission due Mon Sep 28, 2026, 8:00pm ET = 5:00pm PT.** Target: hosted URL live and
 working end to end by **Mon 12:00pm PT** — **ahead: hosted + smoke PASS Sun ~10:48pm**.
 
-Status Sun ~10:48pm: **M1 ✅ M2 ✅ M3 ✅ M5 ✅ (INFRA-002b DEPLOYED + SMOKE PASS)**.
+Status Sun ~11:20pm: **M1 ✅ M2 ✅ M3 ✅ M5 ✅**; **M6 DOCS/HOSTED/PROMPT ✅ merged**;
+**M7** NAME-001 + GRAD-001 + AUDIT-001 running (live-test fixes).
 Live: web `https://persona-onboarding-darran.vercel.app`, agent
-`https://persona-onboarding-agent.fly.dev` (`/health` db ok). Smoke 7/7 PASS.
-Remaining Darran (not deploy): Google Console test users + Branding homepage/privacy/
-authorized domain (see `docs/deploy/DEPLOY-STATE.md`). OAuth stays Testing until then.
-M6 packets launching tonight: DOCS-001, HOSTED-001, PROMPT-001.
+`https://persona-onboarding-agent.fly.dev` (`/health` db ok, sha ddd8ac5). Smoke 7/7 PASS.
+Remaining Darran: Google Console test users + Branding homepage/privacy/authorized domain
+(see `docs/deploy/DEPLOY-STATE.md`). OAuth stays Testing until then.
 
 | When (PT) | Milestone | Owner |
 |---|---|---|
@@ -22,7 +22,7 @@ M6 packets launching tonight: DOCS-001, HOSTED-001, PROMPT-001.
 | Sun ~8:55pm | **FE-005** ✅ + **VOICE-004-lite** ✅ → **M2 ✅ M3 ✅** | done |
 | Sun ~10:35–10:48pm | **INFRA-002b ✅** deploy + smoke PASS (pooler DB, Fly agent, Vercel web) | done |
 | ASAP (blocks Gmail demo) | Darran: Google Console — add reviewer test-user emails; Branding homepage `/about` + privacy + authorized domain + confirm redirect URI (URLs in DEPLOY-STATE). | Darran |
-| Sun night – Mon 8:00am | M6 packets (DOCS-001 reviewer handoff, HOSTED-001 hosted e2e probe, PROMPT-001 tone/chips polish); real voice call smoke | EM + workers |
+| Sun night – Mon 8:00am | M6 DOCS/HOSTED/PROMPT ✅; M7 live-test fixes (NAME/GRAD/AUDIT); GUARD/LAT after; real voice call smoke | EM + workers |
 | Mon 8:00–10:00am | Hosted smoke (human): text flow, voice call (normal + TURN-only), Gmail OAuth test user, hangup/redial; fix-only | EM + Darran |
 | Mon 10:00am–12:00pm | Hosted edge-case sweep (hangup, refusal, nonsense, early graduation, two tabs), latency tuning, fix-only; spend caps set | EM + workers |
 | **Mon 12:00pm** | **Hosted URL live and end-to-end** | EM |
@@ -101,13 +101,14 @@ READY FOR PRODUCT TEST to Darran.
 
 | ID | Title | Class/role | Depends | Acceptance |
 |---|---|---|---|---|
-| **DOCS-001** 🟡 launched | Reviewer README + submission walkthrough script | B-high / impl | INFRA-002b | `docs/REVIEWER.md` + walkthrough; no secrets |
-| **HOSTED-001** 🟡 launched | Hosted Playwright probe vs live web+agent (text session, ICE, OAuth start) | B-high / frontend | INFRA-002b | `qa:e2e` green; hosted spec gated on env |
-| **PROMPT-001** 🟡 launched | Agent-name suggestion chips + tone polish from design copy (DQ-04 residual) | B-high / impl | FE-005 | chips on agent_name ask; qa:fast/flow/e2e |
+| **DOCS-001** ✅ merged | Reviewer README + submission walkthrough script | B-high / impl | INFRA-002b | `docs/REVIEWER.md` + walkthrough; no secrets |
+| **HOSTED-001** ✅ merged | Hosted Playwright probe vs live web+agent (text session, ICE, OAuth start) | B-high / frontend | INFRA-002b | `qa:e2e` green; hosted spec gated on env |
+| **PROMPT-001** ✅ merged | Agent-name suggestion chips + tone polish from design copy (DQ-04 residual) | B-high / impl | FE-005 | chips on agent_name ask; qa:fast/flow/e2e |
 
 ## Parallelism
-Now (Sun ~10:48pm PT): INFRA-002b ✅; launching DOCS-001 + HOSTED-001 + PROMPT-001.
+Now (Sun ~11:20pm PT): M6 DOCS/HOSTED/PROMPT ✅; M7 NAME-001 + GRAD-001 + AUDIT-001 running.
 Keep 2–3 Opus workers active overnight. Darran still needed for Google Console test users.
+Next after NAME-001: GUARD-001 → LAT-001.
 
 ## Decisions (resolved by Darran, 2026-09-26)
 1. **Gmail scopes: read + write** (half the product is automation): `openid email profile`
