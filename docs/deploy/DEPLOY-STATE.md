@@ -5,8 +5,8 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **REDEPLOYING — agent (NAME-GREET: the call introduces the assistant by its agent_name). Last LIVE: agent+web 1293997** |
-| OWNER | EM executor (NAME-GREET) — started 2:24pm PT Mon |
+| STATE | **LIVE — agent 65c8201 (NAME-GREET: call greets as the named assistant, 'Hi, it's Atlas!'; plus CUTOFF-001/CLIP-001/NAME-004/VQA-002), web 1293997 (RESET-002, RING-002, MUTE-002, FONT-001); quick ack ON via Fly secret** |
+| OWNER | EM executor (NAME-GREET) — deploy finished 2:27pm PT Mon |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
 ## Env files (gitignored, mode 600, values never committed/printed)
@@ -85,3 +85,4 @@ Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a
 - Mon 1:25PM PT — EM executor (honest-need/name fix): agent+web c029e5d (code 904c0da) deployed; smoke.sh 7/7 + LIVE button audit 246 rows PASS; live API replay: 'Text messages.' / 'book reservations for me' / 'clean up my inbox' all get the identical 'Noted: … To get started, let's connect your Gmail. …' line.
 - Mon 1:50PM PT — EM executor (yes-loop/VQA): agent ac6a1dd + web fc79338 (no web changes after fc79338); smoke 7/7 + LIVE audit 246 PASS (an earlier run had 1 call-live timeout while an API replay ran concurrently; clean on rerun); live replay: 'what can you actually do?' / 'how long will this take?' get approved answers.
 - Mon 2:18PM PT — EM executor (cutoff/clip/UI): agent+web 1293997 (code 679a6e7); smoke 8/8 + LIVE audit 246 rows PASS (Start over reset < 1s asserted on LIVE); agent pytest 882 passed; qa:fast/flow/e2e(102)/visual(baselines refreshed for 3 call states)/audit local PASS. Note: fly-agent.sh and vercel-web.sh each run the local audit — run them serially (parallel runs collide on ports).
+- Mon 2:27PM PT — EM executor (NAME-GREET): agent 65c8201 (code 25fa315), web unchanged 1293997; smoke 8/8 + LIVE audit 246 rows PASS; agent pytest 887 passed; qa:fast PASS; local audit gate PASS in fly-agent.sh.
