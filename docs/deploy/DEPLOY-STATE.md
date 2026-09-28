@@ -5,7 +5,7 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **IN PROGRESS — step 1/6 Supabase migration running (owner EM executor)** |
+| STATE | **IN PROGRESS — step 1/6 done (Supabase migrated); waiting on fly auth (owner EM executor)** |
 | OWNER | EM executor (claimed Sun Sep 27 8:34pm PT; re-claimed 10:36pm PT) — reconcile: do NOT `--apply` |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
@@ -37,3 +37,4 @@ Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a
 
 ## Log
 - Sun 10:35PM PT — DB fixed (pooler); running supabase-db.sh --apply
+- Sun 10:35PM PT — supabase-db.sh --apply: 4 applied (0001-0004), re-status 4 applied/0 drifted
