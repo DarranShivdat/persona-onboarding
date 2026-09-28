@@ -200,6 +200,48 @@ const homeReply = (via: "enter" | "button") => async (_c: Locator, ctx: Ctx) => 
 
 // ---- catalogue -----------------------------------------------------------------------------
 
+// RESET-001: the header "Start over" is on every chat/home screen. Everywhere: it opens a confirm
+// and Cancel keeps the session. On `resume` (mid-flow) and `home` (graduated) the confirm is taken
+// all the way: the cookie is replaced and the page lands on a fresh agent_name step.
+async function openStartOver(ctl: Locator, ctx: Ctx) {
+  await ctl.click();
+  const dlg = ctx.page.getByTestId("start-over-confirm");
+  await expect(dlg).toBeVisible();
+  await expect(dlg.getByRole("button", { name: "Cancel" })).toBeFocused();
+  return dlg;
+}
+export const START_OVER_CANCEL: Expectation = {
+  match: "button:Start over @header",
+  expected: "opens a confirm (Start over? / Cancel / Yes, start over); Cancel closes it and keeps the session",
+  skipLive: "exercised end-to-end (Cancel + confirm) on resume and home on LIVE",
+  run: async (ctl, ctx) => {
+    const url = ctx.page.url();
+    const dlg = await openStartOver(ctl, ctx);
+    await dlg.getByRole("button", { name: "Cancel" }).click();
+    await expect(dlg).toHaveCount(0);
+    expect(ctx.page.url()).toBe(url);
+  },
+};
+const START_OVER_FULL: Expectation = {
+  match: "button:Start over @header",
+  expected: "Cancel keeps the session; confirm -> POST /api/session/reset clears the cookie, page reloads into a fresh session at the agent_name step",
+  run: async (ctl, ctx) => {
+    const before = (await ctx.context.cookies()).find((c) => c.name === "persona_session")?.value;
+    const first = await openStartOver(ctl, ctx);
+    await first.getByRole("button", { name: "Cancel" }).click();
+    await expect(first).toHaveCount(0);
+    const dlg = await openStartOver(ctl, ctx);
+    const reset = ctx.page.waitForResponse((r) => r.request().method() === "POST" && new URL(r.url()).pathname === "/api/session/reset");
+    await dlg.getByRole("button", { name: "Yes, start over" }).click();
+    expect((await reset).status()).toBe(200);
+    await expect(thread(ctx.page).locator('[data-from="agent"]').first()).toBeVisible({ timeout: 30_000 });
+    await expect(thread(ctx.page).locator('[data-from="user"]')).toHaveCount(0);
+    await expect(ctx.page.locator('[data-testid^="checklist-"]:visible [data-slot="agent_name"]')).toHaveAttribute("aria-label", "Assistant name: Not yet");
+    const after = (await ctx.context.cookies()).find((c) => c.name === "persona_session")?.value;
+    expect(after && after !== before).toBeTruthy();
+  },
+};
+
 export const SCREENS: Screen[] = [
   {
     name: "landing",
@@ -243,7 +285,7 @@ export const SCREENS: Screen[] = [
       await expect(userBubble(ctx.page, "Juno").first()).toBeVisible();
       await expect(ctx.page.locator('[data-testid^="checklist-"]:visible [data-slot="agent_name"]')).toHaveAttribute("aria-label", "Assistant name: Juno");
     },
-    controls: liveLight(offerControls),
+    controls: [START_OVER_FULL, ...liveLight(offerControls)],
   },
   {
     name: "mic-denied",
@@ -534,6 +576,7 @@ export const SCREENS: Screen[] = [
       await expect(ctx.page.getByRole("heading", { name: /You’re all set/ })).toBeVisible();
     },
     controls: [
+      START_OVER_FULL,
       { match: /^button:Connect( Gmail)? @deferred-prompt$/, expected: "deferred prompt opens Google OAuth", skipLive: "fixture (mock driver) on LIVE", run: (c, ctx) => opensGoogle(c, ctx) },
       {
         match: "button:Dismiss @deferred-prompt",

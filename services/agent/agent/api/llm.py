@@ -126,9 +126,20 @@ def home_ack(state: SessionState, plan: ResponsePlan, skip: Iterable[str] = ()) 
     return out
 
 
-def home_tail(plan: ResponsePlan) -> list[str]:
-    return [T.HOME_REPLY[k] for k in plan.respond_to if k in T.HOME_REPLY]
+def home_tail(plan: ResponsePlan, state: Optional[SessionState] = None) -> list[str]:
+    out: list[str] = []
+    for k in plan.respond_to:
+        if k == "home_math" and plan.note:
+            out += [plan.note, T.HOME_REPLY["home_math_tail"]]
+        elif k == "home_confirm_spelling" and state is not None:
+            from ..brain.home import pending
+            w = pending(state) or []
+            if len(w) == 4 and w[0] == "spell":
+                out.append(T.home_spelling_line(w[2], w[3]))
+        elif k in T.HOME_REPLY:
+            out.append(T.HOME_REPLY[k])
+    return out
 
 
 def home_phrase(state: SessionState, plan: ResponsePlan) -> str:
-    return " ".join(p for p in [*home_ack(state, plan), *home_tail(plan)] if p)
+    return " ".join(p for p in [*home_ack(state, plan), *home_tail(plan, state)] if p)

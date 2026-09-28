@@ -1,3 +1,4 @@
+import { StartOver } from "./StartOver";
 import type { Checklist as ChecklistT, SessionSnapshot, UIAction } from "@/lib/session/types";
 import type { SlotName } from "@/lib/flow-types";
 
@@ -35,14 +36,15 @@ export function Checklist({ items, just, variant }: { items: ChecklistT; just: S
   );
 }
 
-export function TopBar({ checklist, just, right }: { checklist?: ChecklistT; just?: SlotName | null; right?: string }) {
+export function TopBar({ checklist, just, right, startOver }: { checklist?: ChecklistT; just?: SlotName | null; right?: string; startOver?: boolean }) {
   return (
     <header className="topbar">
       <span className="wordmark">Persona</span>
-      {(checklist || right) && <span className="spacer desk-only" />}
+      {(checklist || right || startOver) && <span className="spacer" />}
       {checklist && <Checklist items={checklist} just={just ?? null} variant="desk" />}
       {checklist && <span className="spacer desk-only" />}
       {right && <span className="help">{right}</span>}
+      {startOver && <StartOver />}
     </header>
   );
 }

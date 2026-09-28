@@ -79,6 +79,7 @@ class ResponsePlan:
     deferred: list[str] = field(default_factory=list)
     push_ui: list[str] = field(default_factory=list)       # e.g. ["gmail_connect_card"]
     graduate: bool = False
+    note: Optional[str] = None                             # home: a computed answer (e.g. "5 + 5 is 10")
 
 
 @dataclass
@@ -100,6 +101,11 @@ def apply(spec: FlowSpec, state: SessionState, turn: Turn) -> TurnResult:
             return apply_home(spec, state, turn)
         plan.graduate = True
         plan.deferred = list(st.deferred_prompts)
+        if turn.event != "call_started":
+            # The closing line is said once, when the session graduates. A call ending (or a
+            # re-open) afterwards must not repeat it in the chat (live test 2026-09-28: the
+            # full "You're all set, ..." summary reappeared after the call).
+            plan.absorbed = True
         return TurnResult(st, plan, ev)
     if turn.event is not None:
         return _apply_event(spec, st, turn, plan, ev)

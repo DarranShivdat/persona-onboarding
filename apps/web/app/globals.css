@@ -260,3 +260,11 @@ button:disabled { cursor: default; }
 .notice { position: fixed; top: 72px; left: 50%; transform: translateX(-50%); z-index: 20; width: min(560px, calc(100vw - 32px)); display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s3) var(--s3) var(--s4); background: var(--amber-wash); color: var(--amber-ink); border: 1px solid var(--amber); border-radius: 16px; font: 500 15px/1.35 var(--font); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
 .notice span { flex: 1; }
 .notice .btn { flex: none; }
+
+/* RESET-001: header "Start over" + confirm */
+.startover { position: relative; flex: none; }
+.btn.sm { padding: 10px 16px; font-size: 14px; }
+.startover-pop { position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; width: min(320px, calc(100vw - 32px)); background: var(--paper, #fff); border: 1px solid var(--line); border-radius: 16px; padding: var(--s4); box-shadow: 0 12px 32px rgba(0,0,0,.14); }
+.startover-pop .t { font-weight: 600; margin: 0 0 4px; }
+.startover-pop .d { color: var(--ink-2); margin: 0 0 var(--s3); font-size: 14px; line-height: 1.4; }
+.startover-pop .row { display: flex; gap: var(--s2); justify-content: flex-end; flex-wrap: wrap; }

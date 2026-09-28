@@ -6,6 +6,12 @@ in the chat and end the call politely (reason `silence_timeout` -> chat resume).
 caller speech or transcript resets the ladder; nothing fires while either side is
 speaking. The lines are templated per node (never LLM output) and never move state.
 
+Gmail node (live call 2026-09-28 12:36pm: the caller was in the Google OAuth popup and the
+ladder nudged at ~7s/~15s and hung up at ~23s): the caller is expected to be quiet while
+signing in, so the ladder there is "Take your time, I'll wait while you connect" once (~10s),
+then silence until OAuth completes (announced by the flow) or ~75s for one gentle check-in,
+and only a much later park (~180s).
+
 `SilenceFloor` is pure (injected clock); `run_silence_floor` polls it with an injected
 sleep; `SilenceObserver` feeds it from Pipecat frames.
 """
@@ -39,6 +45,10 @@ EXAMPLES = {
     "gmail": "Just tap Connect Gmail on your screen, or say \"later\" and we'll do it afterwards.",
 }
 GENERIC_EXAMPLE = "You can say something like \"let's keep going\" whenever you're ready."
+GMAIL_WAIT = "Take your time, I'll wait while you connect Gmail."
+GMAIL_CHECKIN = ("Still with me? No rush. Finish connecting Gmail when you're ready, "
+                 "or say \"later\" and we'll do it afterwards.")
+WAIT_NODES = ("gmail",)   # nodes where the caller is off doing something (OAuth popup)
 PARK_LINE = ("No worries, sounds like now isn't a great time. Everything so far is saved, "
              "so you can pick up by typing in the chat. Bye for now!")
 
@@ -49,6 +59,15 @@ class SilencePolicy:
     example_s: float = 15.0
     park_s: float = 23.0
     poll_s: float = 0.25
+    # Gmail node (OAuth popup open): one "take your time", one late check-in, a late park.
+    wait_nudge_s: float = 10.0
+    wait_example_s: float = 75.0
+    wait_park_s: float = 180.0
+
+    def ladder(self, node: Optional[str] = None) -> tuple[float, float, float]:
+        if node in WAIT_NODES:
+            return self.wait_nudge_s, self.wait_example_s, self.wait_park_s
+        return self.nudge_s, self.example_s, self.park_s
 
     @classmethod
     def from_env(cls, env: Optional[Mapping[str, str]] = None) -> "SilencePolicy":
@@ -64,6 +83,8 @@ def silence_line(spec: FlowSpec, node: Optional[str], action: str) -> str:
     """Spoken line for `action` at `node` (unknown node -> generic line)."""
     if action == PARK:
         return PARK_LINE
+    if node in WAIT_NODES:
+        return GMAIL_WAIT if action == NUDGE else GMAIL_CHECKIN
     n = spec.nodes.get(node or "", {})
     slot = n.get("slot") if n.get("kind") == "collect" else None
     if action == NUDGE:
@@ -103,13 +124,13 @@ class SilenceFloor:
             self._since = self._clock()     # the question just ended: the caller's turn starts now
         self._bot = speaking
 
-    def due(self) -> Optional[str]:
-        """The action due now, if any (advances the ladder)."""
+    def due(self, node: Optional[str] = None) -> Optional[str]:
+        """The action due now at `node`, if any (advances the ladder)."""
         if not self.armed or self._bot or self._user or self.stage >= 3:
             return None
         quiet = self._clock() - self._since
-        p = self.policy
-        for stage, (at, action) in enumerate(((p.nudge_s, NUDGE), (p.example_s, EXAMPLE), (p.park_s, PARK))):
+        nudge, example, park = self.policy.ladder(node)
+        for stage, (at, action) in enumerate(((nudge, NUDGE), (example, EXAMPLE), (park, PARK))):
             if self.stage == stage and quiet >= at:
                 self.stage = stage + 1
                 return action
@@ -118,11 +139,12 @@ class SilenceFloor:
 
 async def run_silence_floor(floor: SilenceFloor, *, speak: Callable[[str], Awaitable[None]],
                             park: Callable[[str], Awaitable[None]], line: Callable[[str], str],
-                            sleep: Callable[[float], Awaitable[None]]) -> None:
+                            sleep: Callable[[float], Awaitable[None]],
+                            node: Callable[[], Optional[str]] = lambda: None) -> None:
     """Poll the floor; speak nudges; on park, hand the goodbye to `park` and stop."""
     while True:
         await sleep(floor.policy.poll_s)
-        action = floor.due()
+        action = floor.due(node())
         if action == PARK:
             floor.stop()
             await park(line(PARK))

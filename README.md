@@ -5,6 +5,10 @@
 **Reviewers, start here: [`docs/REVIEWER.md`](docs/REVIEWER.md)** (5-minute happy path, Gmail
 test-user note, what's cut, caveats). Walkthrough script: [`docs/WALKTHROUGH.md`](docs/WALKTHROUGH.md).
 
+**Start over / `?reset=1`:** the session is kept in a cookie, so a reload resumes it. Use the
+**Start over** button in the header (with a confirm step) or open `/?reset=1` to begin a fresh
+onboarding.
+
 > Gmail connect uses Google OAuth in **testing mode**: only invited Google accounts can connect;
 > choose *Continue* on the "unverified app" notice and tick the Gmail boxes (or *Select all*).
 

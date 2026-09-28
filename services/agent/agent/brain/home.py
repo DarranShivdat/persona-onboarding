@@ -16,6 +16,16 @@ request gets an honest "can't do that yet" (no fabricated inbox facts, nothing "
 The plan it returns uses the engine's `ResponsePlan` with `say=["home"]`; `respond_to`
 carries the home reply kinds (HOME_KINDS) for the phrasing layer's HOME_* templates.
 A prompt-injection turn changes nothing (state returned as given).
+
+Live test 2026-09-28 (HOME-002):
+  - "change my name" (no value) asks "What should I call you?" and waits; the next message is
+    the new value. The wait is kept in `state.explained` as a `home:` entry (no schema change).
+  - "my name is Darrran not darren": the "not ..." part is dropped, and a name with a tripled
+    letter is read back for a spelling check ("did you mean Darran?") before it is saved.
+  - Model-extracted values must appear in what the user typed: a bare "change my name" can no
+    longer re-save every slot from context (the "Thanks, Darran it is. Okay, jarvis it is. ..."
+    burst).
+  - Simple arithmetic gets a short answer; other off-topic asks get a natural scoped redirect.
 """
 from __future__ import annotations
 
@@ -31,7 +41,8 @@ HOME = "home"
 EDITABLE = ("agent_name", "user_name", "need")
 # Reply kinds (plan.respond_to) the phrasing layer turns into HOME_* templates.
 HOME_KINDS = ("prompt_injection", "privacy_question", "home_capability", "home_task", "home_offer_gmail",
-              "home_need_added", "home_chat")
+              "home_need_added", "home_chat", "home_ask_user_name", "home_ask_agent_name", "home_ask_need",
+              "home_confirm_spelling", "home_math", "home_off_topic", "home_cancelled")
 # Validator outcomes that need a yes/no during onboarding are refused on home (no pending
 # confirm state after graduation): the user just picks another value.
 _CONFIRM_REASON = "needs_confirm"
@@ -57,6 +68,29 @@ _CAPABILITY = re.compile(r"\b(what (can|will|do|would) you|how (do|does|will) (y
 _TASK = re.compile(r"\b(check|read|send|reply|draft|write|schedule|book|remind|summari[sz]e|sort|archive|delete|forward|"
                    r"clean up|unsubscribe|find|look up|email|inbox|calendar|meeting)\b", re.I)
 _GMAIL = re.compile(r"\b(gmail|inbox|email|mail)\b", re.I)
+# "change my name" with no value: ask for it, then wait for the next message.
+_ASK_EDIT = (
+    ("user_name", re.compile(
+        r"^(?:(?:can|could|may) i\s+|i\s+(?:want|need|would like|'d like)\s+to\s+|i wanna\s+|let me\s+|let's\s+|please\s+)?"
+        r"(?:change|update|fix|correct|edit|rename)\s+my\s+name(?:\s+please)?[.!?]*$|"
+        r"^(?:that's|thats|that is)\s+not\s+my\s+name[.!?]*$|^you\s+(?:got|spelled|have)\s+my\s+name\s+wrong[.!?]*$", re.I)),
+    ("agent_name", re.compile(
+        r"^(?:(?:can|could|may) i\s+|i\s+(?:want|need|would like|'d like)\s+to\s+|i wanna\s+|let me\s+|please\s+)?"
+        r"(?:change|update|edit)\s+your\s+name(?:\s+please)?[.!?]*$|^(?:can i\s+)?rename\s+you(?:rself)?[.!?]*$", re.I)),
+    ("need", re.compile(
+        r"^(?:(?:can|could|may) i\s+|i\s+(?:want|need|would like|'d like)\s+to\s+|let me\s+|please\s+)?"
+        r"(?:change|update|edit)\s+(?:my need|what i (?:need|want)(?:\s+help with)?)[.!?]*$", re.I)),
+)
+_NOT_TAIL = re.compile(r"\s*,?\s+(?:not|instead of|rather than)\s+\S.*$", re.I)
+_TRIPLED = re.compile(r"([a-z])\1\1+", re.I)
+_YES = re.compile(r"^(?:y|yes|yeah|yep|yup|correct|right|that's right|thats right|exactly|sure|ok|okay|perfect)\b[.! ]*", re.I)
+_NO = re.compile(r"^(?:n|no|nope|nah|not quite|wrong)\b[.!, ]*", re.I)
+_CANCEL = re.compile(r"^(?:never ?mind|nvm|cancel|forget it|skip it|no thanks|leave it)[.! ]*$", re.I)
+_VALUE_LEAD = re.compile(r"^(?:it's|it is|its|call me|my name is|my name's|i'm|im|i am|call yourself|you're|youre|"
+                         r"i want help with|help with|i need help with)\s+", re.I)
+_MATH = re.compile(r"^\s*(?:what'?s|whats|what is|calculate|how much is|compute)?\s*(-?\d{1,9}(?:\.\d{1,4})?)\s*"
+                   r"([-+*/x×÷]|plus|minus|times|divided by)\s*(-?\d{1,9}(?:\.\d{1,4})?)\s*[?.!=]*\s*$", re.I)
+PENDING = "home:"   # `state.explained` entry prefix for a home turn that is waiting on the user
 
 
 def home_extract(utterance: str) -> tuple[dict[str, str], bool]:
@@ -67,8 +101,60 @@ def home_extract(utterance: str) -> tuple[dict[str, str], bool]:
     for slot, rx in (("user_name", _USER_EDIT), ("agent_name", _AGENT_EDIT), ("need", _NEED_EDIT)):
         m = rx.match(text)
         if m:
-            return {slot: m.groups()[-1].strip()}, True
+            value = m.groups()[-1].strip()
+            if slot != "need":
+                value = _NOT_TAIL.sub("", value).strip()   # "Darran not Darren" -> "Darran"
+            return {slot: value}, True
     return {}, False
+
+
+def pending(st: SessionState) -> Optional[list[str]]:
+    """What a home turn is waiting on: ["ask", slot] or ["spell", slot, typed, suggestion]."""
+    for e in st.explained:
+        if e.startswith(PENDING):
+            return e[len(PENDING):].split("|")
+    return None
+
+
+def _set_pending(st: SessionState, *parts: str) -> None:
+    st.explained = [e for e in st.explained if not e.startswith(PENDING)]
+    if parts:
+        st.explained.append(PENDING + "|".join(p.replace("|", " ") for p in parts))
+
+
+def spelling_suggestion(value: str) -> Optional[str]:
+    """"Darrran" -> "Darran" (a tripled letter is almost always a typo); None when unambiguous."""
+    fixed = _TRIPLED.sub(lambda m: m.group(1) * 2, value or "")
+    return fixed if fixed != value else None
+
+
+def _grounded(slot: str, value: str, text: str) -> bool:
+    """A model-extracted value must come from what the user said (not from context)."""
+    v, t = (value or "").strip().lower(), text.lower()
+    if not v:
+        return False
+    if slot == "need":
+        words = re.findall(r"[a-z']{4,}", v)
+        return not words or any(w in t for w in words)
+    return v in t or v.replace(" ", "") in t.replace(" ", "")
+
+
+def _math(text: str) -> Optional[str]:
+    m = _MATH.match(text or "")
+    if not m:
+        return None
+    a, op, b = float(m.group(1)), m.group(2).lower(), float(m.group(3))
+    sym = {"x": "×", "*": "×", "times": "×", "plus": "+", "minus": "-", "divided by": "÷", "/": "÷"}.get(op, op)
+    if sym == "÷" and b == 0:
+        return None
+    r = {"+": a + b, "-": a - b, "×": a * b, "÷": a / b if b else 0}[sym]
+    fmt = lambda n: str(int(n)) if float(n).is_integer() else f"{n:.4g}"  # noqa: E731
+    return f"{fmt(a)} {sym} {fmt(b)} is {fmt(r)}."
+
+
+def _value_from(text: str) -> str:
+    v = _VALUE_LEAD.sub("", text.strip()).strip().rstrip(".!?").strip()
+    return v.strip("\"'“”")
 
 
 def _deferred(spec: FlowSpec, st: SessionState) -> list[str]:
@@ -93,12 +179,40 @@ def apply_home(spec: FlowSpec, state: SessionState, turn):
         plan.deferred = list(state.deferred_prompts)
         return TurnResult(copy.deepcopy(state), plan, ev)
 
-    slots = {k: v for k, v in x.slots.items() if v}
+    wait = pending(st)
+    if text:
+        _set_pending(st)   # any typed/spoken turn resolves (or abandons) what we were waiting on
+    slots = {k: v for k, v in x.slots.items() if v and (not text or k == "gmail" or _grounded(k, v, text))}
     floor, floor_edit = home_extract(text)
     for k, v in floor.items():
-        slots.setdefault(k, v)
+        slots[k] = v if k != "need" or k not in slots else slots[k]
     editing = "change_answer" in intents or floor_edit
     also = bool(_ALSO.search(text))
+
+    if wait and text:
+        if _CANCEL.match(text):
+            plan.respond_to.append("home_cancelled")
+            return _done(spec, st, plan, ev)
+        if wait[0] == "spell" and len(wait) == 4:
+            slot, typed, suggestion = wait[1], wait[2], wait[3]
+            if _YES.match(text) and not _grounded(slot, typed, text):
+                slots, editing = {slot: suggestion}, True
+            elif _NO.match(text) and not _value_from(_NO.sub("", text)):
+                _set_pending(st, "ask", slot)
+                plan.respond_to.append(f"home_ask_{slot}")
+                return _done(spec, st, plan, ev)
+            else:
+                slots, editing = {slot: slots.get(slot) or _value_from(_NO.sub("", text)) or typed}, True
+                plan.note = "spelled"   # they chose this spelling: don't ask again
+        elif wait[0] == "ask" and len(wait) == 2 and wait[1] in EDITABLE:
+            slot = wait[1]
+            slots, editing = {slot: slots.get(slot) or floor.get(slot) or _value_from(text)}, True
+    elif text and not slots:
+        for slot, rx in _ASK_EDIT:
+            if rx.match(text):
+                _set_pending(st, "ask", slot)
+                plan.respond_to.append(f"home_ask_{slot}")
+                return _done(spec, st, plan, ev)
 
     for name in EDITABLE:
         raw = slots.get(name)
@@ -108,7 +222,17 @@ def apply_home(spec: FlowSpec, state: SessionState, turn):
         _gmail(spec, st, slots["gmail"], turn, plan, ev)
 
     if not (plan.changed or plan.acknowledge or plan.rejected or plan.respond_to):
-        plan.respond_to.extend(_kinds(st, text, intents))
+        answer = _math(text)
+        if answer:
+            plan.note = answer
+            plan.respond_to.append("home_math")
+        else:
+            plan.respond_to.extend(_kinds(st, text, intents))
+    return _done(spec, st, plan, ev)
+
+
+def _done(spec, st, plan, ev):
+    from .engine import TurnResult
 
     st.deferred_prompts = _deferred(spec, st)
     plan.deferred = list(st.deferred_prompts)
@@ -127,6 +251,15 @@ def _edit(spec, st, name, raw, *, editing, also, turn, plan, ev) -> None:
         return  # a filled answer changes only on an explicit edit
     value = raw
     appended = False
+    text = (turn.utterance or "").strip()
+    if name == "user_name" and text and plan.note != "spelled":
+        suggestion = spelling_suggestion(raw.strip())
+        if suggestion:
+            # Ambiguous spelling ("Darrran"): check before saving anything.
+            _set_pending(st, "spell", name, raw.strip(), suggestion)
+            plan.respond_to.append("home_confirm_spelling")
+            ev.append({"type": "spelling_check", "slot": name, "typed": raw.strip(), "suggestion": suggestion})
+            return
     if name == "need" and was_filled and also:
         add = re.sub(r"^\s*(also|too)\s+", "", raw.strip(), flags=re.I).strip().rstrip(".")
         if add.lower() in (sv.value or "").lower():
@@ -175,8 +308,10 @@ def _kinds(st: SessionState, text: str, intents: list[str]) -> list[str]:
         return ["privacy_question"]
     if _CAPABILITY.search(text):
         out = ["home_capability"]
-    elif _TASK.search(text) or "off_topic" in intents:
+    elif _TASK.search(text):
         out = ["home_task"]
+    elif "off_topic" in intents:
+        out = ["home_off_topic"]
     else:
         out = ["home_chat"]
     if not st.filled("gmail") and (_GMAIL.search(text) or out == ["home_task"]):
