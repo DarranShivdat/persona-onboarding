@@ -96,7 +96,10 @@ class ClaudeTurnLlm:
 
     def phrase(self, *, spec: FlowSpec, state: SessionState, plan: ResponsePlan, channel: Channel) -> str:
         if channel == "voice":
-            text = template_phrase(spec, state, plan)
+            # Live 2026-09-28: the chat showed "Just to confirm, Darran? (yes/no)" while the call
+            # said the read-back. The chat transcript is now the spoken line itself.
+            from ..voice.flows import voice_line
+            text = voice_line(spec, plan, state)
         else:
             text = self._react_then_ask(plan, state)
         if state.session_id:
@@ -118,11 +121,12 @@ class ClaudeTurnLlm:
         if "greet" in plan.say:
             return " ".join([T.GREET, *tail]).strip()
         has_reaction = bool(plan.acknowledge or plan.changed or plan.rejected or plan.respond_to
-                            or plan.skipped)
+                            or plan.skipped or plan.answer)
         reaction = ""
         fixed = [i for i in plan.respond_to if i in _TEMPLATED_RESPONSES]
         if has_reaction and fixed_copy_only(plan, state):
-            # HONEST-001: the need step is fixed copy only (no model reaction at all).
+            # HONEST-001 / VQA-001: the need step and every question are fixed copy only
+            # (the approved answer or the fixed deflection; no model reaction at all).
             reaction = template_reply(self.spec, _reaction_only(plan), state, "text", critical=True)
         elif fixed and not (plan.acknowledge or plan.changed):
             # Privacy / injection / language answers are policy text: templated, never paraphrased.

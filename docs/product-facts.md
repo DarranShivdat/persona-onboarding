@@ -12,6 +12,13 @@ Status: DRAFT — Darran to approve (D-class). Updated 2026-09-26 with Darran's 
 - Do NOT state prices, ship dates, funding, company certifications (e.g. SOC 2), or
   encryption claims about Persona's production service — this trial build is separate.
 
+## This setup (trial onboarding; restates flow.yaml — added 2026-09-28 for VQA-001 text answers)
+- This trial covers setup only, so it doesn't carry out tasks yet.
+- Setup is a few quick questions: what to call your assistant, your name, one thing you'd
+  like help with, and connecting Gmail.
+- You can skip any question and finish it later from the main screen.
+- You don't need to call: typing works just as well, and a quick call is optional.
+
 ## Gmail connection (this trial build)
 - Gmail connects through Google sign-in (OAuth); the assistant never sees your password.
 - Persona asks for **read and write** access to Gmail, because most of what it does for

@@ -84,16 +84,27 @@ RESPOND = {
 }
 REASK = "Sorry, I missed that."
 
-# VQA-001: a caller's question on the call is answered from THIS table only. The voice
-# extraction call picks an id (enum, like a Penciled categorize bucket); code speaks the
-# line and then the node's ask. Every line restates docs/product-facts.md (the approved
-# facts the text chat's answers are limited to) and passes the output guard
-# (tests/test_voice_questions.py). No id -> RESPOND["off_topic"]. Never model-written.
-VOICE_ANSWERS: dict[str, tuple[str, str]] = {  # id: (what it answers, spoken line)
+# VQA-001: a user's question, on the call AND in the text chat (at every collecting node), is
+# answered from THIS table only. The extraction call picks an id (enum, like a Penciled
+# categorize bucket) or none; code says the line verbatim and then the node's ask. Every
+# line restates docs/product-facts.md (the only approved facts), makes no capability
+# promise, and passes the output guard (tests/test_voice_polish.py, test_text_answers.py).
+# No id -> the fixed deflection RESPOND["off_topic"]. Never model-written.
+APPROVED_ANSWERS: dict[str, tuple[str, str]] = {  # id: (what it answers, line said verbatim)
     "what_is_persona": (
-        "what Persona is or what it can help with",
-        "Persona's a personal AI assistant: you text it, and it helps with your email, calendar, "
-        "and everyday tasks."),
+        "who or what it is, what Persona is, or what it can do",
+        "Persona's a personal AI assistant that helps with your email, calendar, and everyday "
+        "tasks. This trial covers setup only, so it doesn't carry out tasks yet."),
+    "setup_length": (
+        "how long setup takes or how many questions are left",
+        "Setup is a few quick questions: what to call your assistant, your name, one thing you'd "
+        "like help with, and connecting Gmail."),
+    "can_skip": (
+        "whether they can skip a question or do it later",
+        "You can skip any question and finish it later from the main screen."),
+    "need_to_call": (
+        "whether they need to call or can just type",
+        "You don't need to call: typing works just as well, and a quick call is optional."),
     "asks_before_acting": (
         "whether it acts on its own or asks first",
         "Persona asks for your OK before it acts on your behalf."),
@@ -104,11 +115,11 @@ VOICE_ANSWERS: dict[str, tuple[str, str]] = {  # id: (what it answers, spoken li
         "whether it sees their password, or how Gmail connects",
         "Gmail connects through Google sign-in, so your assistant never sees your password."),
     "gmail_access": (
-        "why it wants read and write Gmail access, or what it does with email",
+        "why it wants Gmail or read and write access, or what it does with email",
         "It asks for read and write access so it can read your email, organize it, and send "
         "email for you, only after you say OK."),
     "nothing_without_ok": (
-        "whether it will send or change email without asking",
+        "whether their email is safe, or whether it will send or change email without asking",
         "Nothing is sent or changed in your inbox without your explicit OK."),
     "gmail_testing": (
         "the unverified app notice, testing mode, or who can connect",
@@ -122,12 +133,25 @@ VOICE_ANSWERS: dict[str, tuple[str, str]] = {  # id: (what it answers, spoken li
         "whether the call is recorded or what happens to their voice",
         "Speech providers process the call to run the conversation, and call audio is not saved."),
     "data_retention": (
-        "how long their data is kept",
+        "privacy, or how long their data is kept",
         "Setup conversations are kept no longer than 30 days after your last activity."),
     "contact": (
         "who to contact with questions or deletion requests",
         "For questions or deletion requests, email darranshivdat1 at gmail dot com."),
 }
+VOICE_ANSWERS = APPROVED_ANSWERS  # the call's name for the same table (VQA-001)
+
+
+def with_answer(line: str, answer: Optional[str]) -> str:
+    """Put an approved answer where the generic question reply sits (or first); the node's
+    ask that follows is kept, so setup keeps moving. Idempotent."""
+    if not answer or not line or answer in line:
+        return line or (answer or "")
+    for generic in (RESPOND["off_topic"], RESPOND["privacy_question"]):
+        if generic in line:
+            return line.replace(generic, answer, 1)
+    return f"{answer} {line}"
+
 
 NATO = {
     "a": "Alpha", "b": "Bravo", "c": "Charlie", "d": "Delta", "e": "Echo", "f": "Foxtrot",

@@ -52,6 +52,9 @@ class FakeLlm:
         return naive_extract(spec, state, utterance)
 
     def phrase(self, *, spec: FlowSpec, state: SessionState, plan: ResponsePlan, channel: Channel) -> str:
+        if channel == "voice" and not is_home(plan):
+            from ..voice.flows import voice_line  # the chat shows exactly what the call says
+            return voice_line(spec, plan, state)
         return template_phrase(spec, state, plan)
 
 
@@ -80,7 +83,11 @@ def template_phrase(spec: FlowSpec, state: SessionState, plan: ResponsePlan) -> 
         out.append(T.GREET)  # copy.md A-01
     elif plan.resume:
         out.append("Let's pick up where we left off.")
-    if plan.respond_to:
+    from ..llm.phrase import plan_answer
+    ans = plan_answer(spec, plan)
+    if ans:
+        out.append(ans)  # VQA-001: the approved answer, verbatim
+    elif plan.respond_to:
         out.append("Good question — happy to get into that once we're set up.")
     for s in plan.acknowledge:
         out.append(T.slot_ack(state, s))
@@ -89,7 +96,7 @@ def template_phrase(spec: FlowSpec, state: SessionState, plan: ResponsePlan) -> 
     for s, reason in plan.rejected.items():
         out.append(T.REJECTED.get(reason, f"Hmm, that didn't work for your {s.replace('_', ' ')}."))
     if plan.confirm:
-        out.append(f"Just to confirm, {state.slots[plan.confirm].value}? (yes/no)")
+        out.append(T.confirm_line(plan.confirm, state.slots[plan.confirm].value, "text"))
     elif plan.offer_call:
         out.append(T.OFFER_CALL)
     elif plan.ask:

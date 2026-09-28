@@ -47,6 +47,7 @@ class Extraction:
     slots: dict[str, Optional[str]] = field(default_factory=dict)
     confidences: dict[str, float] = field(default_factory=dict)
     intents: list[str] = field(default_factory=list)
+    answer: Optional[str] = None                           # VQA-001: approved-answer id (or None)
 
 
 @dataclass
@@ -81,6 +82,7 @@ class ResponsePlan:
     push_ui: list[str] = field(default_factory=list)       # e.g. ["gmail_connect_card"]
     graduate: bool = False
     note: Optional[str] = None                             # home: a computed answer (e.g. "5 + 5 is 10")
+    answer: Optional[str] = None                           # VQA-001: approved-answer id to say verbatim
 
 
 @dataclass
@@ -112,6 +114,7 @@ def apply(spec: FlowSpec, state: SessionState, turn: Turn) -> TurnResult:
         return _apply_event(spec, st, turn, plan, ev)
 
     intents = [i for i in turn.extraction.intents if i in spec.intents]
+    intents = _explicit_yes(st, turn, intents, ev)
     intents = _accept_intents(spec, st.node, turn.channel, intents, ev)
     ev.extend({"type": "intent", "intent": i} for i in intents)
     if "prompt_injection" in intents:
@@ -126,7 +129,9 @@ def apply(spec: FlowSpec, state: SessionState, turn: Turn) -> TurnResult:
     confirm_handled = _resolve_confirms(spec, st, touched, intents, plan, ev)
     confirm_handled = _reopen_name(spec, st, turn, intents, touched, plan, ev) or confirm_handled
 
-    if "noise_or_fragment" in intents and not touched and not confirm_handled:
+    answered = bool(turn.extraction.answer)
+    plan.answer = turn.extraction.answer if answered else None
+    if "noise_or_fragment" in intents and not touched and not confirm_handled and not answered:
         ev.append({"type": "absorbed", "node": node})
         plan.absorbed = True
         return TurnResult(st, plan, ev)
@@ -143,9 +148,9 @@ def apply(spec: FlowSpec, state: SessionState, turn: Turn) -> TurnResult:
     kind = spec.nodes[node]["kind"]
     if kind == "collect" and not st.resolved(slot) and slot not in touched and not confirm_handled:
         refused = "refuse_slot" in intents
-        if refused or slot in rejected or unsure or not (touched or plan.respond_to):
+        if refused or slot in rejected or unsure or not (touched or plan.respond_to or answered):
             _fail(spec, st, node, refused, plan, ev)
-    elif kind == "choice" and not st.call_offer_resolved and not plan.respond_to:
+    elif kind == "choice" and not st.call_offer_resolved and not (plan.respond_to or answered):
         _fail(spec, st, node, "refuse_slot" in intents, plan, ev)
 
     return _advance(spec, st, turn.channel, plan, ev)
@@ -199,6 +204,13 @@ def _extract(spec, st, turn, intents, plan, ev):
         sv = st.slot(name)
         if res.outcome == "unsure":
             unsure = True
+            continue
+        if (sv.needs_confirm and "affirm" in intents and res.value is not None
+                and _same(res.value, sv.value)):
+            # Live 2026-09-28: "Yes." came back as {user_name: "Darran", intents: [affirm]}; the
+            # re-extracted pending value was treated as a new candidate and read back forever.
+            # The same value next to a yes IS the yes: leave it to _resolve_confirms.
+            ev.append({"type": "confirm_value_repeated", "slot": name})
             continue
         if res.outcome == "reject":
             rejected.add(name)
@@ -264,7 +276,44 @@ def _resolve_confirms(spec, st, touched, intents, plan, ev) -> bool:
         else:
             plan.confirm = name  # still waiting on the yes/no: read it back again
             plan.reconfirm = True
+            if name == NAME_SLOT and "noise_or_fragment" not in intents:
+                # No infinite read-back: every unanswered repeat counts toward the cap.
+                sv.confirm_attempts += 1
+                if sv.confirm_attempts > _name_policy(spec).get("max_attempts", NAME_MAX_ATTEMPTS):
+                    _fill_low_confidence(spec, st, name, plan, ev)
+                    plan.reconfirm = False
+                    handled = True
     return handled
+
+
+# An explicit yes to a read-back, decided in code (punctuation/case-insensitive), so a
+# "Yes." never depends on the extractor tagging `affirm`.
+_YES_WORD = r"(yes|yeah|yea|yep|yup|ya|correct|right|exactly|perfect|affirmative|uh[- ]?huh|mm[- ]?hmm)"
+_YES_TAIL = r"((that'?s|that is|it'?s|it is|you got it|you have it|you('ve| have) got it)( (right|correct|it))?|right|correct|please|it is)"
+_EXPLICIT_YES = re.compile(
+    rf"^\s*({_YES_WORD}( {_YES_WORD})*( {_YES_TAIL})?|(that'?s|that is|it'?s|it is) (right|correct|it)|you got it|spot on)"
+    r"[\s.!,]*$", re.IGNORECASE)
+
+
+def is_explicit_yes(utterance: str) -> bool:
+    text = re.sub(r"[.!,;:]+", " ", (utterance or "").replace("’", "'"))
+    return bool(_EXPLICIT_YES.match(re.sub(r"\s+", " ", text).strip()))
+
+
+def _explicit_yes(st, turn, intents, ev) -> list[str]:
+    """A plain yes while a read-back is pending is `affirm`, whatever the extractor tagged."""
+    if not any(s.needs_confirm for s in st.slots.values()) or not is_explicit_yes(turn.utterance):
+        return intents
+    out = [i for i in intents if i not in ("deny", "change_answer", "noise_or_fragment")]
+    if "affirm" not in out:
+        out.append("affirm")
+        ev.append({"type": "explicit_yes", "utterance": turn.utterance[:40]})
+    return out
+
+
+def _same(a: Optional[str], b: Optional[str]) -> bool:
+    norm = lambda v: re.sub(r"[^a-z]", "", (v or "").lower())  # noqa: E731
+    return bool(norm(a)) and norm(a) == norm(b)
 
 
 def _implicit_yes(name, touched, intents) -> bool:

@@ -19,7 +19,7 @@ from ..brain.validators import AGENT_NAME_SUGGESTIONS
 from ..obs.tracing import NoopTracer, Tracer
 from . import templates as T
 from .client import LLMClient, blocks, field, usage_dict
-from .guard import GuardResult, guard
+from .guard import GuardResult, check as guard_check, guard
 from .models import phrase_model, policy_for
 from .prompts import approved_facts, phrasing_system
 
@@ -80,6 +80,30 @@ def _has_content(brief: dict) -> bool:
                          "gmail_button_on_screen", "end_without_question") for k in brief)
 
 
+_ANSWER_FACTS: dict[int, str] = {}
+
+
+def answer_line(spec: FlowSpec, answer_id: Any) -> Optional[str]:
+    """VQA-001: the approved answer for an extraction's `answer` id, screened by the output
+    guard against the approved facts; None for no/unknown id or a guard miss."""
+    entry = T.APPROVED_ANSWERS.get(answer_id) if isinstance(answer_id, str) else None
+    if entry is None:
+        return None
+    facts = _ANSWER_FACTS.get(id(spec))
+    if facts is None:
+        facts = _ANSWER_FACTS[id(spec)] = approved_facts() + "\n" + "\n".join(d["why"] for d in spec.slots.values())
+    if guard_check(entry[1], allowed=facts) is not None:
+        return None
+    return entry[1]
+
+
+def plan_answer(spec: FlowSpec, plan: ResponsePlan) -> Optional[str]:
+    """The approved answer this plan should say, if any (never next to an injection)."""
+    if not plan.answer or plan.absorbed or plan.graduate or "prompt_injection" in plan.respond_to:
+        return None
+    return answer_line(spec, plan.answer)
+
+
 def template_reply(spec: FlowSpec, plan: ResponsePlan, state: SessionState,
                    channel: Channel, critical: bool) -> str:
     parts: list[str] = []
@@ -95,6 +119,15 @@ def template_reply(spec: FlowSpec, plan: ResponsePlan, state: SessionState,
     parts += [T.REJECTED[r] for r in plan.rejected.values() if r in T.REJECTED]
     if plan.skipped:
         parts.append(T.SKIPPED)
+    ans = plan_answer(spec, plan)
+    if ans:
+        # VQA-001: the approved answer replaces the generic question reply (or goes after the
+        # acks), then the node's ask follows.
+        generic = [p for p in parts if p in (T.RESPOND["off_topic"], T.RESPOND["privacy_question"])]
+        if generic:
+            parts[parts.index(generic[0])] = ans
+        else:
+            parts.append(ans)
     if not critical:
         parts += _ask_parts(spec, plan, channel, state)
     return " ".join(dict.fromkeys(parts))
@@ -106,6 +139,9 @@ def fixed_copy_only(plan: ResponsePlan, state: SessionState) -> bool:
     the flow's fixed copy, whatever the need is, so nothing can claim (or deny) a capability.
     Also the name kept at the read-back cap ("I'll go with ... for now")."""
     if "need" in plan.acknowledge or "need" in plan.changed or "need" in plan.rejected:
+        return True
+    if plan.respond_to or plan.answer:
+        # VQA-001: questions get an approved answer or the fixed deflection, never model text.
         return True
     if plan.ask == "need" or plan.node == "need" or plan.suggest_examples:
         return True

@@ -67,34 +67,12 @@
      "cache_read_input_tokens": 1500
     }
    },
-   "phrase": {
-    "id": "msg_synthetic",
-    "type": "message",
-    "role": "assistant",
-    "model": "synthetic",
-    "stop_reason": "end_turn",
-    "content": [
-     {
-      "type": "text",
-      "text": "{\"record_slots\": {\"gmail\": \"connected\"}}\nI've connected your Gmail! *smiles* Anyway, what would you like to call your assistant?"
-     }
-    ],
-    "usage": {
-     "input_tokens": 120,
-     "output_tokens": 30,
-     "cache_read_input_tokens": 1800
-    }
-   },
+   "phrase": null,
    "expect": {
     "node": "agent_name",
     "filled": [],
     "state_unchanged": true,
-    "reply": "I'll leave that one. Let's keep going with setup. What would you like to call me?",
-    "dropped_reasons": [
-     "tool",
-     "claim:gmail_connected",
-     "stage_direction"
-    ]
+    "reply": "I'll leave that one. Let's keep going with setup. What would you like to call me?"
    }
   },
   {

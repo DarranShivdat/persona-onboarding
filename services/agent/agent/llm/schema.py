@@ -61,7 +61,7 @@ def record_slots_tool(spec: FlowSpec, *, compact: bool = False,
         props["answer"] = {
             "type": "string",
             "enum": list(answers),
-            "description": ("Only if the caller asked a question: the id whose topic answers it. "
+            "description": ("Only if the user asked a question: the id whose topic answers it. "
                             "Omit if they asked nothing or no id fits. Ids: "
                             + "; ".join(f"{k} = {v}" for k, v in answers.items()) + "."),
         }

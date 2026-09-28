@@ -19,6 +19,9 @@ from .client import LLMClient, blocks, field, usage_dict
 from .models import extract_model, policy_for
 from .prompts import extraction_system
 from .schema import TOOL_NAME, record_slots_tool
+from .templates import APPROVED_ANSWERS
+
+APPROVED_ANSWER_IDS = frozenset(APPROVED_ANSWERS)
 
 MAX_SLOT_CHARS = 200
 EXTRACT_MAX_TOKENS = 512
@@ -61,7 +64,8 @@ class Extractor:
         self.policy = policy_for(self.model)
         # Stable prefix: tools render before system, so one breakpoint on the system
         # block caches tools + system together.
-        self._tools = [record_slots_tool(spec)]
+        # VQA-001 on text too: the model may only pick an approved-answer id; code says it.
+        self._tools = [record_slots_tool(spec, answers={k: v[0] for k, v in APPROVED_ANSWERS.items()})]
         self._system = [{"type": "text", "text": extraction_system(spec),
                          "cache_control": {"type": "ephemeral"}}]
 
@@ -162,4 +166,6 @@ def parse(spec: FlowSpec, raw: dict) -> Extraction:
     for i in raw.get("intents") or []:
         if isinstance(i, str) and i in spec.intents and i not in intents:
             intents.append(i)
-    return Extraction(slots=slots, confidences=conf, intents=intents)
+    answer = raw.get("answer")
+    return Extraction(slots=slots, confidences=conf, intents=intents,
+                      answer=answer if isinstance(answer, str) and answer in APPROVED_ANSWER_IDS else None)

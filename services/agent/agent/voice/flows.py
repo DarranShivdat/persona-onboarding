@@ -61,8 +61,7 @@ from ..brain.spec import TERMINAL_NODE, TOOL_REGISTRY, FlowSpec
 from ..brain.state import SessionState
 from ..llm import templates as T
 from ..llm.extract import parse
-from ..llm.guard import check as guard_check
-from ..llm.phrase import build_brief, critical_lines, template_reply
+from ..llm.phrase import answer_line, build_brief, critical_lines, template_reply
 from ..llm.prompts import approved_facts
 from ..llm.schema import TOOL_NAME, record_slots_tool
 from ..obs.tracing import NoopTracer, Tracer
@@ -332,7 +331,7 @@ class VoiceFlow:
         self.last: Optional[VoiceTurn] = None
         # LAT-001/003: compact (~1/3 the output tokens); VQA-001: + the approved-answer enum.
         self._tool = record_slots_tool(spec, compact=True,
-                                       answers={k: v[0] for k, v in T.VOICE_ANSWERS.items()})
+                                       answers={k: v[0] for k, v in T.APPROVED_ANSWERS.items()})
         self._graduated_said = False
         self._ctx_seen = 0                             # context messages already handled as turns
         self.stt_confidence: Optional[float] = None   # last final transcript's STT confidence
@@ -436,15 +435,10 @@ class VoiceFlow:
     def answer_line(self, answer_id: Any) -> Optional[str]:
         """VQA-001: the approved spoken answer for an extraction's `answer` id, screened by the
         same output guard as every spoken sentence; None for no/unknown id or a guard miss."""
-        entry = T.VOICE_ANSWERS.get(answer_id) if isinstance(answer_id, str) else None
-        if entry is None:
-            return None
-        if self._facts is None:
-            self._facts = approved_facts() + "\n" + "\n".join(d["why"] for d in self.spec.slots.values())
-        if guard_check(entry[1], allowed=self._facts) is not None:
+        line = answer_line(self.spec, answer_id)
+        if line is None and isinstance(answer_id, str) and answer_id in T.APPROVED_ANSWERS:
             logger.warning(f"voice answer {answer_id!r} failed the output guard; using the default")
-            return None
-        return entry[1]
+        return line
 
     def _with_answer(self, vt: VoiceTurn, answer_id: Any) -> VoiceTurn:
         """Put the approved answer where the brain's generic question reply sits (or first):
@@ -453,11 +447,7 @@ class VoiceFlow:
         plan = vt.plan
         if not line or not vt.line or plan.absorbed or plan.graduate or "prompt_injection" in plan.respond_to:
             return vt
-        for generic in (T.RESPOND["off_topic"], T.RESPOND["privacy_question"]):
-            if generic in vt.line:
-                vt.line = vt.line.replace(generic, line, 1)
-                return vt
-        vt.line = f"{line} {vt.line}"
+        vt.line = T.with_answer(vt.line, line)   # idempotent: the brain's line may already carry it
         return vt
 
     async def handle_record_slots(self, args: dict, flow_manager: Any = None) -> tuple[dict, "NodeConfig"]:
