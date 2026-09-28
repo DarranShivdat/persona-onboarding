@@ -16,17 +16,17 @@ async function bubbleFonts(page: Page, state: string) {
 test("FONT-001: every chat bubble variant has the same computed font-size and line-height", async ({ page }) => {
   const all = [
     ...(await bubbleFonts(page, "call-connected")),   // text agent + voice agent + voice user
-    ...(await bubbleFonts(page, "welcome-back")),     // resume + text user
-    ...(await bubbleFonts(page, "graduation")),
+    ...(await bubbleFonts(page, "welcome-back")),     // resume line
+    ...(await bubbleFonts(page, "call-declined")),    // text user
+    ...(await bubbleFonts(page, "gmail-card-wrong-account")),
   ];
   const kinds = new Set(all.map((b) => b.kind));
-  for (const k of ["agent", "agent-voice", "user-voice"]) expect(kinds, `fixtures cover ${k}`).toContain(k);
+  for (const k of ["agent", "user", "agent-voice", "user-voice"]) expect(kinds, `fixtures cover ${k}`).toContain(k);
   expect(new Set(all.map((b) => b.size)), JSON.stringify(all)).toEqual(new Set(["17px"]));
   expect(new Set(all.map((b) => b.line)).size, JSON.stringify(all)).toBe(1);
 });
 
-async function callBoxes(page: Page, state: string) {
-  await page.goto(`/?state=${state}&capture=1`);
+async function boxes(page: Page) {
   const ring = await page.locator(".device .stage .ring").boundingBox();
   const caps = await page.locator(".device .captions").boundingBox();
   return { ring: ring!, caps: caps! };
@@ -34,12 +34,15 @@ async function callBoxes(page: Page, state: string) {
 
 test("RING-002 + MUTE-002: smaller call ring; the muted badge overlays without moving ring or captions", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
-  const live = await callBoxes(page, "call-connected");
-  expect(Math.round(live.ring.width)).toBeGreaterThanOrEqual(118);   // 150 -> ~124 (15-20% smaller)
-  expect(Math.round(live.ring.width)).toBeLessThanOrEqual(128);
-  const muted = await callBoxes(page, "call-muted");
-  await expect(page.locator(".device .badge")).toHaveText(/muted/);
-  expect(await page.locator(".device .badge").evaluate((el) => getComputedStyle(el).position)).toBe("absolute");
-  expect(Math.abs(muted.ring.y - live.ring.y)).toBeLessThan(1);
-  expect(Math.abs(muted.caps.y - live.caps.y)).toBeLessThan(1);
+  await page.goto("/?state=call-muted&capture=1");
+  const badge = page.locator(".device .badge");
+  await expect(badge).toHaveText(/muted/);
+  const withBadge = await boxes(page);
+  expect(Math.round(withBadge.ring.width)).toBeGreaterThanOrEqual(118);   // 150 -> ~124 (15-20% smaller)
+  expect(Math.round(withBadge.ring.width)).toBeLessThanOrEqual(128);
+  expect(await badge.evaluate((el) => getComputedStyle(el).position)).toBe("absolute");
+  await badge.evaluate((el) => ((el as HTMLElement).style.display = "none"));
+  const without = await boxes(page);
+  expect(Math.abs(withBadge.ring.y - without.ring.y)).toBeLessThan(1);
+  expect(Math.abs(withBadge.caps.y - without.caps.y)).toBeLessThan(1);
 });

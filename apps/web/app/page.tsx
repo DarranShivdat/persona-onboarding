@@ -21,5 +21,5 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
     return <App key={initial} initialState={initial} capture={sp.capture === "1"} />;
   }
   const state = await loadState(decodeSession((await cookies()).get(SESSION_COOKIE)?.value));
-  return <App key="live" initialState="landing" capture={false} live={{ state }} />;
+  return <App key="live" initialState="landing" capture={false} live={{ state, begin: sp.fresh === "1" }} />;
 }

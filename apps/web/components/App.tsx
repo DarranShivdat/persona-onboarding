@@ -15,6 +15,8 @@ import { Checklist, Notice, TopBar } from "./TopBar";
 /** Live mode: the real agent session resolved server-side from the httpOnly cookie. */
 export interface LiveBoot {
   state: AgentState | null;
+  /** RESET-002: arrived from Start over; begin a fresh session right away (no landing hero). */
+  begin?: boolean;
 }
 
 /** Renders whatever the driver's snapshot says. No transition logic lives here. */
@@ -41,6 +43,15 @@ export function App({ initialState, capture, live }: { initialState: StateName; 
   }, [driver]);
   useEffect(() => () => driver.close(), [driver]);
 
+  // RESET-002: after Start over, create the fresh session now (the reset itself never waits on it).
+  const [booting, setBooting] = useState(() => !!live?.begin && !live.state);
+  useEffect(() => {
+    if (!booting) return;
+    window.history.replaceState(null, "", "/");
+    void driver.act("begin").finally(() => setBooting(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [driver]);
+
   // "Keep typing" collapses the ended panel (layout only); a new call shows it again.
   const callStatus = snap.call?.status;
   useEffect(() => {
@@ -55,6 +66,14 @@ export function App({ initialState, capture, live }: { initialState: StateName; 
     void driver.startCall();
   };
 
+  if (snap.surface === "landing" && booting && !snap.notice) {
+    // RESET-002: Start over lands here with no session; the new one is being created lazily.
+    return (
+      <div className="app" data-surface="starting" aria-busy="true">
+        <TopBar />
+      </div>
+    );
+  }
   if (snap.surface === "landing") {
     return (
       <div className="app" data-surface="landing">

@@ -224,20 +224,24 @@ export const START_OVER_CANCEL: Expectation = {
 };
 const START_OVER_FULL: Expectation = {
   match: "button:Start over @header",
-  expected: "Cancel keeps the session; confirm -> GET /api/session/reset expires the cookie and 303s to the landing step in < 1 s (the new session starts on the first message)",
+  expected: "Cancel keeps the session; confirm -> GET /api/session/reset only expires the cookie (< 1 s) and the page starts a fresh session at the agent_name step",
   run: async (ctl, ctx) => {
+    const before = (await ctx.context.cookies()).find((c) => c.name === "persona_session")?.value;
     const first = await openStartOver(ctl, ctx);
     await first.getByRole("button", { name: "Cancel" }).click();
     await expect(first).toHaveCount(0);
     const dlg = await openStartOver(ctl, ctx);
+    const reset = ctx.page.waitForResponse((r) => new URL(r.url()).pathname === "/api/session/reset");
     const t0 = Date.now();
     await dlg.getByRole("button", { name: "Yes, start over" }).click();
-    await expect(ctx.page.locator('[data-surface="landing"]')).toBeVisible({ timeout: 30_000 });
-    const ms = Date.now() - t0;
-    expect(ms, `Start over took ${ms} ms`).toBeLessThan(1000);
-    await expect(ctx.page.locator('[data-from="user"]')).toHaveCount(0);
+    expect((await reset).status()).toBe(303);
+    const resetMs = Date.now() - t0;
+    expect(resetMs, `reset answered in ${resetMs} ms`).toBeLessThan(1000);
+    await expect(thread(ctx.page).locator('[data-from="agent"]').first()).toBeVisible({ timeout: 30_000 });
+    await expect(thread(ctx.page).locator('[data-from="user"]')).toHaveCount(0);
+    await expect(ctx.page.locator('[data-testid^="checklist-"]:visible [data-slot="agent_name"]')).toHaveAttribute("aria-label", "Assistant name: Not yet");
     const after = (await ctx.context.cookies()).find((c) => c.name === "persona_session")?.value;
-    expect(after).toBeFalsy();
+    expect(after && after !== before).toBeTruthy();
   },
 };
 

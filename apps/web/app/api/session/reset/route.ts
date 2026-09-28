@@ -4,7 +4,8 @@
 // created lazily by the landing page on the first message (ApiSessionDriver.begin); the old
 // session row is left as-is (resuming it needs the cookie, which is gone). An active call is
 // hung up by the page (StartOver dispatches `persona:start-over`; pagehide backs it up).
-//   GET  /api/session/reset        -> 303 to "/" (Start over button + `/?reset=1`)
+//   GET  /api/session/reset        -> 303 to "/?fresh=1" (Start over button + `/?reset=1`); the page
+//                                     then begins the new session client-side (agent_name step)
 //   POST /api/session/reset        -> { ok } (JSON)
 import { type NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, cookieOptions, isHttps } from "@/lib/session/server";
@@ -22,5 +23,5 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  return expire(req, NextResponse.redirect(new URL("/", req.url), 303));
+  return expire(req, NextResponse.redirect(new URL("/?fresh=1", req.url), 303));
 }
