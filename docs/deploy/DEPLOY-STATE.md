@@ -5,7 +5,7 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **IN PROGRESS — step 3/6 Vercel web deploying; Fly redeploy in flight (owner EM executor)** |
+| STATE | **IN PROGRESS — step 4-5/6 set Vercel env + redeploy (owner EM executor)** |
 | OWNER | EM executor (claimed Sun Sep 27 8:34pm PT; re-claimed 10:36pm PT) — reconcile: do NOT `--apply` |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
@@ -41,3 +41,4 @@ Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a
 - Sun 10:36PM PT — fly auth ok (personal org); running fly-agent.sh --apply (sjc, --ha=false)
 - Sun 10:43PM PT — Fly app created (sjc, 1 machine), /health ok db ok; call path ImportError libxcb → Dockerfile fix, redeploying
 - Sun 10:43PM PT — vercel-web.sh --apply (project persona-onboarding-darran, root apps/web)
+- Sun 10:44PM PT — Vercel web live at persona-onboarding-darran.vercel.app (/, /about, /privacy 200); setting GOOGLE_OAUTH_REDIRECT_URL + redeploy
