@@ -5,8 +5,8 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **BLOCKED** (not started — nothing created in Supabase/Fly/Vercel) |
-| OWNER | EM executor (claimed Sun Sep 27 8:34pm PT) |
+| STATE | **IN PROGRESS — step 1/6 Supabase migration running (owner EM executor)** |
+| OWNER | EM executor (claimed Sun Sep 27 8:34pm PT; re-claimed 10:36pm PT) — reconcile: do NOT `--apply` |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
 ## Env files (gitignored, mode 600, values never committed/printed)
@@ -14,21 +14,11 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 - `.persona-deploy/web.env` (read by vercel-web.sh) = `apps/web/.env.local`
 - Blank until first deploy: `PERSONA_AGENT_BASE_URL`, `GOOGLE_OAUTH_REDIRECT_URL`.
 
-## Key verification (Sun 9:51pm PT)
-Anthropic PASS · Deepgram PASS · Cartesia PASS · Cloudflare TURN keys SET ·
-Google OAuth client SET · Vercel CLI logged in (`npx vercel whoami` ok) ·
-**Postgres FAIL** — `PERSONA_DATABASE_URL` still points at the direct host
-`db.<ref>.supabase.co:5432` (IPv6-only; Mac has no IPv6). Password field is still a
-classic bracketed placeholder (not a real DB password). Host must be the **Session pooler**
-(`*.pooler.supabase.com`, user `postgres.<ref>`) with the real password. Fly:
-`fly auth whoami` still fails (no access token).
-
-## Blockers (Darran)
-1. Supabase → Project Settings → Database: copy the **Session pooler** connection string
-   (IPv4, port 5432, user `postgres.<ref>`, real password — not a `[YOUR-…]` placeholder)
-   into `services/agent/.env` as `PERSONA_DATABASE_URL` (replace the direct
-   `db.<ref>.supabase.co` host and placeholder password).
-2. `fly auth login` on the Mac (flyctl installed, no token). Vercel CLI is logged in.
+## Key verification (Sun 10:36pm PT)
+Anthropic PASS · Deepgram PASS · Cartesia PASS · Cloudflare TURN mint PASS ·
+**Postgres PASS** — Session pooler `aws-0-us-east-1.pooler.supabase.com:5432` (IPv4, user
+`postgres.<ref>`, password percent-encoded, `sslmode=require`); `select 1` OK from box and Mac.
+Fly: `fly auth whoami` — no token yet (Darran running `fly auth login`).
 
 ## Order once unblocked
 supabase-db.sh --apply → fly-agent.sh --apply (sjc) → vercel-web.sh --apply → set
@@ -44,3 +34,6 @@ Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a
 - Branding → Authorized domain: `vercel.app` is on the Public Suffix List, so Google requires
   the full host `persona-onboarding-darran.vercel.app` (Google accepts PSL entries+1 label).
 - Fly agent (server-side only, not in Google): `https://persona-onboarding-agent.fly.dev`
+
+## Log
+- Sun 10:35PM PT — DB fixed (pooler); running supabase-db.sh --apply
