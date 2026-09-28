@@ -94,6 +94,10 @@ def _candidate_types(connection) -> list[str]:
                    if line.startswith("a=candidate:") and " typ " in line})
 
 
+VAD_STOP_S = 0.2           # LAT-001 (was 0.4)
+TURN_MAX_SILENCE_S = 1.6   # LAT-001: Smart Turn "incomplete" fallback (Pipecat default 3.0)
+
+
 def build_user_params(cfg: VoiceConfig):
     """Silero VAD + Smart Turn v3 stop strategy (best-effort: VAD-only if the turn
     model can't load, e.g. a slim CI image)."""
@@ -102,13 +106,19 @@ def build_user_params(cfg: VoiceConfig):
     from pipecat.processors.aggregators.llm_response_universal import LLMUserAggregatorParams
     from pipecat.turns.user_turn_strategies import UserTurnStrategies
 
-    # Penciled-tuned VAD (confidence 0.7, start 0.2s, stop 0.4s); keep in sync with warmup.py.
-    vad = SileroVADAnalyzer(params=VADParams(confidence=0.7, start_secs=0.2, stop_secs=0.4))
+    # VAD: confidence 0.7 / start 0.2s (Penciled-tuned, barge-in unchanged). stop 0.2s
+    # (LAT-001, was 0.4): Pipecat's default with Smart Turn, which decides whether a short
+    # pause ends the turn, so the extra 200 ms of silence was pure wait on every turn.
+    vad = SileroVADAnalyzer(params=VADParams(confidence=0.7, start_secs=0.2, stop_secs=VAD_STOP_S))
     try:
+        from pipecat.audio.turn.smart_turn.base_smart_turn import SmartTurnParams
         from pipecat.audio.turn.smart_turn.local_smart_turn_v3 import LocalSmartTurnAnalyzerV3
         from pipecat.turns.user_stop import TurnAnalyzerUserTurnStopStrategy
 
-        strategies = UserTurnStrategies(stop=[TurnAnalyzerUserTurnStopStrategy(turn_analyzer=LocalSmartTurnAnalyzerV3())])
+        # Smart Turn's "incomplete" verdict (e.g. a spelled name, "um...") waits for more
+        # speech up to stop_secs of silence; the 3 s default made those turns feel dead.
+        turn = LocalSmartTurnAnalyzerV3(params=SmartTurnParams(stop_secs=TURN_MAX_SILENCE_S))
+        strategies = UserTurnStrategies(stop=[TurnAnalyzerUserTurnStopStrategy(turn_analyzer=turn)])
     except Exception as e:  # noqa: BLE001
         logger.warning(f"Smart Turn unavailable ({e}); using default VAD stop strategy")
         strategies = UserTurnStrategies()

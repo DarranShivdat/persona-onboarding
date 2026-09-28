@@ -24,6 +24,7 @@ registry, idempotent teardown, shutdown drain.
 from __future__ import annotations
 
 import asyncio
+import time
 from typing import Any, Awaitable, Callable, Optional
 
 from loguru import logger
@@ -67,8 +68,10 @@ class CallHost:
         """SDP answer for the browser's offer; the pipeline runs in the background."""
         if self._closing:
             raise RuntimeError("call host is shutting down")
+        t0 = time.perf_counter()
         await self._retire(call_id)
         connection = self._connection(await self._ice())
+        t_ice = time.perf_counter()
         try:
             await connection.initialize(sdp=sdp, type=type_)
             answer = connection.get_answer()
@@ -83,6 +86,10 @@ class CallHost:
         self._live[call_id] = session
         task = asyncio.ensure_future(self._run(call_id, session))
         self._tasks[call_id] = task
+        t_end = time.perf_counter()
+        # LAT-001: where the POST /call answer time goes (ICE lookup, aiortc offer/answer + gather).
+        logger.info(f"call_answer_timing call={call_id} ice_ms={(t_ice - t0) * 1000:.0f} "
+                    f"sdp_ms={(t_end - t_ice) * 1000:.0f} total_ms={(t_end - t0) * 1000:.0f}")
         return {"sdp": answer["sdp"], "type": answer.get("type", "answer"), "pc_id": answer.get("pc_id")}
 
     async def _run(self, call_id: str, session: Any) -> None:
