@@ -55,6 +55,12 @@ function keepTexting(s: AgentState): string {
   return `Or we can just keep texting.${ask}`;
 }
 const HINT: Caption = { who: "", text: "", tone: "hint" };
+/** VOICE-004-lite: on a call at the Gmail step, the rail points at the card and the "type it" escape. */
+function gmailCallHint(card: GmailCard | null): Caption | null {
+  if (card?.state === "connected" || card?.state === "wrong_account") return null;
+  if (card?.state === "error") return { ...HINT, tone: "warn", text: "Google didn’t finish. Try again on the card in the chat, or type your email there." };
+  return { ...HINT, text: "Tap Continue with Google on the card in the chat, or type your email there." };
+}
 const CAPTION_TURNS = 3;
 const ICE_FETCH_TIMEOUT_MS = 2500;
 const SPEAKING_ON = 0.12;
@@ -603,6 +609,7 @@ export class ApiSessionDriver implements SessionDriver {
         if (this.gmailCard()?.state !== "connecting" || !this.popup?.closed) return;
         this.popup = null;
         this.upsertGmail({ state: "error" });
+        this.reportOAuthFailed("window_closed");
         this.render();
       });
     };
@@ -622,9 +629,19 @@ export class ApiSessionDriver implements SessionDriver {
     if (!this.oauthPending) return;
     this.oauthPending = false;
     this.popup = null;
-    if (r.status === "error") this.upsertGmail({ state: "error" });
-    else this.upsertGmail({ state: r.status, account: { name: r.name, email: r.email, initials: initialsOf(r.name, r.email) }, missing: r.missing });
+    if (r.status === "error") {
+      this.upsertGmail({ state: "error" });
+      this.reportOAuthFailed(r.reason);
+    } else this.upsertGmail({ state: r.status, account: { name: r.name, email: r.email, initials: initialsOf(r.name, r.email) }, missing: r.missing });
     this.render();
+  }
+
+  /** EC-21 on a call: tell the brain consent didn't finish so the call offers retry / type-it /
+   * skip. Only our own live leg; the agent never changes state for it. */
+  private reportOAuthFailed(reason: string) {
+    if (!this.callId || !this.media) return;
+    const r = (reason || "").toLowerCase().replace(/[^a-z_]/g, "").slice(0, 32) || "cancelled";
+    void fetch(`${this.base}/gmail/failed`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reason: r }) }).catch(() => null);
   }
 
   // --- render ---------------------------------------------------------------------------
@@ -635,15 +652,21 @@ export class ApiSessionDriver implements SessionDriver {
     const agent = agentNameOf(s);
     const thread = [...this.items];
     // Another tab/device holds the call: the rail shows it (spec §4.4, EC-02) unless we have our own leg.
-    const call: CallView | null = this.call ?? (this.otherLive && !s.graduated ? { status: "elsewhere", elapsed: 0, ring: "ended", captions: [] } : null);
+    let call: CallView | null = this.call ?? (this.otherLive && !s.graduated ? { status: "elsewhere", elapsed: 0, ring: "ended", captions: [] } : null);
     if (s.node === "call_offer" && agent && !call) thread.push(offerItem(agent));
+    const liveCall = !!call && call.status !== "ended" && call.status !== "elsewhere";
+    // Gmail during a call (VOICE-004-lite): the card stays in the thread (spec §4.5); the rail and
+    // composer point at it and at typing the email instead. Wording only: the brain owns the step.
+    const gmailStep = s.node === "gmail" && s.slots.gmail?.status !== "filled";
+    const hint = call && gmailStep && (call.status === "connected" || call.status === "muted") ? gmailCallHint(this.gmailCard()) : null;
+    if (call && hint) call = { ...call, captions: [...call.captions.filter((c) => !c.tone), hint] };
     return {
       surface: s.graduated ? "home" : "chat",
       agentName: agent,
       checklist: toChecklist(s),
       justFilled: this.justFilled,
       thread,
-      composer: call && call.status !== "ended" && call.status !== "elsewhere" ? { placeholder: "Type instead of talking…", callButton: false } : composerFor(s),
+      composer: liveCall ? { placeholder: gmailStep ? "Or type your email here…" : "Type instead of talking…", callButton: false } : composerFor(s),
       call,
       home: s.graduated ? toHome(s) : null,
     };
