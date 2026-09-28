@@ -69,9 +69,9 @@ function nextMissing(s) {
 }
 
 const ASK = {
-  user_name: "And what should I call you?",
+  user_name: "What should I call you?",
   need: "What's one thing you'd love a hand with this week?",
-  gmail: "Last step: connect your Gmail with the button below.",
+  gmail: "To help with your inbox I’ll need Gmail. Tap Continue with Google below.",
   graduated: "You're all set — let's get to work.",
 };
 
@@ -128,8 +128,8 @@ function create(seed = {}) {
     else fill(s, k, v);
   }
   sessions.set(s.id, s);
-  const hello = "Hi! I'm your new Persona assistant. What would you like to call your assistant?";
-  if (!seed.transcript) push(s, "transcript", { role: "assistant", text: hello, channel: "text" });
+  const hello = "Hi! I'm your new assistant. I'll help with email, your calendar, and the everyday stuff. First things first: what would you like to call me?";
+  if (!seed.transcript) push(s, "transcript", { role: "assistant", text: hello, channel: "text", suggestions: ["Juno", "Atlas", "Surprise me"] });
   for (const [role, text] of seed.transcript ?? []) push(s, "transcript", { role, text, channel: "text" });
   push(s, "state", snapshot(s));
   if (s.node === "gmail") push(s, "gmail_connect_card", { node: "gmail" });

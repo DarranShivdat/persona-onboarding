@@ -4,8 +4,8 @@ import { defineConfig, devices } from "@playwright/test";
 // already-running instance. `?state=` specs use the mock driver (FE-001); live specs (FE-002)
 // hit the real ApiSessionDriver + /api/session proxy backed by the in-memory stub agent
 // (e2e/stub-agent.mjs on :3199), or a real agent via PERSONA_E2E_AGENT_URL.
-const PORT = 3100;
-const STUB_PORT = 3199;
+const PORT = Number(process.env.PERSONA_E2E_WEB_PORT ?? 3100);
+const STUB_PORT = Number(process.env.PERSONA_E2E_STUB_PORT ?? 3199);
 const external = process.env.PERSONA_WEB_URL;
 const useStub = !process.env.PERSONA_E2E_AGENT_URL;
 const agentUrl = process.env.PERSONA_E2E_AGENT_URL ?? `http://127.0.0.1:${STUB_PORT}`;

@@ -36,10 +36,9 @@ const CLOSED_GRACE_MS = 1500;
 
 /** EC-03 (spec §4.8): mic trouble is explained in text; the chat stays at the same node. */
 const MIC_COPY: Record<MicProblem, string> = {
-  denied:
-    "I can’t hear you yet: your browser blocked the microphone. To allow it, click the icon at the left of the address bar, set Microphone to Allow, then call again.",
-  missing: "I can’t hear you yet: I couldn’t find a microphone. Plug one in or check your sound settings, then call again.",
-  unsupported: "I can’t hear you yet: this browser can’t make calls from here. Try the latest Chrome, Safari, or Firefox, then call again.",
+  denied: "Your browser’s blocking the mic, so I can’t hear you. Allow microphone access for this site in your browser’s settings, then call again.",
+  missing: "I can’t find a microphone. Plug one in or check your sound settings, then call again.",
+  unsupported: "This browser can’t make calls here. The latest Chrome, Safari, or Firefox can.",
 };
 /** Re-asks the question the brain is already waiting on (wording only; the node doesn't move). */
 function keepTexting(s: AgentState): string {
@@ -50,11 +49,12 @@ function keepTexting(s: AgentState): string {
       : (s.node === "call_offer" || s.node === "need") && empty("need")
         ? " So, what’s one thing you’d love a hand with?"
         : s.node === "gmail"
-          ? " Last step is Gmail, with the button below."
+          ? " Tap Continue with Google below to connect Gmail."
           : "";
   return `Or we can just keep texting.${ask}`;
 }
 const HINT: Caption = { who: "", text: "", tone: "hint" };
+const ELSEWHERE: Caption = { ...HINT, text: "This call is open in another tab. Take it over here, or keep typing." };
 const CAPTION_TURNS = 3;
 const ICE_FETCH_TIMEOUT_MS = 2500;
 const SPEAKING_ON = 0.12;
@@ -393,6 +393,9 @@ export class ApiSessionDriver implements SessionDriver {
       if (i >= 0) this.items.splice(i, 1);
     }
     this.items.push({ id: `e${id || Date.now()}`, kind: "msg", from, text: t.text, voice: t.channel === "voice" || undefined });
+    // DQ-04: the brain's suggestions for the ask it just made; tapping one sends its text as a turn.
+    this.items = this.items.filter((x) => x.kind !== "chips");
+    if (from === "agent" && t.suggestions?.length) this.items.push({ id: `chips-${id || Date.now()}`, kind: "chips", options: t.suggestions });
     if (t.channel === "voice" && this.call && this.media) {
       const who = from === "user" ? "You" : (agentNameOf(this.state!) ?? "Assistant");
       const caps = this.call.captions.filter((c) => !c.tone).map((c) => ({ ...c, live: false }));
@@ -633,9 +636,10 @@ export class ApiSessionDriver implements SessionDriver {
     const s = this.state;
     if (!s) return landingSnapshot();
     const agent = agentNameOf(s);
-    const thread = [...this.items];
+    // Suggestions only apply while the brain is still asking for the agent name.
+    const thread = this.items.filter((x) => x.kind !== "chips" || s.node === "agent_name");
     // Another tab/device holds the call: the rail shows it (spec §4.4, EC-02) unless we have our own leg.
-    const call: CallView | null = this.call ?? (this.otherLive && !s.graduated ? { status: "elsewhere", elapsed: 0, ring: "ended", captions: [] } : null);
+    const call: CallView | null = this.call ?? (this.otherLive && !s.graduated ? { status: "elsewhere", elapsed: 0, ring: "ended", captions: [ELSEWHERE] } : null);
     if (s.node === "call_offer" && agent && !call) thread.push(offerItem(agent));
     return {
       surface: s.graduated ? "home" : "chat",
