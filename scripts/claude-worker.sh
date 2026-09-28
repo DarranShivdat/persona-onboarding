@@ -25,6 +25,10 @@ Options:
   --dry-run         Print prompt metadata and exit (no Claude call)
   --worker-id ID    Explicit worker id (default: auto)
   --milestone NAME  Optional milestone tag for status
+  --detach          Run in a new session (setsid, SIGHUP-immune), print WORKER_STATUS and
+                    return at once; the worker outlives the launching shell/routine run.
+                    DEFAULT for real runs without a TTY (routines, agent tool shells);
+                    --foreground (or PERSONA_WORKER_DETACH=0) keeps the old blocking run.
 
 Env:
   PERSONA_WORKER_PACKET / PERSONA_WORKER_PACKET path via --packet
@@ -44,6 +48,8 @@ USAGE
 }
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ORIG_ARGS=("$@")
+DETACH="${PERSONA_WORKER_DETACH:-auto}"
 # Claude CLI binary: prefer the user's native install (~/.local/bin/claude, auto-updates
 # without sudo) over a stale root-owned npm-global /usr/local/bin/claude.
 if [ -z "${PERSONA_CLAUDE_BIN:-}" ]; then
@@ -115,6 +121,14 @@ while [ "$#" -gt 0 ]; do
       PROBE=1
       shift
       ;;
+    --detach)
+      DETACH=1
+      shift
+      ;;
+    --foreground)
+      DETACH=0
+      shift
+      ;;
     -h|--help)
       usage
       ;;
@@ -129,6 +143,48 @@ while [ "$#" -gt 0 ]; do
       ;;
   esac
 done
+
+# WRK-001: workers launched from a routine or an agent's tool shell died with that run
+# (LAT-002 x2, Mon 01:17/01:19: stream cut mid-turn, empty stderr, no exit status written):
+# the wrapper and Claude were in the launcher's process group/session and got its
+# SIGHUP/kill. Detach = re-exec this script in a NEW SESSION (os.setsid after a fork, so
+# it is never the group leader) with SIGHUP ignored and stdio off the launcher, then
+# report the status path and return. Mock/test, dry-run and probe runs stay foreground.
+if [ "$DETACH" = "auto" ]; then
+  if [ -t 0 ] || [ "${PERSONA_WORKER_MOCK:-0}" = "1" ] || [ "$DRY_RUN" = "1" ] || [ "$PROBE" = "1" ]; then
+    DETACH=0
+  else
+    DETACH=1
+  fi
+fi
+if [ "$DETACH" = "1" ] && [ -z "${PERSONA_WORKER_DETACHED:-}" ]; then
+  _SDIR="${PERSONA_WORKER_STATUS_DIR:-$REPO_ROOT/.persona-worker}"
+  mkdir -p "$_SDIR"
+  LAUNCH_LOG="$_SDIR/launch-$(date +%Y%m%d-%H%M%S)-$$.log"
+  PY_BIN="$(command -v python3)"
+  PERSONA_WORKER_DETACHED=1 "$PY_BIN" - "$LAUNCH_LOG" "$0" "${ORIG_ARGS[@]}" <<'PYDETACH'
+import os, signal, sys
+log, argv = sys.argv[1], sys.argv[2:]
+if os.fork():                 # parent: back to the launcher
+    os._exit(0)
+os.setsid()                   # child: new session + process group, no controlling TTY
+signal.signal(signal.SIGHUP, signal.SIG_IGN)
+if os.fork():                 # never reacquire a TTY; reparented to launchd/init
+    os._exit(0)
+fd = os.open(log, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
+nul = os.open(os.devnull, os.O_RDONLY)
+os.dup2(nul, 0); os.dup2(fd, 1); os.dup2(fd, 2)
+os.execv("/bin/bash", ["/bin/bash", *argv])
+PYDETACH
+  # Wait (<=20s) for the detached worker to register, then hand its status path back.
+  for _ in $(seq 1 40); do
+    if grep -q "^WORKER_STATUS " "$LAUNCH_LOG" 2>/dev/null; then break; fi
+    sleep 0.5
+  done
+  grep "^WORKER_STATUS " "$LAUNCH_LOG" 2>/dev/null | head -1 || true
+  echo "persona-worker: detached (new session); launch log $LAUNCH_LOG"
+  exit 0
+fi
 
 case "$MODEL_ALIAS" in
   # Opus 5.5 = claude-opus-5-5 per platform.claude.com model docs (released

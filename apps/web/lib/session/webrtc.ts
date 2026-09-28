@@ -39,7 +39,9 @@ export interface CallMedia {
   close(): void;
 }
 
-const GATHER_TIMEOUT_MS = 3000;
+/** ICE-002: hard cap on the browser's gather (was 3000). A relay candidate normally lands in
+ * <300 ms and the offer goes 150 ms later; this only bounds a TURN server that never answers. */
+const GATHER_TIMEOUT_MS = 2000;
 /** LAT-001: once a TURN relay candidate is in, the offer is good enough to send (the agent's
  * leg relays through TURN too). Waiting for "complete" can mean waiting on the slowest
  * TURN transport (TCP/TLS) for up to GATHER_TIMEOUT_MS. */

@@ -41,6 +41,7 @@ class _Turn:
     direct: bool = False
     llm_text: Optional[float] = None
     node: Optional[str] = None
+    ack: bool = False
 
 
 def _ms(a: Optional[float], b: Optional[float]) -> Optional[float]:
@@ -57,6 +58,7 @@ class TurnTimer:
         self._emit = emit or (lambda r: logger.info(format_line(r)))
         self._t = _Turn()
         self.records: list[dict] = []
+        self.listeners: list[Callable[[dict], None]] = []   # e.g. QuickAckPolicy.observe_extraction
 
     def _now(self, at: Optional[float]) -> float:
         return self.clock() if at is None else at
@@ -84,6 +86,10 @@ class TurnTimer:
         t.handler_done, t.handler_ms, t.node, t.direct = self._now(at), handler_ms, node, direct
         t.db_ms, t.db_calls = db_ms, db_calls
 
+    def ack_spoken(self) -> None:
+        """LAT-003: this turn's first audio is a quick ack, not the brain's line."""
+        self._t.ack = True
+
     def llm_text(self, at: Optional[float] = None) -> None:
         t = self._t
         if t.handler_done is not None and t.llm_text is None and not t.direct:
@@ -109,9 +115,13 @@ class TurnTimer:
             "tts_ttfb": _ms(line_ready, at),
             "total": _ms(t.user_stopped, at),
         }
+        if t.ack:
+            rec["ack"] = True
         self._t = _Turn()
         self.records.append(rec)
         self._emit(rec)
+        for cb in self.listeners:
+            cb(rec)
         return rec
 
 
@@ -125,6 +135,8 @@ def format_line(rec: dict) -> str:
     parts = [f"node={rec.get('node') or '-'}", f"direct={f(rec.get('direct'))}"]
     parts += [f"{k}_ms={f(rec.get(k))}" for k in SPANS]
     parts.insert(-1, f"db_calls={f(rec.get('db_calls'))}")
+    if rec.get("ack"):
+        parts.append("ack=1")
     return "voice_turn_timing " + " ".join(parts)
 
 

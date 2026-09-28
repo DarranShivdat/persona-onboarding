@@ -48,6 +48,7 @@ from .config import SAMPLE_RATE, VoiceConfig
 from .flows import BrainPort, LocalBrain, VoiceFlow
 from .lifecycle import CallTeardown, end_after_playout
 from .playout import PlayoutObserver
+from .quick_ack import QuickAckPolicy, build_quick_ack
 from .services import build_llm, build_stt, build_tts
 from .speech_guard import build_speech_guard
 from .silence import SilenceFloor, SilenceObserver, SilencePolicy, run_silence_floor, silence_line
@@ -143,12 +144,18 @@ class CallSession:
         self._on_connected: Optional[Callable[[], Awaitable[None]]] = None
         self._greeting = greeting
         self._worker = None
+        self._llm = None
         self._playout = None
         self._bg: list[asyncio.Task] = []
         self._ending = False
         self._pending_reason: Optional[str] = None
         self.teardown = CallTeardown()
         self.timer = TurnTimer()   # LAT-001: one `voice_turn_timing` log line per caller turn
+        # LAT-003: quick ack while extraction runs (PERSONA_VOICE_QUICK_ACK, default OFF).
+        self.ack = QuickAckPolicy(enabled=cfg.quick_ack, threshold_ms=cfg.quick_ack_ms,
+                                  allowed=lambda: self.flow is not None and self.flow.ack_allowed()
+                                  and not self._ending and not self.teardown.started)
+        self.timer.listeners.append(lambda rec: self.ack.observe_extraction(rec.get("llm_tool")))
 
     # --- control -----------------------------------------------------------------
 
@@ -221,6 +228,7 @@ class CallSession:
 
         stt = build_stt(self.cfg)
         llm = build_llm(self.cfg)
+        self._llm = llm if self.cfg.use_claude else None
         tts = build_tts(self.cfg, on_switched=on_tts_switched)
         self.stats.tts_active = getattr(getattr(tts, "strategy", None), "active_service", tts).name
         context = LLMContext()
@@ -229,8 +237,10 @@ class CallSession:
         # GUARD-001: on a Flows call, every sentence the LLM says passes the output guard.
         speech_guard = (build_speech_guard(lambda: self.flow.speech_context() if self.flow else None)
                         if self.cfg.llm_mode == "flows" else None)
-        stages = [transport.input(), _AudioInCounter(self.stats), stt, aggregators.user(), llm, speech_guard,
-                  tts, transport.output(), aggregators.assistant()]
+        quick_ack = (build_quick_ack(self.ack, on_ack=self.timer.ack_spoken)
+                     if self.cfg.llm_mode == "flows" and self.cfg.quick_ack else None)
+        stages = [transport.input(), _AudioInCounter(self.stats), stt, aggregators.user(), llm, quick_ack,
+                  speech_guard, tts, transport.output(), aggregators.assistant()]
         pipeline = Pipeline([p for p in stages if p is not None])
         self._worker = PipelineWorker(
             pipeline,
@@ -253,6 +263,10 @@ class CallSession:
                     await self._on_connected()
                 except Exception as e:  # noqa: BLE001 - a UI push must not drop the call
                     logger.warning(f"call connected push failed: {e}")
+            if self._llm is not None:
+                from .warmup import prewarm_llm_connection  # LAT-003: TLS up before turn 1
+
+                self._spawn(prewarm_llm_connection(self._llm))
             if self._flow_manager is not None:
                 # The brain's call_started turn picks the node and the opening line.
                 await self._flow_manager.initialize(await self.flow.opening(reconnect=self._reconnect))

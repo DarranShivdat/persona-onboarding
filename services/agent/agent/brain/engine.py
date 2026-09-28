@@ -238,11 +238,14 @@ def _resolve_confirms(spec, st, touched, intents, plan, ev) -> bool:
         sv = st.slots.get(name)
         if sv is None or not sv.needs_confirm or name in touched:
             continue
-        if "affirm" in intents:
+        implicit = _implicit_yes(name, touched, intents)
+        if "affirm" in intents or implicit:
             sv.status, sv.needs_confirm = "filled", False
             sv.validated_by = spec.slots[name]["validator"]
-            ev.append({"type": "slot_filled", "slot": name, "value": sv.value, "validated_by": sv.validated_by})
-            plan.acknowledge.append(name)
+            ev.append({"type": "slot_filled", "slot": name, "value": sv.value, "validated_by": sv.validated_by,
+                       **({"implicit_confirm": True} if implicit else {})})
+            # Implicit yes: the name's ack ("Perfect, thanks Sam.") comes before the new info's.
+            plan.acknowledge.insert(0, name) if implicit else plan.acknowledge.append(name)
             handled = True
         elif "deny" in intents:
             handled = True
@@ -254,6 +257,15 @@ def _resolve_confirms(spec, st, touched, intents, plan, ev) -> bool:
         else:
             plan.confirm = name  # still waiting on the yes/no
     return handled
+
+
+def _implicit_yes(name, touched, intents) -> bool:
+    """NAME-002: the caller answered the name read-back with new information ("I mostly
+    want help with my inbox") instead of yes/no: that is a yes. The new info was already
+    extracted and validated this turn (`touched`). A correction (a new name, change_answer)
+    or a "no" is never an implicit yes: those re-confirm / re-ask as before."""
+    return (name == NAME_SLOT and bool(touched - {name})
+            and not {"deny", "change_answer"} & set(intents))
 
 
 def _call_intents(spec, st, turn, intents, touched, plan, ev):

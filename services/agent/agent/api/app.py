@@ -150,7 +150,15 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
+        warm = None
+        host = app.state.call_host
+        if host is not None and getattr(getattr(host, "cfg", None), "mode", None) == "live":
+            from ..voice.warmup import run_warmup  # LAT-003: boot prewarm, in the background
+
+            warm = asyncio.ensure_future(run_warmup(host.cfg))
         yield
+        if warm is not None and not warm.done():
+            warm.cancel()
         # Shutdown: hang up live calls (lease released, chat resumes), stop grace timers.
         if app.state.call_host is not None:
             await app.state.call_host.close()

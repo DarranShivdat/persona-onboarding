@@ -141,9 +141,10 @@ async def _default_ice() -> list[dict]:
 def _default_connection(ice_servers: list[dict]):
     from pipecat.transports.smallwebrtc.connection import SmallWebRTCConnection
 
-    from .ice import to_aiortc
+    from .ice import limit_gather_timeout, server_ice_servers, to_aiortc
 
-    return SmallWebRTCConnection(ice_servers=to_aiortc(ice_servers))
+    limit_gather_timeout()   # ICE-002: relay-first server leg, shorter gather cap
+    return SmallWebRTCConnection(ice_servers=to_aiortc(server_ice_servers(ice_servers)))
 
 
 def _default_session(connection, cfg: VoiceConfig, *, call_id: str, session_id: str, service: Any,
