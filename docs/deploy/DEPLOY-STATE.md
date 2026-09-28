@@ -5,8 +5,8 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **LIVE — agent+web b7f24f8 (voice polish: forced lean extraction, prewarm, relay-first ICE, VQA-001, NAME-002; quick ack built but OFF)** |
-| OWNER | EM executor (voice polish) — deploy finished 2:28am PT. Later `--apply` runs = redeploys only; log them below |
+| STATE | **REDEPLOYING — agent+web (RESET-001 Start over, HOME-002 home replies, SIL-002 gmail silence wait)** |
+| OWNER | EM executor (reset/home fix) — holds deploy from 12:47pm PT Mon; others do not `--apply` until LIVE |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
 ## Env files (gitignored, mode 600, values never committed/printed)
@@ -80,3 +80,4 @@ Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a
 - Mon 1:47AM PT — 01:47 PT EM reconcile: be8e932 redeploy confirmed LIVE (agent /health sha d4de37d, Fly machine started checks passing); smoke.sh 7/7 PASS; post-fix latency probes ~2.0–2.5s user-stop→first-audio (was ~8s pre-LAT); qa:audit LIVE PASS 01:45; STATE → LIVE.
 - Mon 2:22AM PT — EM executor (voice polish) holds deploy: merged em/voice-polish (9f04f1e); qa fast/flow/harness/e2e/audit/visual + real-agent call smoke green; agent+web redeploy then smoke/audit/latency probe. PERSONA_VOICE_QUICK_ACK stays unset (OFF).
 - Mon 2:28AM PT — EM executor (voice polish): agent+web redeploy b7f24f8 LIVE (agent /health sha b7f24f8, Fly v13 checks passing; web build b7f24f8 aliased). smoke.sh 7/7 + LIVE button audit 215 rows PASS. PERSONA_VOICE_QUICK_ACK unset (OFF). Note: web deploy needs `--scope darran-s-projects --deploy-only`. STATE → LIVE.
+- Mon 12:47PM PT — EM executor (reset/home fix) holds deploy: merged em/reset-fix; qa fast/flow/e2e/audit (LOCAL 246 rows) green; agent+web redeploy, then live smoke + audit. Fly secrets untouched (PERSONA_VOICE_QUICK_ACK=1 stays on).
