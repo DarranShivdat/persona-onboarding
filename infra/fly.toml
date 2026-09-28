@@ -1,26 +1,42 @@
-# Fly.io app for services/agent (long-lived; NOT on Vercel).
-# INFRA-001 must prove SmallWebRTC media works from Fly (UDP/ICE) — likely needs a
-# TURN service (ice_servers) or a switch to Pipecat Cloud. Do not deploy before that.
+# Fly.io app for services/agent (ADR 0001: Fly sjc + Cloudflare Realtime TURN on both legs).
+# Deploy ONLY via scripts/deploy/fly-agent.sh --apply after Darran's go-ahead (dry-run by default).
+#   fly deploy --remote-only -c infra/fly.toml .        (from repo root; context = repo root)
+# Secrets (keys, DB URL, TURN, OAuth): `fly secrets import` — never in this file.
+# No UDP service / dedicated IPv4 on purpose: media relays via TURN TCP/TLS 443 (see ADR 0001).
 app = "persona-onboarding-agent"
 primary_region = "sjc"
+kill_signal = "SIGTERM"
+kill_timeout = "30s"             # let an in-flight turn commit (hangup loses at most that turn)
 
 [build]
-  dockerfile = "agent.Dockerfile"
+  dockerfile = "agent.Dockerfile"  # relative to this file
+
+[deploy]
+  strategy = "immediate"           # single machine; no rolling pair to keep in sync
+
+# Non-secret defaults only (docs/deploy/ENV.md). Keep these names OUT of the secrets file.
+[env]
+  PERSONA_TRACING = "noop"
+  PERSONA_VOICE_MAX_CALL_SECS = "900"
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "off"     # voice sessions are long-lived; no scale-to-zero mid-call
+  auto_stop_machines = "off"       # voice sessions are long-lived; no scale-to-zero mid-call
+  auto_start_machines = true
   min_machines_running = 1
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
+
+[[http_service.checks]]
+  grace_period = "60s"             # ONNX model load (Silero + Smart Turn) on cold start
+  interval = "15s"
+  timeout = "3s"
+  method = "GET"
+  path = "/health"
 
 [[vm]]
   size = "shared-cpu-2x"
-  memory = "2gb"                 # Silero + Smart Turn ONNX models resident
-
-[checks]
-  [checks.health]
-    type = "http"
-    port = 8080
-    path = "/health"
-    interval = "15s"
-    timeout = "3s"
+  memory = "2gb"                   # Silero + Smart Turn ONNX + torch import resident

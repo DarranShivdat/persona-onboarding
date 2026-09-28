@@ -1,0 +1,25 @@
+# Pins for the agent image (infra/agent.Dockerfile): `pip install -r <pyproject deps+extras> -c this`.
+# Versions = the local env the brain/API/voice tests + INFRA-001 call proof ran on (2026-09-27).
+# Bump deliberately; the Dockerfile's import smoke fails the remote build on a broken combo.
+pipecat-ai==1.4.0
+pipecat-ai-flows==1.3.0
+aiortc==1.14.0
+onnxruntime==1.24.4
+anthropic==0.114.0
+fastapi==0.138.2
+uvicorn==0.49.0
+psycopg==3.3.6
+psycopg-binary==3.3.6
+psycopg-pool==3.3.3
+httpx==0.28.1
+cryptography==44.0.1
+loguru==0.7.3
+pyyaml==6.0.2
+numpy==2.1.3
+# torch/torchaudio come from the CPU wheel index (see Dockerfile) — only pulled in by
+# pipecat's `local-smart-turn` extra; Smart Turn v3 itself runs on onnxruntime.
+torch==2.9.1
+torchaudio==2.9.1
+transformers==5.12.1
+coremltools==9.0
+langfuse==3.15.0
