@@ -27,7 +27,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/services/agent \
     NLTK_DATA=/usr/local/share/nltk_data \
     HOME=/home/persona
+# libxcb1/libgl1/libglib2.0-0: opencv-python (pulled in by pipecat's SmallWebRTC transport,
+# `import cv2` at module load) needs them — without them every call fails to import.
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libgomp1 \
+    libxcb1 libgl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 10001 --shell /usr/sbin/nologin persona
 COPY --from=build /opt/venv /opt/venv
@@ -38,7 +41,7 @@ COPY services/agent/agent /app/services/agent/agent
 # Build-time smoke: fail the (remote) build, not the first call, on a broken dep set.
 # Also pre-fetch the NLTK tokenizer so the non-root runtime never downloads at call time.
 RUN python -c "import nltk; nltk.download('punkt_tab', download_dir='/usr/local/share/nltk_data', quiet=True)" \
-    && python -c "import agent.api.app, agent.voice.config, agent.voice.ice, pipecat.audio.vad.silero, pipecat.audio.turn.smart_turn.local_smart_turn_v3" \
+    && python -c "import agent.api.app, agent.voice.config, agent.voice.ice, pipecat.audio.vad.silero, pipecat.audio.turn.smart_turn.local_smart_turn_v3, pipecat.transports.smallwebrtc.transport, agent.voice.session" \
     && chown -R persona:persona /app
 USER persona
 WORKDIR /app/services/agent
