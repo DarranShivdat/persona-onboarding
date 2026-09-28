@@ -5,7 +5,7 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **REDEPLOYING agent+web (EM executor) — GRAD/GUARD/AUDIT** |
+| STATE | **LIVE — deployed + hosted smoke PASS** |
 | OWNER | EM executor — deploy finished 10:55pm PT. Later `--apply` runs = redeploys only; log them below |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
@@ -72,3 +72,4 @@ Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a
 - Sun 11:39PM PT — 11:39PM PT EM executor: agent redeploy f42fb63 (NAME-001 name read-back/spelling)
 - Sun 11:43PM PT — 11:43PM PT EM executor: agent 3f61b67 (NAME-001) LIVE; smoke 7/7 from box. NOTE: Vercel Security Checkpoint (x-vercel-mitigated: challenge) is challenging the Mac's IP after heavy automated traffic — curl/Playwright from the Mac get 403; box IP fine.
 - Sun 11:56PM PT — 11:56PM PT EM executor: agent+web redeploy 9819060 (GRAD-001, GUARD-001, AUDIT-001; qa fast/flow/e2e/audit green)
+- Mon 12:06AM PT — 12:06AM PT EM executor: agent 3521105 + web 7957763 LIVE (GRAD/GUARD/AUDIT). smoke 7/7 from box; live home-screen chat + /edit verified.
