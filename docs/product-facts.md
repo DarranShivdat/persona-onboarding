@@ -29,4 +29,9 @@ Status: DRAFT — Darran to approve (D-class). Updated 2026-09-26 with Darran's 
 
 ## Voice
 - Voice calls are processed by third-party speech services (speech-to-text and
-  text-to-speech) to run the conversation. <retention policy — pending Darran>
+  text-to-speech) to run the conversation. Call audio is not saved.
+
+## Retention and contact (approved by Darran, 2026-09-27)
+- Setup conversations and Gmail connection records are kept no longer than 30 days after
+  your last activity; disconnecting Gmail deletes the stored Google tokens immediately.
+- Questions or deletion requests: darranshivdat1@gmail.com (also on /privacy).

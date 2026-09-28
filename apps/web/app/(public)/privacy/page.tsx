@@ -74,7 +74,7 @@ export default function Privacy() {
 
           <h2 className={s.h2}>Retention and deletion</h2>
           <p>Setup conversations and Gmail connection records are kept for as long as needed to
-            provide the Service, and no longer than 90 days after your last activity. Disconnecting
+            provide the Service, and no longer than 30 days after your last activity. Disconnecting
             Gmail deletes the stored Google tokens immediately. To delete your data sooner, contact
             us using the details below.</p>
 
@@ -88,7 +88,7 @@ export default function Privacy() {
 
           <h2 className={s.h2}>Changes and contact</h2>
           <p>We will update this page if our practices change. Questions or deletion requests:
-            contact the Persona team through <a href="https://yourpersona.com">yourpersona.com</a>.</p>
+            email <a href="mailto:darranshivdat1@gmail.com">darranshivdat1@gmail.com</a>.</p>
         </div>
         <footer className={s.foot}>
           <Link href="/about">About Persona</Link>
