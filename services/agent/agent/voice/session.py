@@ -48,6 +48,7 @@ from .config import SAMPLE_RATE, VoiceConfig
 from .flows import BrainPort, LocalBrain, VoiceFlow
 from .lifecycle import CallTeardown, end_after_playout
 from .playout import PlayoutObserver
+from .leadin import build_leadin_pad
 from .quick_ack import QuickAckPolicy, build_quick_ack
 from .services import build_llm, build_stt, build_tts
 from .speech_guard import build_speech_guard
@@ -240,7 +241,8 @@ class CallSession:
         quick_ack = (build_quick_ack(self.ack, on_ack=self.timer.ack_spoken)
                      if self.cfg.llm_mode == "flows" and self.cfg.quick_ack else None)
         stages = [transport.input(), _AudioInCounter(self.stats), stt, aggregators.user(), llm, quick_ack,
-                  speech_guard, tts, transport.output(), aggregators.assistant()]
+                  speech_guard, tts, build_leadin_pad(self.cfg.leadin_ms, SAMPLE_RATE),  # CLIP-001
+                  transport.output(), aggregators.assistant()]
         pipeline = Pipeline([p for p in stages if p is not None])
         self._worker = PipelineWorker(
             pipeline,

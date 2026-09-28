@@ -14,6 +14,7 @@
     PERSONA_VOICE_FORCE_EXTRACTION  default 1: force the record_slots tool call on extraction nodes
     PERSONA_VOICE_QUICK_ACK  1 = speak a short ack ("Got it.") while extraction runs (default OFF)
     PERSONA_VOICE_QUICK_ACK_MS  expected-extraction threshold for the ack, default 600
+    PERSONA_VOICE_LEADIN_MS  silence before each spoken line so its first syllable is not clipped (CLIP-001), default 120; 0 = off
     PERSONA_TRACING          langfuse = export Pipecat OTel spans to Langfuse OTLP (agent/obs)
 
 LLM slot (`llm_mode`): `flows` (Claude under Pipecat Flows over the shared brain) when
@@ -55,6 +56,7 @@ class VoiceConfig:
     force_extraction: bool = True  # LAT-003: tool_choice=record_slots on extraction nodes
     quick_ack: bool = False        # LAT-003: short spoken ack while extraction runs (default OFF)
     quick_ack_ms: float = 600.0    # ...only when extraction is expected to take longer than this
+    leadin_ms: float = 120.0       # CLIP-001: silence before each utterance (0 = off)
 
     @classmethod
     def from_env(cls, env: Optional[Mapping[str, str]] = None) -> "VoiceConfig":
@@ -76,6 +78,7 @@ class VoiceConfig:
             force_extraction=(env.get("PERSONA_VOICE_FORCE_EXTRACTION") or "1").strip().lower() not in ("0", "false", "no", "off"),
             quick_ack=_flag(env, "PERSONA_VOICE_QUICK_ACK"),
             quick_ack_ms=float(env.get("PERSONA_VOICE_QUICK_ACK_MS") or cls.quick_ack_ms),
+            leadin_ms=float(env.get("PERSONA_VOICE_LEADIN_MS") if env.get("PERSONA_VOICE_LEADIN_MS") not in (None, "") else cls.leadin_ms),
         )
 
     @property
