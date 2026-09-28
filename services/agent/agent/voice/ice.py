@@ -26,7 +26,8 @@ def static_ice_servers(env: dict[str, str] | None = None) -> list[dict]:
     env = os.environ if env is None else env
     servers: list[dict] = []
     stun = _split(env.get("PERSONA_STUN_URLS")) or [DEFAULT_STUN]
-    servers.append({"urls": stun})
+    if stun != ["none"]:  # "none" = host candidates only (offline local smoke)
+        servers.append({"urls": stun})
     turn = _split(env.get("PERSONA_TURN_URLS"))
     if turn:
         servers.append(
@@ -61,13 +62,29 @@ async def cloudflare_ice_servers(ttl_secs: int = 3600) -> list[dict] | None:
     return [s for s in servers if s["urls"]]
 
 
-async def resolve_ice_servers() -> list[dict]:
+ICE_TTL_S = 3600
+
+
+async def resolve_ice() -> tuple[list[dict], int | None]:
+    """(servers, ttl_s): Cloudflare-minted creds (ttl) if configured, else static (no ttl)."""
     try:
-        minted = await cloudflare_ice_servers()
-    except Exception as e:  # noqa: BLE001 - fall back to static config
-        logger.warning(f"Cloudflare TURN mint failed, using static ICE config: {e}")
+        minted = await cloudflare_ice_servers(ICE_TTL_S)
+    except Exception as e:  # noqa: BLE001 - fall back to static config (never log the token)
+        logger.warning(f"Cloudflare TURN mint failed, using static ICE config: {type(e).__name__}")
         minted = None
-    return minted or static_ice_servers()
+    return (minted, ICE_TTL_S) if minted else (static_ice_servers(), None)
+
+
+async def resolve_ice_servers() -> list[dict]:
+    return (await resolve_ice())[0]
+
+
+def ice_mode(env: dict[str, str] | None = None) -> str:
+    """Log-safe summary of which ICE source is configured: cloudflare | static_turn | stun_only."""
+    env = os.environ if env is None else env
+    if env.get("CLOUDFLARE_TURN_KEY_ID") and env.get("CLOUDFLARE_TURN_API_TOKEN"):
+        return "cloudflare"
+    return "static_turn" if _split(env.get("PERSONA_TURN_URLS")) else "stun_only"
 
 
 def to_aiortc(servers: list[dict]) -> list:

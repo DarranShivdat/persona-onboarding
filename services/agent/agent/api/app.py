@@ -12,13 +12,15 @@ import os
 import secrets
 import subprocess
 import time
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Optional
+from typing import Awaitable, Callable, Optional
 
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, StreamingResponse
+from loguru import logger
 from pydantic import BaseModel, Field
 
 from ..brain.spec import FlowSpec, load_spec
@@ -26,7 +28,9 @@ from ..brain.validators import gmail_oauth
 from ..gmail import GmailError, GmailService, GoogleOAuth, ReconnectRequired, TokenCipher
 from ..obs.tracing import Tracer, get_tracer
 from ..store import LeaseHeldError, NotFoundError, PgStore, VersionConflictError
+from ..voice.config import VoiceConfig
 from ..voice.handoff import GRACE_REASONS, CallControl, HandoffSettings
+from ..voice.host import CallHost
 from .llm import FakeLlm, TurnLlm
 from .ratelimit import RateLimiter, SlidingWindowLimiter
 from .service import Notifier, SessionService, TurnOutcome
@@ -71,7 +75,7 @@ class GmailIn(BaseModel):
 
 
 class CallIn(BaseModel):
-    sdp: Optional[str] = None                 # SmallWebRTC offer (VOICE-001); ignored here
+    sdp: Optional[str] = Field(default=None, max_length=20_000)  # SmallWebRTC offer (non-trickle)
     type: Optional[str] = None
     take_over: bool = False                   # explicit user confirm after a 409 call_in_progress (EC-02)
     resume_call_id: Optional[str] = None      # reconnect inside the grace window (EC-04)
@@ -113,7 +117,13 @@ def create_app(
     ip_limiter: Optional[RateLimiter] = None,
     session_limiter: Optional[RateLimiter] = None,
     gmail: Optional[GmailService] = None,
+    voice: Optional[VoiceConfig] = None,
+    call_host: Optional[CallHost] = None,
+    ice: Optional[Callable[[], Awaitable[tuple[list[dict], Optional[int]]]]] = None,
+    ice_limiter: Optional[RateLimiter] = None,
 ) -> FastAPI:
+    """`voice=None` (default) keeps the call route lease-only (`answer: null`); pass
+    `VoiceConfig.from_env()` (or a `call_host`) to host the pipeline and answer the SDP."""
     settings = settings or Settings()
     notifier = Notifier()
     svc = SessionService(store=store, llm=llm or FakeLlm(), spec=spec or load_spec(),
@@ -121,11 +131,26 @@ def create_app(
     ip_limiter = ip_limiter or SlidingWindowLimiter(120, 60)
     session_limiter = session_limiter or SlidingWindowLimiter(40, 60)
 
-    calls = CallControl(svc, settings.handoff())
+    ice_limiter = ice_limiter or SlidingWindowLimiter(20, 60)
 
-    app = FastAPI(title="persona-agent", version="0.0.1")
+    calls = CallControl(svc, settings.handoff())
+    if call_host is None and voice is not None and voice.can_answer:
+        call_host = CallHost(calls, voice, service=svc, spec=svc.spec)
+    if ice is None:
+        from ..voice.ice import resolve_ice as ice
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        yield
+        # Shutdown: hang up live calls (lease released, chat resumes), stop grace timers.
+        if app.state.call_host is not None:
+            await app.state.call_host.close()
+        await calls.close()
+
+    app = FastAPI(title="persona-agent", version="0.0.1", lifespan=lifespan)
     gmail = gmail or GmailService(store=store, cipher=None, oauth=None)
     app.state.service, app.state.settings, app.state.calls, app.state.gmail = svc, settings, calls, gmail
+    app.state.call_host = call_host
 
     @app.exception_handler(NotFoundError)
     async def _nf(_: Request, __: NotFoundError):
@@ -231,6 +256,10 @@ def create_app(
         await authorize(session_id, _bearer(authorization, x_session_token, None))
         limit(request, session_id)
         body = body or CallIn()
+        host: Optional[CallHost] = app.state.call_host
+        hosting = host is not None and host.enabled and bool(body.sdp)
+        if hosting and (body.type or "offer") != "offer":
+            raise HTTPException(422, "sdp_type_must_be_offer")
         if body.resume_call_id:
             lease = await calls.reconnect(session_id, body.resume_call_id)
             if lease is None:  # grace window closed (or taken over): the client starts a new call
@@ -239,12 +268,33 @@ def create_app(
         else:
             lease = await calls.start(session_id, take_over=body.take_over)
             status = "taken_over" if lease.replaced else "lease_acquired"
-        # Placeholder: the SmallWebRTC answer for body.sdp is attached when the API hosts the
-        # pipeline (CallSession.attach(calls, session_id) wires heartbeat/grace/hangup).
+        answer = None
+        if hosting:
+            # Take-over already stopped the replaced pipeline (CallControl.start); a resume
+            # retires any pipeline still running for this call_id (CallHost.answer).
+            try:
+                answer = await host.answer(session_id, lease.call_id, body.sdp, "offer",
+                                                reconnect=status == "resumed")
+            except Exception as e:  # noqa: BLE001 - never hold a lease for a call that can't connect
+                logger.warning(f"call {lease.call_id}: SDP answer failed: {type(e).__name__}: {e}")
+                await calls.end(session_id, lease.call_id, "answer_failed")
+                return JSONResponse({"error": "call_setup_failed", "call_id": lease.call_id}, status_code=502)
         return JSONResponse({"call_id": lease.call_id, "lease_expires_at": lease.expires_at.isoformat(),
-                             "answer": None, "status": status, "replaced": lease.replaced,
+                             "answer": answer, "status": status, "replaced": lease.replaced,
                              "grace_s": settings.call_grace_s, "heartbeat_s": settings.call_heartbeat_s},
                             status_code=200 if status == "resumed" else 201)
+
+    @app.get("/v1/sessions/{session_id}/ice")
+    async def get_ice(session_id: str, request: Request,
+                      authorization: Optional[str] = Header(None), x_session_token: Optional[str] = Header(None)):
+        """ICE servers for the browser leg (same source as the server leg; ADR 0001). Minted
+        per request when Cloudflare TURN is configured. Credentials are returned, never logged."""
+        await authorize(session_id, _bearer(authorization, x_session_token, None))
+        limit(request, session_id)
+        if not ice_limiter.allow(f"ice:{session_id}"):
+            raise HTTPException(429, "rate_limited")
+        servers, ttl = await ice()
+        return JSONResponse({"ice_servers": servers, "ttl_s": ttl}, headers={"Cache-Control": "no-store"})
 
     @app.post("/v1/sessions/{session_id}/call/{call_id}/heartbeat")
     async def heartbeat_call(session_id: str, call_id: str,
@@ -313,4 +363,4 @@ def create_app_from_env() -> FastAPI:
     dsn = os.environ["PERSONA_DATABASE_URL"]
     store = PgStore(dsn)
     gmail = GmailService(store=store, cipher=TokenCipher.from_env(), oauth=GoogleOAuth.from_env())
-    return create_app(store=store, settings=Settings.from_env(), gmail=gmail)
+    return create_app(store=store, settings=Settings.from_env(), gmail=gmail, voice=VoiceConfig.from_env())

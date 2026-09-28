@@ -127,6 +127,7 @@ class CallSession:
         self._flow_manager = None
         self.stats = CallStats(call_id=call_id, pc_id=getattr(connection, "pc_id", "") or "")
         self._on_ended, self._heartbeat, self._heartbeat_s = on_ended, heartbeat, heartbeat_s
+        self._on_connected: Optional[Callable[[], Awaitable[None]]] = None
         self._greeting = greeting
         self._worker = None
         self._playout = None
@@ -144,7 +145,14 @@ class CallSession:
         """Wire lease heartbeat / grace / hangup-resume to a `handoff.CallControl`."""
         self._on_ended, self._heartbeat = control.hooks(session_id, self.stats.call_id)
         self._heartbeat_s = control.settings.heartbeat_s
-        control.attach(self.stats.call_id, self.hangup)
+        call_id = self.stats.call_id
+        self._on_connected = lambda: control.connected(session_id, call_id)
+        control.attach(call_id, self.hangup)
+
+    def release_hooks(self) -> None:
+        """Stop reporting to the lease (this pipeline is being replaced by a resume of the
+        same call): a later teardown must not end or drop the call."""
+        self._on_ended = self._heartbeat = self._on_connected = None
 
     async def speak(self, text: str) -> None:
         if self._worker is not None and not self._ending and not self.teardown.started:
@@ -220,9 +228,21 @@ class CallSession:
         @transport.event_handler("on_client_connected")
         async def _connected(_t, _c):  # noqa: ANN001
             self.stats.connected = True
+            if self._on_connected is not None:
+                try:
+                    await self._on_connected()
+                except Exception as e:  # noqa: BLE001 - a UI push must not drop the call
+                    logger.warning(f"call connected push failed: {e}")
             if self._flow_manager is not None:
                 # The brain's call_started turn picks the node and the opening line.
                 await self._flow_manager.initialize(await self.flow.opening(reconnect=self._reconnect))
+            elif self._brain is not None:
+                # Stub turn over the shared brain (fake vendors / no Anthropic key): the brain's
+                # call_started still moves the session onto voice and picks the opening line
+                # (so hangup resumes in chat); the stub LLM never touches state after that.
+                self.flow = VoiceFlow(self._spec or load_spec(), self._brain)
+                await self.flow.opening(reconnect=self._reconnect)
+                await self._worker.queue_frame(TTSSpeakFrame(self.flow.last.line))
             elif self._greeting:
                 await self._worker.queue_frame(TTSSpeakFrame(self._greeting))
             if self.silence and not self.silence.armed:
@@ -231,7 +251,9 @@ class CallSession:
 
         @transport.event_handler("on_client_disconnected")
         async def _disconnected(_t, _c):  # noqa: ANN001
-            await self.teardown("client_disconnected")
+            # Start teardown, don't await it: its transport.cleanup step waits for this very
+            # handler to finish, so awaiting here deadlocks and on_ended (grace/resume) never runs.
+            self._spawn(self.teardown("client_disconnected"))
 
         if stt is not None and hasattr(stt, "add_event_handler"):
             async def _stt_usable(_svc, usable: bool) -> None:
