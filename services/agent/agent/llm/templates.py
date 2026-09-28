@@ -176,3 +176,30 @@ def graduation_summary(state: SessionState, deferred: list[str]) -> str:
 
 def _lower_first(v: str) -> str:
     return v[:1].lower() + v[1:] if v[:2] != v[:2].upper() else v
+
+
+# Post-graduation home conversation (GRAD-001). Policy text: templated, never paraphrased.
+# Claims stay inside docs/product-facts.md; this trial never executes tasks.
+HOME_REPLY = {
+    "prompt_injection": "I can't do that, and nothing's changed.",
+    "privacy_question": RESPOND["privacy_question"],
+    "home_capability": (
+        "I'm here for your email, calendar and everyday tasks, and I ask for your OK before acting "
+        "for you. This trial can't carry out tasks yet."
+    ),
+    "home_task": "I can't do that in this trial yet, so nothing's been read, sent or changed.",
+    "home_offer_gmail": "Connect Gmail on this screen whenever you're ready.",
+    "home_need_added": "I've added that to what you'd like help with.",
+    "home_chat": "You can rename me, change your name or what you'd like help with right here.",
+}
+HOME_REJECTED = {
+    "charset": "That doesn't look like a name. Try letters only.",
+    "too_short": "Could you say a bit more?",
+    "unsure_need": "No rush. Tell me when something comes to mind.",
+    "joke_or_profane": "Let's pick a different one.",
+    "very_long": "That's a bit long. Something shorter?",
+    "needs_confirm": "Let's pick a different one.",
+    "empty": "That's empty. Try again.",
+    **REJECTED,
+}
+HOME_GMAIL_CONNECTED = "Gmail's connected. Nothing is sent or changed without your OK."

@@ -33,7 +33,7 @@ from ..voice.handoff import GRACE_REASONS, CallControl, HandoffSettings
 from ..voice.host import CallHost
 from .llm import FakeLlm, TurnLlm
 from .ratelimit import RateLimiter, SlidingWindowLimiter
-from .service import Notifier, SessionService, TurnOutcome
+from .service import EditNotAllowed, EditRejected, Notifier, SessionService, TurnOutcome
 
 MAX_TEXT_LEN = 2000
 
@@ -64,6 +64,11 @@ class Settings:
 class TurnIn(BaseModel):
     text: str = Field(min_length=1, max_length=MAX_TEXT_LEN)
     version: Optional[int] = None             # optional client-side optimistic check
+
+
+class EditIn(BaseModel):
+    slot: str = Field(pattern=r"^(agent_name|user_name|need)$")
+    value: str = Field(min_length=1, max_length=MAX_TEXT_LEN)
 
 
 class GmailFailedIn(BaseModel):
@@ -213,6 +218,21 @@ def create_app(
         await authorize(session_id, _bearer(authorization, x_session_token, None))
         limit(request, session_id)
         outcome = await run_in_threadpool(svc.text_turn, session_id, body.text, expected_version=body.version)
+        return _turn_json(outcome)
+
+    @app.post("/v1/sessions/{session_id}/edit")
+    async def post_edit(session_id: str, body: EditIn, request: Request,
+                        authorization: Optional[str] = Header(None), x_session_token: Optional[str] = Header(None)):
+        """Home tap-to-edit (GRAD-001): the brain's validators decide; 422 = rejected (nothing saved)."""
+        await authorize(session_id, _bearer(authorization, x_session_token, None))
+        limit(request, session_id)
+        try:
+            outcome = await run_in_threadpool(svc.edit, session_id, body.slot, body.value)
+        except EditRejected as e:
+            return JSONResponse({"error": "invalid_value", "slot": e.slot, "reason": e.reason, "message": e.message},
+                                status_code=422)
+        except EditNotAllowed as e:
+            return JSONResponse({"error": e.reason}, status_code=409)
         return _turn_json(outcome)
 
     def require_internal(secret: Optional[str]) -> None:

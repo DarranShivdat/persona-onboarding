@@ -2,7 +2,10 @@
 // fixture snapshots (a canned "brain" reply per state + action); the UI never computes
 // transitions itself. `?state=<name>` picks the starting fixture (used by qa:visual).
 import { fixture, type StateName } from "./fixtures";
-import type { SessionDriver, SessionSnapshot, UIAction, UIPush } from "./types";
+import { applyPush } from "./types";
+import type { EditableSlot, EditResult, SessionDriver, SessionSnapshot, UIAction, UIPush } from "./types";
+
+const MOCK_HOME_REPLY = "I can’t do that in this trial yet, so nothing’s been read, sent or changed.";
 
 type Reply = StateName | ((d: MockSessionDriver) => void);
 
@@ -81,6 +84,24 @@ export class MockSessionDriver implements SessionDriver {
     if (!t) return;
     // Echo the user's turn the way the brain's transcript push would.
     this.emit({ type: "transcript", items: [{ id: `u${Date.now()}`, kind: "msg", from: "user", text: t }] });
+    // Home (GRAD-001): the fake brain answers with the real agent's honest trial reply.
+    if (this.snap.surface === "home") this.later(300, () => this.emit({ type: "transcript", items: [{ id: `a${Date.now()}`, kind: "msg", from: "agent", text: MOCK_HOME_REPLY }] }));
+  }
+
+  /** Mock stand-in for the agent's validated edit: accepts any non-empty value. */
+  async editSlot(slot: EditableSlot, value: string): Promise<EditResult> {
+    const v = value.trim();
+    const h = this.snap.home;
+    if (!v || !h) return { ok: false, message: "That’s empty. Try again." };
+    const home = {
+      ...h,
+      userName: slot === "user_name" ? v : h.userName,
+      focus: slot === "need" ? { ...h.focus, value: v } : h.focus,
+      tiles: h.tiles.map((t) => (t.slot === slot ? { ...t, value: v, empty: false } : t)),
+    };
+    this.snap = { ...this.snap, home, agentName: slot === "agent_name" ? v : this.snap.agentName };
+    this.emit({ type: "snapshot", snapshot: this.snap });
+    return { ok: true };
   }
 
   async startCall(): Promise<void> {
@@ -129,7 +150,7 @@ export class MockSessionDriver implements SessionDriver {
   private emit(p: UIPush) {
     if (p.type !== "snapshot") {
       // keep our own snapshot in sync for later snapshot() calls
-      this.snap = p.type === "transcript" ? { ...this.snap, thread: [...this.snap.thread, ...p.items] } : this.snap;
+      this.snap = applyPush(this.snap, p);
     }
     this.listeners.forEach((cb) => cb(p));
   }

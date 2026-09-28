@@ -83,7 +83,7 @@ export function App({ initialState, capture, live }: { initialState: StateName; 
       <div className="app" data-surface="home">
         <TopBar right={snap.home.userName} />
         <main className="home">
-          <Home home={snap.home} agent={agent} onAct={act} />
+          <Home home={snap.home} agent={agent} onAct={act} onEdit={driver.editSlot ? (slot, v) => driver.editSlot!(slot, v) : undefined} />
           <Composer ref={composerRef} placeholder={snap.composer.placeholder} onSend={send} />
         </main>
       </div>

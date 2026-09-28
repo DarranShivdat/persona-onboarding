@@ -71,6 +71,8 @@ def template_phrase(spec: FlowSpec, state: SessionState, plan: ResponsePlan) -> 
     if plan.absorbed:
         return ""
     out: list[str] = []
+    if is_home(plan):
+        return home_phrase(state, plan)
     if plan.graduate:
         # One templated summary (never "let's get to work" next to a "still left" list).
         return T.graduation_summary(state, plan.deferred)
@@ -100,3 +102,33 @@ def template_phrase(spec: FlowSpec, state: SessionState, plan: ResponsePlan) -> 
         else:
             out.append(_ASK.get(plan.ask, f"What's your {plan.ask}?"))
     return " ".join(p for p in out if p)
+
+
+def is_home(plan: ResponsePlan) -> bool:
+    """A post-graduation conversation turn (brain/home.py), not the graduation itself."""
+    return "home" in plan.say
+
+
+def home_ack(state: SessionState, plan: ResponsePlan, skip: Iterable[str] = ()) -> list[str]:
+    """Templated acknowledgements / rejections for a home turn (edits and the gmail fill);
+    `skip`: slots a model reaction already acknowledged."""
+    out: list[str] = []
+    for s in plan.acknowledge:
+        if s in skip:
+            continue
+        out.append(T.HOME_GMAIL_CONNECTED if s == "gmail" else T.ack_for(s, state.slots[s].value))
+    for s in plan.changed:
+        if s in skip or (s == "need" and "home_need_added" in plan.respond_to):
+            continue
+        out.append(T.HOME_GMAIL_CONNECTED if s == "gmail" else T.ack_for(s, state.slots[s].value, changed=True))
+    for s, reason in plan.rejected.items():
+        out.append(T.HOME_REJECTED.get(reason, f"That didn't work for your {s.replace('_', ' ')}."))
+    return out
+
+
+def home_tail(plan: ResponsePlan) -> list[str]:
+    return [T.HOME_REPLY[k] for k in plan.respond_to if k in T.HOME_REPLY]
+
+
+def home_phrase(state: SessionState, plan: ResponsePlan) -> str:
+    return " ".join(p for p in [*home_ack(state, plan), *home_tail(plan)] if p)

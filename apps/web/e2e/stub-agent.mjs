@@ -75,11 +75,39 @@ const ASK = {
   graduated: "You're all set — let's get to work.",
 };
 
+// GRAD-001 home: a canned mirror of brain/home.py (edits via a name check, honest replies).
+const NAME_OK = /^[\p{L}][\p{L} '.-]{0,49}$/u;
+const HOME_REJECT = { user_name: "That doesn't look like a name. Try letters only.", agent_name: "Let's pick a different one.", need: "Could you say a bit more?" };
+const HOME_CHANGED = { agent_name: (v) => `Okay, ${v} it is.`, user_name: (v) => `Thanks, ${v} it is.`, need: (v) => `Okay, noted: ${v}.` };
+
+function homeEdit(s, slot, value) {
+  const v = value.trim();
+  const ok = slot === "need" ? v.length >= 3 : NAME_OK.test(v);
+  if (!ok) return { ok: false, reason: slot === "need" ? "too_short" : "charset", message: HOME_REJECT[slot] };
+  fill(s, slot, v);
+  s.deferred = s.deferred.filter((d) => d !== slot);
+  return { ok: true, reply: HOME_CHANGED[slot](v) };
+}
+
+function homeReply(s, text) {
+  const t = text.trim();
+  let m;
+  if ((m = t.match(/^(?:call me|my name is)\s+(.+?)[.!]*$/i))) return homeEdit(s, "user_name", m[1]).reply ?? HOME_REJECT.user_name;
+  if ((m = t.match(/^(?:rename yourself|call yourself)\s+(.+?)[.!]*$/i))) return homeEdit(s, "agent_name", m[1]).reply ?? HOME_REJECT.agent_name;
+  if (/what can you do|what will you do/i.test(t)) return "I'm here for your email, calendar and everyday tasks, and I ask for your OK before acting for you. This trial can't carry out tasks yet.";
+  const gmail = s.slots.gmail.status === "filled" ? "" : " Connect Gmail on this screen whenever you're ready.";
+  if (/inbox|email|calendar|send|check|reply|schedule/i.test(t)) return `I can't do that in this trial yet, so nothing's been read, sent or changed.${gmail}`;
+  return "You can rename me, change your name or what you'd like help with right here.";
+}
+
 /** Canned stand-in for extraction + brain + phrasing. */
 function turn(s, text) {
   const low = text.trim().toLowerCase();
+  const wasGraduated = s.graduated;
   let reply;
-  if (s.node === "agent_name") {
+  if (s.graduated) {
+    reply = homeReply(s, text);
+  } else if (s.node === "agent_name") {
     fill(s, "agent_name", text.trim());
     s.node = "call_offer";
     reply = `Got it: ${text.trim()}. Want to hop on a quick call for the rest, or keep typing?`;
@@ -108,7 +136,7 @@ function turn(s, text) {
   push(s, "transcript", { role: "assistant", text: reply, channel: "text" });
   push(s, "state", snapshot(s));
   if (s.node === "gmail") push(s, "gmail_connect_card", { node: "gmail" });
-  if (s.graduated && low) push(s, "graduate", { deferred: s.deferred });
+  if (s.graduated && !wasGraduated) push(s, "graduate", { deferred: s.deferred });
   return reply;
 }
 
@@ -138,6 +166,7 @@ function create(seed = {}) {
   for (const [role, text] of seed.transcript ?? []) push(s, "transcript", { role, text, channel: "text" });
   push(s, "state", snapshot(s));
   if (s.node === "gmail") push(s, "gmail_connect_card", { node: "gmail" });
+  if (s.graduated) push(s, "graduate", { deferred: s.deferred }); // as the real agent's history has it
   return { s, reply: hello };
 }
 
@@ -290,7 +319,7 @@ const server = createServer(async (req, res) => {
     if (!body || typeof body.email !== "string" || !body.email.includes("@") || !body.google_sub) return send(res, 422, { error: "invalid_email" });
     s.slots.gmail = { status: "filled", value: body.email, source: "oauth", needs_confirm: false };
     s.deferred = s.deferred.filter((d) => d !== "gmail");
-    s.node = nextMissing(s);
+    if (!s.graduated) s.node = nextMissing(s);
     s.version += 1;
     const reply = `Got it, connected as ${body.email}.`;
     push(s, "gmail_connected", { email: body.email });
@@ -314,6 +343,18 @@ const server = createServer(async (req, res) => {
     if (typeof body.version === "number" && body.version !== s.version) return send(res, 409, { error: "version_conflict" });
     const reply = turn(s, body.text);
     return send(res, 200, { reply, state: snapshot(s), push_ui: [], trace_id: "stub" });
+  }
+  if (req.method === "POST" && sub === "edit") {
+    // GRAD-001 home tap-to-edit: 422 + message when the (stub) validator refuses; nothing saved.
+    const body = (await readJson(req)) ?? {};
+    if (!["agent_name", "user_name", "need"].includes(body.slot) || typeof body.value !== "string") return send(res, 422, { error: "bad_body" });
+    if (!s.graduated) return send(res, 409, { error: "not_graduated" });
+    const r = homeEdit(s, body.slot, body.value);
+    if (!r.ok) return send(res, 422, { error: "invalid_value", slot: body.slot, reason: r.reason, message: r.message });
+    s.version += 1;
+    push(s, "transcript", { role: "assistant", text: r.reply, channel: "text" });
+    push(s, "state", snapshot(s));
+    return send(res, 200, { reply: r.reply, state: snapshot(s), push_ui: [], trace_id: "stub" });
   }
   if (req.method === "POST" && sub === "call") {
     const body = (await readJson(req)) ?? {};

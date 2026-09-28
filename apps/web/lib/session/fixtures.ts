@@ -320,11 +320,14 @@ const BUILDERS: Record<StateName, () => SessionSnapshot> = {
           value: "Getting your inbox under control",
           detail:
             "First up: a short list of what needs a reply, and the junk ready to archive. Nothing gets sent or changed without your OK.",
+          slot: "need",
         },
         tiles: [
-          { label: "Your assistant", value: "Juno" },
-          { label: "You", value: "Maya" },
+          { label: "Your assistant", value: "Juno", slot: "agent_name" },
+          { label: "You", value: "Maya", slot: "user_name" },
         ],
+        gmail: { state: "idle" },
+        thread: [],
         deferred: [
           {
             id: "defer-gmail",
