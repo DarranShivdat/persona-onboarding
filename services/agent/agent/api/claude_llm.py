@@ -144,7 +144,7 @@ class ClaudeTurnLlm:
             p.respond_to, p.say, p.changed = [], [], []
             reaction = self._reaction(p, state)
         ack = home_ack(state, plan, skip=edits if reaction else ())
-        return " ".join(x for x in [reaction, *ack, *home_tail(plan)] if x).strip()
+        return " ".join(x for x in [reaction, *ack, *home_tail(plan, state)] if x).strip()
 
     def _reaction(self, plan: ResponsePlan, state: SessionState) -> str:
         val = lambda s: state.slots[s].value if s in state.slots else None  # noqa: E731

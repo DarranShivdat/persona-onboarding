@@ -360,7 +360,7 @@ class CallSession:
         await run_silence_floor(self.silence, speak=self.speak,
                                 park=lambda line: self.say_goodbye(line, "silence_timeout"),
                                 line=lambda action: silence_line(spec, self.current_node(), action),
-                                sleep=asyncio.sleep)
+                                sleep=asyncio.sleep, node=self.current_node)
 
     async def _cancel_background(self) -> None:
         me = asyncio.current_task()

@@ -243,7 +243,20 @@ HOME_REPLY = {
     "home_offer_gmail": "Connect Gmail on this screen whenever you're ready.",
     "home_need_added": "I've added that to what you'd like help with.",
     "home_chat": "You can rename me, change your name or what you'd like help with right here.",
+    "home_ask_user_name": "Sure. What should I call you?",
+    "home_ask_agent_name": "Sure. What would you like to call me?",
+    "home_ask_need": "Sure. What would you like help with?",
+    "home_off_topic": ("That's outside what I can help with in this trial, but I can update my name, "
+                       "your name, or what you'd like help with."),
+    "home_math_tail": "Otherwise, I'm here if you want to rename me, change your name, or update what you'd like help with.",
+    "home_cancelled": "No problem, nothing's changed.",
 }
+
+
+def home_spelling_line(typed: str, suggestion: str) -> str:
+    """HOME-002: an ambiguous typed name ("Darrran") is checked before it's saved."""
+    return (f"Just checking the spelling: did you mean {suggestion} ({spell(suggestion, '-')})? "
+            f"Say yes, or type it the way you'd like it.")
 HOME_REJECTED = {
     "charset": "That doesn't look like a name. Try letters only.",
     "too_short": "Could you say a bit more?",

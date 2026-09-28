@@ -1,6 +1,6 @@
 import { test } from "@playwright/test";
 import { CHECKPOINT, TARGET, byIdx, checkpoint, enumerate, expect, find, generic, shot, writeRows, type Ctx, type Expectation, type Row } from "./audit";
-import { SCREENS } from "./screens";
+import { SCREENS, START_OVER_CANCEL } from "./screens";
 
 // AUDIT-001: for every screen x viewport, every visible control must have an expectation and
 // pass it. Unknown controls FAIL (a new button needs an audit entry). `fixme` expectations
@@ -59,7 +59,9 @@ for (const screen of SCREENS) {
     }
 
     const ctls = await enumerate(page);
-    const pick = (key: string) => screen.controls.find((e) => (typeof e.match === "string" ? e.match === key : e.match.test(key)));
+    const hit = (e: Expectation, key: string) => (typeof e.match === "string" ? e.match === key : e.match.test(key));
+    // Screen entries first; the header "Start over" (RESET-001) is global to every chat/home screen.
+    const pick = (key: string) => screen.controls.find((e) => hit(e, key)) ?? [START_OVER_CANCEL].find((e) => hit(e, key));
     const used = new Set<Expectation>();
     const todo: { key: string; e: Expectation; fails: string[]; info: string[] }[] = [];
     for (const c of ctls) {

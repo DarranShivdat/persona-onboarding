@@ -82,7 +82,7 @@ export function App({ initialState, capture, live }: { initialState: StateName; 
   if (snap.surface === "home" && snap.home) {
     return (
       <div className="app" data-surface="home">
-        <TopBar right={snap.home.userName} />
+        <TopBar right={snap.home.userName} startOver />
         <main className="home">
           <Home home={snap.home} agent={agent} onAct={act} onEdit={driver.editSlot ? (slot, v) => driver.editSlot!(slot, v) : undefined} />
           <Composer ref={composerRef} placeholder={snap.composer.placeholder} onSend={send} />
@@ -95,7 +95,7 @@ export function App({ initialState, capture, live }: { initialState: StateName; 
   const liveCall = !!snap.call && snap.call.status !== "ended" && snap.call.status !== "elsewhere";
   return (
     <div className="app" data-surface="chat">
-      <TopBar checklist={snap.checklist} just={snap.justFilled} right="Setting up" />
+      <TopBar checklist={snap.checklist} just={snap.justFilled} right="Setting up" startOver />
       <Checklist items={snap.checklist} just={snap.justFilled} variant="mob" />
       {snap.notice && <Notice notice={snap.notice} onAct={act} />}
       <main className={`main ${showRail ? "with-call" : ""}`}>

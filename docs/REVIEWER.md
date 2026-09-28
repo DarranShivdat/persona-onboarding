@@ -58,6 +58,12 @@ asks you to reconnect about once a week.
 Prefer not to talk? Decline the call ("texting works just as well"). The same four steps
 run in chat, backed by the same brain and the same saved state.
 
+**Start over / `?reset=1`.** Your progress is saved in this browser, so a reload brings you
+back where you left off, including the "You're all set" screen. To test again from scratch,
+tap **Start over** in the top-right corner (it's there mid-flow and on the graduation screen)
+and confirm, or open https://persona-onboarding-darran.vercel.app/?reset=1. Either way, the
+saved session is forgotten and you land on a fresh "name your assistant" step.
+
 ## Things worth stress-testing
 
 These are designed behaviours. Please try to break them.

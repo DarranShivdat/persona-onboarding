@@ -24,6 +24,23 @@ flips to PASS by itself once fixed); `SKIP` = action not exercised on LIVE (read
 mock fixture; generic checks still ran); `BLOCKED` = Vercel's bot checkpoint was served instead
 of the app.
 
+## Start over (RESET-001, Mon 2026-09-28)
+
+A header **Start over** button now appears on every chat and home screen (mid-flow and on the
+graduation screen), next to the user's name on home. It opens a confirm (`Start over?`, with
+**Cancel** focused, and **Yes, start over**); confirming POSTs `/api/session/reset`, which
+replaces the httpOnly session cookie server-side with a fresh session and reloads onto the
+`agent_name` step. `/?reset=1` does the same through `GET /api/session/reset` (303 to `/`).
+
+| Screen | Control | Expected | How it's audited |
+|---|---|---|---|
+| every chat/home screen | `button:Start over @header` | opens the confirm; Cancel closes it and keeps the session | global expectation (`START_OVER_CANCEL`); LOCAL exercises it on every screen, LIVE runs generic checks and the full flow below |
+| resume (mid-flow), home (graduated) | `button:Start over @header` | Cancel keeps the session; confirm -> reset 200, fresh session (new cookie, no user bubbles, "Assistant name: Not yet") | `START_OVER_FULL`, LOCAL + LIVE |
+| confirm | `Cancel`, `Yes, start over` | close / reset | exercised inside the two rows above (they only exist once the confirm is open) |
+
+Also covered by `apps/web/e2e/reset-start-over.spec.ts` (graduation screen with Cancel then
+confirm, mid-flow, and `/?reset=1`).
+
 ## Failures found and fixes (this branch)
 
 | # | Screen / control | Failure | Fix |
