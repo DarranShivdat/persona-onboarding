@@ -11,7 +11,7 @@ working end to end by **Mon 12:00pm PT** — **ahead: hosted + smoke PASS Sun ~1
 Status Mon ~1:47am: **M1 ✅ M2 ✅ M3 ✅ M5 ✅**; **M6 DOCS/HOSTED/PROMPT ✅**; **M7** NAME/GRAD/AUDIT/GUARD/LAT-001/LAT-002/REQ-001 ✅;
 LAT tip + split-turn name fix **LIVE** (agent `/health` sha `d4de37d`, web build `e2fc98f`). Smoke 7/7 PASS Mon 1:47am.
 Live: web `https://persona-onboarding-darran.vercel.app`, agent `https://persona-onboarding-agent.fly.dev`.
-Latency probe after tip: user-stop→first-audio ~2.0–2.5s (was ~8s pre-LAT).
+Latency probe after tip: user-stop→first-audio p50 2.29s / p90 2.48s (pre-LAT with the 1:00am hotfix: p50 4.32s / p90 7.02s; ~8s was the broken 12:06–1:00am window). Target <1.5s → LAT-003.
 Remaining Darran: Google Console test users + Branding homepage/privacy/authorized domain
 (see `docs/deploy/DEPLOY-STATE.md`). OAuth stays Testing until then.
 
@@ -107,7 +107,7 @@ READY FOR PRODUCT TEST to Darran.
 
 ## Parallelism
 Now (Mon ~1:47am PT): M7 complete on main; LAT tip + be8e932 **LIVE** (DEPLOY-STATE LIVE).
-No ready Opus packets. Hosted latency probes already collected under `.persona-qa/latency/` (~2.0–2.5s after tip vs ~8s pre-LAT).
+No ready Opus packets. Hosted latency probes already collected under `.persona-qa/latency/` (p50 2.29s after tip vs 4.32s pre-LAT; see docs/qa/live-test-2026-09-27.md).
 Next: Mon morning hosted human smoke (text/voice/Gmail/hangup); Darran still needed for Google Console test users.
 
 Keep 2–3 Opus workers active when packets are ready. Darran still needed for Google Console test users.
