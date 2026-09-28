@@ -90,9 +90,26 @@ def agent_name_nudge() -> str:
     return AGENT_NAME_NUDGE.format(*AGENT_NAME_SUGGESTIONS[:2])
 
 
-def spell(value: str) -> str:
-    """'Sam' -> 'S, A, M' (spoken spell-back)."""
-    return ", ".join(c.upper() for c in value if not c.isspace())
+def spell(value: str, sep: str = ", ") -> str:
+    """'Sam' -> 'S, A, M' (spoken spell-back); sep="-" -> 'S-A-M'."""
+    return sep.join(c.upper() for c in value if not c.isspace())
+
+
+# user_name read-back (NAME-001). Only the NAME is spelled on the call, never an email.
+NAME_CONFIRM_VOICE = "Nice to meet you. Did I get that right: {v}, {s}?"
+NAME_RECONFIRM_VOICE = "Thanks. So that's {v}, {s}?"
+NAME_CONFIRM_TEXT = "Just checking, should I call you {v}?"
+NAME_REASK = "Sorry about that. What's your name again?"
+NAME_SPELL_ASK = "Sorry, could you spell it for me, letter by letter?"
+NAME_CONFIRMED = "Perfect, thanks {v}."
+NAME_KEEP = "No worries, I'll go with {v} for now. You can fix it anytime."
+
+
+def name_confirm_line(value: str, channel: Channel, attempt: int = 1) -> str:
+    if channel != "voice":
+        return NAME_CONFIRM_TEXT.format(v=value)
+    line = NAME_CONFIRM_VOICE if attempt <= 1 else NAME_RECONFIRM_VOICE
+    return line.format(v=value, s=spell(value, "-"))
 
 
 def _say_char(c: str) -> str:
@@ -120,7 +137,7 @@ def confirm_line(slot: str, value: Optional[str], channel: Channel) -> str:
     if slot == "agent_name":
         return f"Just checking, you'd like to call your assistant {value}?"
     if slot == "user_name":
-        return f"I want to get your name right. I heard {spell(value)}. Is that right?"
+        return name_confirm_line(value, channel)
     if slot == "gmail":
         return email_readback(value)
     return f"Just checking: {value}. Is that right?"

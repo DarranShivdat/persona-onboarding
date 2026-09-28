@@ -113,7 +113,7 @@ async def _drive(state: SessionState, utterances: list[str]):
 
 def test_flow_manager_pipeline_drives_the_shared_brain():
     st = apply(SPEC, SessionState(session_id="p1"), Turn(channel="text", event="open")).state
-    st, fm, llm, graduated = asyncio.run(_drive(st, ["I'm Sam", "uh", "help me triage my inbox every morning",
+    st, fm, llm, graduated = asyncio.run(_drive(st, ["I'm Sam, S-A-M", "uh", "help me triage my inbox every morning",
                                                     "just let me in"]))
     assert st.graduated and st.active_channel == "voice"
     assert st.slot("user_name").value == "Sam" and st.slot("need").status == "filled"

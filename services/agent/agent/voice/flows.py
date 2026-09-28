@@ -113,12 +113,40 @@ def voice_line(spec: FlowSpec, plan: ResponsePlan, state: SessionState) -> str:
     spelled = T.email_readback(gm.value) if gm and gm.value and gm.status == "candidate" else None
     # Never spell an email out on the call (NATO capture was cut): the card + chat carry it.
     crit = [c for c in critical_lines(plan, state, CHANNEL) if c != spelled]
-    rest = template_reply(spec, plan, state, CHANNEL, critical=bool(crit))
+    name_line = _name_line(plan, state)
+    if name_line:
+        # NAME-001: the name read-back / re-ask replaces the generic confirm or ask line.
+        generic = T.confirm_line(NAME, state.slots[NAME].value, CHANNEL) if plan.confirm == NAME else None
+        crit = [c for c in crit if c != generic] + [name_line]
+    rest = _name_ack(plan, state, template_reply(spec, plan, state, CHANNEL, critical=bool(crit)))
     gmail = ""
     if plan.ask == "gmail" and not crit:
         # Live test 2026-09-27: "type your email in the chat" misled (typing never connects).
         gmail = GMAIL_TYPED if spelled else ""
     return " ".join(p for p in [VOICE_GREET if greet else "", rest, gmail, *crit] if p)
+
+
+NAME = "user_name"
+
+
+def _name_line(plan: ResponsePlan, state: SessionState) -> str:
+    """NAME-001 read-back lines: the templated name confirm (spelled), or after a "no" the
+    re-ask / spell-it-for-me ask. Empty when the plan has no name business."""
+    sv = state.slots.get(NAME)
+    if plan.confirm == NAME and sv and sv.value:
+        return T.name_confirm_line(sv.value, CHANNEL, sv.confirm_attempts)
+    if NAME in plan.denied and plan.ask == NAME:
+        return T.NAME_SPELL_ASK if plan.spell == NAME else T.NAME_REASK
+    return ""
+
+
+def _name_ack(plan: ResponsePlan, state: SessionState, rest: str) -> str:
+    """After a read-back the name ack says the (confirmed or kept) name, not "nice to meet you" twice."""
+    sv = state.slots.get(NAME)
+    if NAME not in plan.acknowledge or not sv or not sv.value or not sv.confirm_attempts:
+        return rest
+    line = T.NAME_KEEP if sv.low_confidence else T.NAME_CONFIRMED
+    return rest.replace(T.ack_for(NAME, sv.value), line.format(v=sv.value.strip().rstrip(".")))
 
 
 def gmail_oauth_line(data: Optional[dict]) -> str:
@@ -238,6 +266,11 @@ class VoiceFlow:
         self.last: Optional[VoiceTurn] = None
         self._tool = record_slots_tool(spec)
         self._graduated_said = False
+        self.stt_confidence: Optional[float] = None   # last final transcript's STT confidence
+
+    def note_stt_confidence(self, confidence: Optional[float]) -> None:
+        """Called by the pipeline with each final transcript's STT confidence (Deepgram)."""
+        self.stt_confidence = confidence
 
     # -- functions --
 
@@ -252,7 +285,11 @@ class VoiceFlow:
     async def handle_record_slots(self, args: dict, flow_manager: Any = None) -> tuple[dict, "NodeConfig"]:
         """Flows handler: extraction in, brain-decided (result, next node) out."""
         utterance = _utterance(self.context)
-        vt = await self.brain.turn(utterance, parse(self.spec, args if isinstance(args, dict) else {}))
+        x = parse(self.spec, args if isinstance(args, dict) else {})
+        if self.stt_confidence is not None and NAME in x.slots:
+            # The brain sees the weaker of the STT and extraction confidence for the name.
+            x.confidences[NAME] = min(self.stt_confidence, x.confidences.get(NAME, 1.0))
+        vt = await self.brain.turn(utterance, x)
         return await self._after(vt)
 
     async def opening(self, *, reconnect: bool = False) -> "NodeConfig":

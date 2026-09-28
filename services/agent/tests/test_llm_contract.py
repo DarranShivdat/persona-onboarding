@@ -83,7 +83,7 @@ def test_forced_tool_choice_on_latency_models():
 @pytest.mark.parametrize("model", ["claude-fable-5-1", "claude-opus-5-5", "claude-some-future-model"])
 def test_auto_tool_choice_where_forced_is_rejected(model):
     c = FakeClient(tool_resp({"user_name": "Sam"}))
-    r = Extractor(c, SPEC, model=model).extract("I'm Sam", ctx("user_name"))
+    r = Extractor(c, SPEC, model=model).extract("I'm Sam, S-A-M", ctx("user_name"))
     kw = c.messages.calls[0]
     assert kw["tool_choice"] == {"type": "auto"}
     assert "Call the record_slots tool" in kw["messages"][0]["content"]

@@ -17,6 +17,10 @@ Outcome = Literal["ok", "confirm", "candidate", "unsure", "reject"]
 
 # Voice STT confidence below this needs a spell-back before a name is accepted.
 VOICE_NAME_MIN_CONFIDENCE = 0.8
+# Typed names are authoritative; only unusual ones (NAME-001) are confirmed. flow.yaml's
+# user_name.confirm_policy may override these defaults.
+TEXT_NAME_MIN_CONFIDENCE = 0.8
+TEXT_NAME_MAX_WORDS = 2
 # Agent names longer than this are allowed but confirmed ("very long").
 AGENT_NAME_CONFIRM_LEN = 24
 AGENT_NAME_MAX_LEN = 40
@@ -89,22 +93,111 @@ def _unspell(v: str) -> Optional[str]:
     return letters[:1].upper() + letters[1:].lower()
 
 
-def person_name(raw: Optional[str], *, channel: str = "text", confidence: Optional[float] = None) -> Validation:
-    v = re.sub(r"\s+", " ", _clean(raw))
+_NATO_LETTER = {
+    "alpha": "a", "alfa": "a", "bravo": "b", "charlie": "c", "delta": "d", "echo": "e", "foxtrot": "f",
+    "golf": "g", "hotel": "h", "india": "i", "juliet": "j", "juliett": "j", "kilo": "k", "lima": "l",
+    "mike": "m", "november": "n", "oscar": "o", "papa": "p", "quebec": "q", "romeo": "r", "sierra": "s",
+    "tango": "t", "uniform": "u", "victor": "v", "whiskey": "w", "xray": "x", "x-ray": "x",
+    "yankee": "y", "zulu": "z",
+}
+_REPEAT = {"double": 2, "triple": 3}
+_AS_IN = {("as", "in"), ("like", "in"), ("as", "for")}
+_JOINERS = {"and", "then"}
+_COPULAS = {"it's", "its", "is", "s", "was", "that's", "thats"}
+_WORD = re.compile(r"[^\W\d_]+(?:['’][^\W\d_]+)?", re.UNICODE)
+
+
+def assemble_spelling(text: Optional[str]) -> Optional[str]:
+    """Letters spoken one by one -> the name: "D as in David, A, double R, A, N" -> "Darran".
+
+    Takes the longest run of letter items (single letters, NATO words, "double r",
+    "d as in david" / "d for david"); fillers ("no", "it's", "spelled") end a run.
+    None unless the run has at least two letters (so "I'm Sam" is never a spelling).
+    """
+    toks = [t.lower() for t in _WORD.findall((text or "").replace("x-ray", "xray"))]
+    best: list[str] = []
+    run: list[str] = []
+    i = 0
+    while i < len(toks):
+        t = toks[i]
+        letter, width = None, 1
+        if t in _REPEAT and i + 1 < len(toks) and len(toks[i + 1]) == 1:
+            letter, width = toks[i + 1] * _REPEAT[t], 2
+        elif len(t) == 1 and not (t == "a" and not run and i and toks[i - 1] in _COPULAS):
+            letter = t
+        elif t in _NATO_LETTER:
+            letter = _NATO_LETTER[t]
+        if letter is None:
+            if not (run and t in _JOINERS):
+                best, run = max(best, run, key=len), []
+            i += 1
+            continue
+        run.append(letter)
+        i += width
+        # "D as in David" / "D for David": the example word only names the letter.
+        if i + 2 < len(toks) and tuple(toks[i:i + 2]) in _AS_IN:
+            i += 3
+        elif i + 1 < len(toks) and toks[i] == "for" and len(toks[i + 1]) > 1:
+            i += 2
+    letters = "".join(max(best, run, key=len))
+    if len(letters) < 2:
+        return None
+    return letters[:1].upper() + letters[1:]
+
+
+def _looks_unusual(v: str, confidence: Optional[float], utterance: Optional[str],
+                   min_conf: float, max_words: int) -> Optional[str]:
+    """Why a *typed* name deserves a "did I get that right?" (None: take it as typed)."""
+    if confidence is not None and confidence < min_conf:
+        return "low_confidence"
+    if len(v.split(" ")) > max_words:
+        return "many_words"
+    if _SENTENCE.search(v) or v.endswith("?"):
+        return "sentence"
+    if utterance and v.lower() not in re.sub(r"\s+", " ", utterance).lower():
+        # The typed text is authoritative: a name the user didn't literally type was rewritten.
+        return "not_as_typed"
+    return None
+
+
+_SENTENCE = re.compile(
+    r"\b(i|i'm|im|me|my|is|am|are|the|and|you|your|name|call|it|this|that|not|just)\b", re.IGNORECASE)
+
+
+def person_name(raw: Optional[str], *, channel: str = "text", confidence: Optional[float] = None,
+                utterance: Optional[str] = None, confirm_policy: Optional[dict] = None) -> Validation:
+    """Confirm policy (flow.yaml user_name.confirm_policy): voice `always` reads the name back
+    (spelled) before it is filled; text `unusual` confirms only odd names. A spelled name
+    *is* the spell-back and is accepted as is on either channel."""
+    pol = confirm_policy or {}
+    v = re.sub(r"\s+", " ", _clean(raw)).rstrip(".!")
     if not v:
         return Validation("reject", reason="empty")
     spelled = _unspell(v)
     if spelled is not None:
-        # A spelled name *is* the spell-back: accept regardless of STT confidence.
         return Validation("ok", spelled)
     if len(v) > PERSON_NAME_MAX_LEN or len(v.split(" ")) > PERSON_NAME_MAX_WORDS:
         return Validation("reject", reason="too_long")
     if not _PERSON_NAME.match(v):
+        if re.search(r"[^\W\d_]", v) and not re.search(r"[<>{}\[\]\\/@#$%^*=|~]", v):
+            # Letters with a stray digit/symbol ("Dar4an"): never filled silently.
+            return Validation("confirm", v, reason="unusual_charset")
         return Validation("reject", reason="charset")
     if _ABUSIVE.search(v):
         return Validation("reject", reason="abusive")
-    if channel == "voice" and confidence is not None and confidence < VOICE_NAME_MIN_CONFIDENCE:
-        return Validation("confirm", v, reason="low_confidence_spell_back")
+    mode = pol.get(channel)
+    if channel == "voice":
+        if mode == "always":
+            return Validation("confirm", v, reason="voice_read_back")
+        if confidence is not None and confidence < VOICE_NAME_MIN_CONFIDENCE:
+            return Validation("confirm", v, reason="low_confidence_spell_back")
+        return Validation("ok", v)
+    if mode == "unusual":
+        why = _looks_unusual(v, confidence, utterance,
+                             float(pol.get("text_min_confidence", TEXT_NAME_MIN_CONFIDENCE)),
+                             int(pol.get("text_max_words", TEXT_NAME_MAX_WORDS)))
+        if why:
+            return Validation("confirm", v, reason=why)
     return Validation("ok", v)
 
 
