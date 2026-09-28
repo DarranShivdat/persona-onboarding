@@ -5,13 +5,16 @@
 #   e.g. bash scripts/deploy/smoke.sh https://persona-onboarding.vercel.app https://persona-onboarding-agent.fly.dev
 #
 # Checks: agent /health (+db ok), web home page, session create via the web proxy (cookie),
-# one text turn via the proxy, direct agent session + turn, ICE route (if present), Google OAuth
+# one text turn via the proxy, direct agent session + turn, ICE route (TURN present), Google OAuth
 # start redirect (Location only — never follows it, no login). Prints PASS/FAIL per check and
 # exits 1 on any FAIL. SKIP = optional check whose route does not exist yet.
-# Env: SMOKE_ICE_PATHS (space-separated URLs to try for the ICE route), SMOKE_TIMEOUT (s, 15).
+# Env: SMOKE_ICE_PATHS (space-separated URLs to try for the ICE route), SMOKE_TIMEOUT (s, 15),
+#      SMOKE_REQUIRE_TURN=0 (STUN-only ICE passes; local stack), SMOKE_SKIP_OAUTH=1 (no Google
+#      client configured; local offline stack). Deploy runs leave both unset.
 set -uo pipefail
 
-[ $# -eq 2 ] || { sed -n '2,11p' "$0"; exit 2; }
+case "${1:-}" in -h|--help) sed -n '2,14p' "$0"; exit 0 ;; esac
+[ $# -eq 2 ] || { sed -n '2,14p' "$0"; exit 2; }
 WEB="${1%/}"; AGENT="${2%/}"
 T="${SMOKE_TIMEOUT:-15}"
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
@@ -67,23 +70,28 @@ if [ "$CODE" = 201 ]; then
   if [ "$CODE" = 200 ]; then ok "agent POST /v1/sessions + /turns"; else bad "agent /v1/sessions/{id}/turns" "HTTP $CODE"; fi
 else bad "agent POST /v1/sessions" "HTTP $CODE"; fi
 
-# 6. ICE route (browser + server must share TURN; ADR 0001). Optional until the route exists.
-ICE_PATHS="${SMOKE_ICE_PATHS:-$AGENT/v1/ice $AGENT/api/ice $WEB/api/session/ice $WEB/api/ice}"
+# 6. ICE route (browser + server must share TURN; ADR 0001): web proxy GET /api/session/ice.
+ICE_PATHS="${SMOKE_ICE_PATHS:-$WEB/api/session/ice}"
 ice_done=0
 for u in $ICE_PATHS; do
   req GET "$u"
   if [ "$CODE" = 200 ]; then
     n="$(json "len(d.get('iceServers', d.get('ice_servers', d)) if not isinstance(d, list) else d)")"
     relay="$(python3 -c "import json,sys; print('turn' in open(sys.argv[1]).read())" "$TMP/body")"
-    if [ "$relay" = True ]; then ok "ICE $u ($n servers, TURN present)"; else bad "ICE $u" "no turn: URLs (TURN not configured?)"; fi
+    if [ "$relay" = True ]; then ok "ICE $u ($n servers, TURN present)"
+    elif [ "${SMOKE_REQUIRE_TURN:-1}" = 0 ]; then ok "ICE $u ($n servers, no TURN — allowed by SMOKE_REQUIRE_TURN=0)"
+    else bad "ICE $u" "no turn: URLs (TURN not configured?)"; fi
     ice_done=1; break
   elif [ "$CODE" = 401 ] || [ "$CODE" = 403 ]; then
     ok "ICE $u exists (auth required: $CODE)"; ice_done=1; break
   fi
 done
-[ "$ice_done" = 1 ] || skip "ICE route" "none of: $ICE_PATHS (set SMOKE_ICE_PATHS once VOICE-005 lands)"
+[ "$ice_done" = 1 ] || bad "ICE route" "no 200/401 from: $ICE_PATHS"
 
 # 7. Google OAuth start: redirect to Google with our client + callback; never followed.
+if [ "${SMOKE_SKIP_OAUTH:-0}" = 1 ]; then
+  skip "OAuth start" "SMOKE_SKIP_OAUTH=1 (no Google client configured)"
+else
 req GET "$WEB/api/oauth/google/start"
 LOC="$(tr -d '\r' < "$TMP/hdrs" | sed -n 's/^[Ll]ocation: //p' | head -1)"
 case "$CODE:$LOC" in
@@ -95,6 +103,7 @@ case "$CODE:$LOC" in
     else bad "OAuth start" "Location lacks client_id or https redirect_uri"; fi ;;
   *) bad "OAuth start" "HTTP $CODE, Location=${LOC:-none} (oauth_unconfigured? check GOOGLE_OAUTH_* on Vercel)" ;;
 esac
+fi
 
 echo
 if [ "$FAILS" = 0 ]; then echo "SMOKE PASS ($PASSES checks)"; exit 0; fi
