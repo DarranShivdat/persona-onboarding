@@ -17,8 +17,15 @@ class CallTeardown:
     """Run named cleanup steps once, best-effort, in order. The first reason wins;
     concurrent callers await the same run. Every step's failure is logged, never raised."""
 
-    def __init__(self, steps: Optional[list[tuple[str, Step]]] = None):
+    # Per-step budget: on the hosted stack (TURN relay) transport cleanup / worker cancel were
+    # seen to hang forever, which blocked DELETE /call and leaked the pipeline. A step that
+    # overruns is cancelled and recorded as a failure; later steps (release lease) still run.
+    STEP_TIMEOUT_S = 5.0
+
+    def __init__(self, steps: Optional[list[tuple[str, Step]]] = None,
+                 step_timeout_s: Optional[float] = None):
         self._steps: list[tuple[str, Step]] = list(steps or [])
+        self.step_timeout_s = self.STEP_TIMEOUT_S if step_timeout_s is None else step_timeout_s
         self._task: Optional[asyncio.Task] = None
         self.reason: Optional[str] = None
         self.failures: list[str] = []
@@ -42,7 +49,10 @@ class CallTeardown:
         logger.info(f"call teardown: {self.reason}")
         for name, step in self._steps:
             try:
-                await step()
+                await asyncio.wait_for(step(), self.step_timeout_s)
+            except asyncio.TimeoutError:
+                self.failures.append(name)
+                logger.warning(f"teardown step {name} timed out after {self.step_timeout_s:.0f}s")
             except asyncio.CancelledError:
                 raise
             except Exception as e:  # noqa: BLE001 - best-effort cleanup

@@ -36,6 +36,9 @@ GRACE_REASONS = frozenset({"client_disconnected", "network_drop", "ice_failed"})
 LOST_REASONS = frozenset({"taken_over", "lease_lost"})
 
 
+HANGUP_WAIT_S = 3.0  # max time DELETE /call waits for pipeline teardown
+
+
 @dataclass(frozen=True)
 class HandoffSettings:
     lease_ttl_s: float = 120.0
@@ -154,7 +157,13 @@ class CallControl:
             self.ended.setdefault(call_id, reason)
         hangup = self._pipelines.pop(call_id, None)
         if hangup is not None:
-            await _quietly(hangup(reason))
+            # Don't hold the hangup HTTP response hostage to pipeline teardown: the lease is
+            # already released above; teardown keeps running (shielded) in the background.
+            t = asyncio.ensure_future(_quietly(hangup(reason)))
+            try:
+                await asyncio.wait_for(asyncio.shield(t), HANGUP_WAIT_S)
+            except asyncio.TimeoutError:
+                logger.warning(f"call {call_id}: teardown still running after {HANGUP_WAIT_S:.0f}s; responding anyway")
         return released, outcome
 
     async def close(self) -> None:
