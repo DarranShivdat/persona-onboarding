@@ -5,8 +5,8 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **LIVE — agent c029e5d, web c029e5d (HONEST-001 one fixed need ack 'Noted: {need}.' + permissions-only Gmail pitch, no capability claims; NAME-003 spoken names incl. spelled are read back until an explicit yes, cap 4; plus RESET-001/HOME-002/SIL-002; quick ack ON via Fly secret)** |
-| OWNER | EM executor (honest-need/name fix) — deploy finished 1:25pm PT Mon. Later `--apply` runs = redeploys only; log them below |
+| STATE | **REDEPLOYING — agent + web from main (NAME-004 explicit yes settles the read-back, VQA-002 approved answers on text). Previous LIVE: agent/web c029e5d** |
+| OWNER | EM executor (yes-loop/VQA fix) — started 1:45pm PT Mon |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
 ## Env files (gitignored, mode 600, values never committed/printed)
