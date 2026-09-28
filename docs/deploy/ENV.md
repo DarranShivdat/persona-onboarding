@@ -54,6 +54,7 @@ Check a target by name only (never prints values):
 | `PERSONA_CALL_LEASE_TTL_S` | agent (Fly) | optional | no | `120` | — | call lease TTL |
 | `PERSONA_CALL_HEARTBEAT_S` | agent (Fly) | optional | no | `30` | — | call heartbeat interval |
 | `PERSONA_CALL_GRACE_S` | agent (Fly) | optional | no | `20` | — | reconnect grace window (EC-04) |
+| `PERSONA_WARMUP_TIMEOUT_S` | agent (Fly) | optional | no | `20` | — | agent.main boot warmup budget (seconds); best-effort, time-boxed |
 
 ## ICE / TURN
 
@@ -92,6 +93,7 @@ Check a target by name only (never prints values):
 
 | Variable | Component | Required | Secret | Default | How to get / generate | Notes |
 |---|---|---|---|---|---|---|
+| `LOG_LEVEL` | agent (Fly) | optional | no | `info` | — | uvicorn/log level for agent.main (info\|debug\|warning\|error) |
 | `GIT_SHA` | agent (Fly) | optional | no | — | — | build id for /health; fly-agent.sh passes `fly deploy --env GIT_SHA=<sha>` |
 | `FLY_IMAGE_REF` | platform | optional | no | — | — | set by Fly; /health build id fallback |
 | `RAILWAY_GIT_COMMIT_SHA` | platform | optional | no | — | — | set by Railway (fallback host) |

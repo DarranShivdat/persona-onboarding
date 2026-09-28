@@ -106,6 +106,10 @@ REGISTRY: tuple[Var, ...] = (
     Var("PERSONA_CALL_LEASE_TTL_S", (AGENT,), section="voice", default="120", note="call lease TTL"),
     Var("PERSONA_CALL_HEARTBEAT_S", (AGENT,), section="voice", default="30", note="call heartbeat interval"),
     Var("PERSONA_CALL_GRACE_S", (AGENT,), section="voice", default="20", note="reconnect grace window (EC-04)"),
+    Var("PERSONA_WARMUP_TIMEOUT_S", (AGENT,), section="voice", default="20",
+        note="agent.main boot warmup budget (seconds); best-effort, time-boxed"),
+    Var("LOG_LEVEL", (AGENT,), section="build", default="info",
+        note="uvicorn/log level for agent.main (info|debug|warning|error)"),
     # --- ICE / TURN ------------------------------------------------------------------------
     Var("CLOUDFLARE_TURN_KEY_ID", (AGENT,), required=(AGENT,), section="ice",
         how="Cloudflare dashboard → Realtime → TURN → create key (see scripts/deploy/cloudflare-turn.md)",
