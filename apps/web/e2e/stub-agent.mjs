@@ -300,12 +300,18 @@ const server = createServer(async (req, res) => {
   }
   if (req.method === "POST" && sub === "call") {
     const body = (await readJson(req)) ?? {};
-    if (s.callId) return send(res, 409, { error: "call_in_progress" });
+    let replaced = null;
+    if (s.callId && !body.take_over) return send(res, 409, { error: "call_in_progress", can_take_over: true });
+    if (s.callId) {
+      // VOICE-003 contract: take_over steals the lease and ends the old leg as `taken_over`.
+      replaced = s.callId;
+      push(s, "call_state", { state: "ended", call_id: replaced, reason: "taken_over" });
+    }
     const callId = (s.callId = randomUUID());
     push(s, "call_state", { state: "ringing", call_id: callId });
     push(s, "state", snapshot(s));
     const answer = typeof body.sdp === "string" && s.bot ? await botAnswer(s, callId, body) : null;
-    return send(res, 201, { call_id: callId, lease_expires_at: null, answer, status: "lease_acquired" });
+    return send(res, 201, { call_id: callId, lease_expires_at: null, answer, status: replaced ? "taken_over" : "lease_acquired", replaced });
   }
   if (req.method === "DELETE" && parts[3] === "call" && parts[4]) {
     const body = (await readJson(req)) ?? {};

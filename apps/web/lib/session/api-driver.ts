@@ -197,9 +197,9 @@ export class ApiSessionDriver implements SessionDriver {
    * Real call path: mic -> RTCPeerConnection offer -> POST call (acquires the lease; the agent
    * answers with its SDP) -> apply answer. Never publishes without the lease (EC-02/EC-09).
    */
-  async startCall(): Promise<void> {
+  async startCall(opts: { takeOver?: boolean } = {}): Promise<void> {
     if (!this.state || this.callId || this.dialing) return;
-    if (this.otherLive) return this.render(); // another device holds the call: take-over is explicit
+    if (this.otherLive && !opts.takeOver) return this.render(); // another device holds the call: take-over is explicit
     this.dialing = true;
     const seq = ++this.dialSeq;
     let mic: MediaStream | null = null;
@@ -220,7 +220,7 @@ export class ApiSessionDriver implements SessionDriver {
         return this.callFailed("Couldn’t start the call on this browser. Let’s keep texting.");
       }
       if (seq !== this.dialSeq) return media.close(); // cancelled while gathering
-      const r = await fetch(`${this.base}/call`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(media.offer) }).catch(() => null);
+      const r = await fetch(`${this.base}/call`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(opts.takeOver ? { ...media.offer, take_over: true } : media.offer) }).catch(() => null);
       if (r?.status === 409) {
         media.close();
         this.call = null;
@@ -441,17 +441,15 @@ export class ApiSessionDriver implements SessionDriver {
     }
   }
 
-  /** EC-02/EC-09: explicit take-over ends the other leg's lease first, then dials here. */
+  /**
+   * EC-02/EC-09: explicit take-over. The agent (VOICE-003 CallControl) atomically steals the
+   * lease on `POST /call {take_over: true}`, ends the other leg as `taken_over`, and stops its
+   * pipeline — no hangup turn, so the chat doesn't get a spurious "call ended" resume message.
+   */
   private async takeOver(): Promise<void> {
-    if (!this.otherCallId) await this.refreshState();
-    const other = this.otherCallId;
-    if (other) {
-      await fetch(`${this.base}/call/${encodeURIComponent(other)}`, { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ reason: "take_over" }) }).catch(() => null);
-    }
     this.otherCallId = null;
-    this.otherLive = false;
     this.call = null;
-    await this.startCall();
+    await this.startCall({ takeOver: true });
   }
 
   private async refreshState() {
