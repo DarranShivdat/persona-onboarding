@@ -89,6 +89,10 @@ class CallControl:
         """A running pipeline for `call_id` (so take-over/end can stop it in-process)."""
         self._pipelines[call_id] = hangup
 
+    async def connected(self, session_id: str, call_id: str) -> None:
+        """Media is up: tell every tab (`call_state: live`) so others show "in another tab"."""
+        await asyncio.to_thread(self.service._call_push, session_id, {"state": "live", "call_id": call_id})
+
     def detach(self, call_id: str) -> None:
         self._pipelines.pop(call_id, None)
 

@@ -56,10 +56,12 @@ function keepTexting(s: AgentState): string {
 }
 const HINT: Caption = { who: "", text: "", tone: "hint" };
 const CAPTION_TURNS = 3;
+const ICE_FETCH_TIMEOUT_MS = 2500;
 const SPEAKING_ON = 0.12;
 const SPEAKING_OFF = 0.05;
 
-/** ICE servers for the browser leg. NEXT_PUBLIC_PERSONA_ICE_URLS: comma-separated, "none" = host only. */
+/** Fallback ICE servers for the browser leg when the agent's list (GET /api/session/ice) is
+ * unavailable. NEXT_PUBLIC_PERSONA_ICE_URLS: comma-separated, "none" = host only. */
 function defaultIce(): RTCIceServer[] {
   const raw = process.env.NEXT_PUBLIC_PERSONA_ICE_URLS ?? "stun:stun.l.google.com:19302";
   const urls = raw.split(",").map((u) => u.trim()).filter((u) => u && u !== "none");
@@ -78,7 +80,8 @@ export interface ApiDriverOptions {
   oauthPath?: string;
   /** Reconnect backoff after the stream is closed for good (ms). */
   reconnectMs?: number;
-  /** ICE servers for the call (defaults from NEXT_PUBLIC_PERSONA_ICE_URLS). */
+  /** Fixed ICE servers for the call. Default: the agent's list (TURN, minted per call), falling
+   * back to NEXT_PUBLIC_PERSONA_ICE_URLS, then Google STUN. */
   iceServers?: RTCIceServer[];
 }
 
@@ -115,14 +118,14 @@ export class ApiSessionDriver implements SessionDriver {
   private readonly base: string;
   private readonly oauthBase: string;
   private readonly reconnectMs: number;
-  private readonly iceServers: RTCIceServer[];
+  private readonly iceServers: RTCIceServer[] | null;
 
   constructor(initial: AgentState | null, opts: ApiDriverOptions = {}) {
     this.state = initial;
     this.base = opts.basePath ?? "/api/session";
     this.oauthBase = opts.oauthPath ?? "/api/oauth/google";
     this.reconnectMs = opts.reconnectMs ?? 1500;
-    this.iceServers = opts.iceServers ?? defaultIce();
+    this.iceServers = opts.iceServers ?? null;
     this.syncLease(initial);
     this.snap = this.compose();
     if (typeof window !== "undefined") {
@@ -214,7 +217,7 @@ export class ApiSessionDriver implements SessionDriver {
       this.connectedAt = null;
       this.render();
       try {
-        media = await prepareCall(mic, this.iceServers);
+        media = await prepareCall(mic, await this.callIce());
       } catch {
         releaseMic(mic);
         return this.callFailed("Couldn’t start the call on this browser. Let’s keep texting.");
@@ -450,6 +453,23 @@ export class ApiSessionDriver implements SessionDriver {
     this.otherCallId = null;
     this.call = null;
     await this.startCall({ takeOver: true });
+  }
+
+  /** ICE for this call: the agent's list (same TURN as the server leg; short-lived creds). */
+  private async callIce(): Promise<RTCIceServer[]> {
+    if (this.iceServers) return this.iceServers;
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), ICE_FETCH_TIMEOUT_MS);
+    try {
+      const r = await fetch(`${this.base}/ice`, { cache: "no-store", signal: ctl.signal });
+      const body = r.ok ? ((await r.json()) as { ice_servers?: RTCIceServer[] }) : null;
+      if (Array.isArray(body?.ice_servers)) return body.ice_servers;
+    } catch {
+      // fall through to the static list
+    } finally {
+      clearTimeout(timer);
+    }
+    return defaultIce();
   }
 
   private async refreshState() {
