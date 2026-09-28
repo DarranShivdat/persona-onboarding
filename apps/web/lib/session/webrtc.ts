@@ -40,6 +40,10 @@ export interface CallMedia {
 }
 
 const GATHER_TIMEOUT_MS = 3000;
+/** LAT-001: once a TURN relay candidate is in, the offer is good enough to send (the agent's
+ * leg relays through TURN too). Waiting for "complete" can mean waiting on the slowest
+ * TURN transport (TCP/TLS) for up to GATHER_TIMEOUT_MS. */
+const RELAY_GRACE_MS = 150;
 
 /** Build the peer connection around the mic and gather ICE, ready to POST the offer. */
 export async function prepareCall(mic: MediaStream, iceServers: RTCIceServer[] = []): Promise<CallMedia> {
@@ -75,6 +79,9 @@ export async function prepareCall(mic: MediaStream, iceServers: RTCIceServer[] =
     if (pc.iceGatheringState === "complete") return res();
     const done = () => pc.iceGatheringState === "complete" && res();
     pc.addEventListener("icegatheringstatechange", done);
+    pc.addEventListener("icecandidate", (e) => {
+      if (e.candidate && / typ relay /.test(` ${e.candidate.candidate} `)) setTimeout(res, RELAY_GRACE_MS);
+    });
     setTimeout(res, GATHER_TIMEOUT_MS); // don't hang on a slow STUN/TURN server
   });
   const local = pc.localDescription!;

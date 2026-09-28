@@ -63,6 +63,8 @@ function gmailCallHint(card: GmailCard | null): Caption | null {
 const ELSEWHERE: Caption = { ...HINT, text: "This call is open in another tab. Take it over here, or keep typing." };
 const CAPTION_TURNS = 3;
 const ICE_FETCH_TIMEOUT_MS = 2500;
+/** LAT-001: ICE fetched while the call offer is on screen is reused for the call if fresher than this. */
+const ICE_PREFETCH_MAX_AGE_MS = 10 * 60_000;
 /** Home keeps a compact thread: the latest post-graduation turns only. */
 const HOME_THREAD_MAX = 12;
 const SPEAKING_ON = 0.12;
@@ -132,6 +134,7 @@ export class ApiSessionDriver implements SessionDriver {
   private readonly oauthBase: string;
   private readonly reconnectMs: number;
   private readonly iceServers: RTCIceServer[] | null;
+  private icePrefetch: { at: number; servers: Promise<RTCIceServer[] | null> } | null = null;
 
   constructor(initial: AgentState | null, opts: ApiDriverOptions = {}) {
     this.state = initial;
@@ -245,6 +248,7 @@ export class ApiSessionDriver implements SessionDriver {
     let mic: MediaStream | null = null;
     let media: CallMedia | null = null;
     try {
+      const ice = this.callIce(); // LAT-001: in parallel with the mic prompt
       try {
         mic = await openMic();
       } catch (e) {
@@ -254,7 +258,7 @@ export class ApiSessionDriver implements SessionDriver {
       this.connectedAt = null;
       this.render();
       try {
-        media = await prepareCall(mic, await this.callIce());
+        media = await prepareCall(mic, await ice);
       } catch {
         releaseMic(mic);
         return this.callFailed("Couldn’t start the call on this browser. Let’s keep texting.");
@@ -483,6 +487,7 @@ export class ApiSessionDriver implements SessionDriver {
     const prev = this.state;
     this.state = next;
     this.syncLease(next);
+    if (next.node === "call_offer" && !next.call?.live) this.prefetchIce();
     const newly = prev ? (Object.keys(next.slots) as SlotName[]).find((k) => next.slots[k]?.status === "filled" && prev.slots[k]?.status !== "filled") : undefined;
     if (newly) {
       this.justFilled = newly;
@@ -523,6 +528,22 @@ export class ApiSessionDriver implements SessionDriver {
   /** ICE for this call: the agent's list (same TURN as the server leg; short-lived creds). */
   private async callIce(): Promise<RTCIceServer[]> {
     if (this.iceServers) return this.iceServers;
+    const pre = this.icePrefetch;
+    this.icePrefetch = null; // one call per prefetch: a redial mints fresh
+    if (pre && Date.now() - pre.at < ICE_PREFETCH_MAX_AGE_MS) {
+      const servers = await pre.servers;
+      if (servers) return servers;
+    }
+    return (await this.fetchIce()) ?? defaultIce();
+  }
+
+  /** Warm the call's ICE list while the call offer is showing (LAT-001: saves a proxied round trip on dial). */
+  private prefetchIce() {
+    if (this.iceServers || this.icePrefetch || this.callId || this.dialing) return;
+    this.icePrefetch = { at: Date.now(), servers: this.fetchIce() };
+  }
+
+  private async fetchIce(): Promise<RTCIceServer[] | null> {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), ICE_FETCH_TIMEOUT_MS);
     try {
@@ -534,7 +555,7 @@ export class ApiSessionDriver implements SessionDriver {
     } finally {
       clearTimeout(timer);
     }
-    return defaultIce();
+    return null;
   }
 
   private async refreshState() {
