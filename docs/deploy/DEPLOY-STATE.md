@@ -5,8 +5,8 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **REDEPLOYING — agent+web (RESET-001 Start over, HOME-002 home replies, SIL-002 gmail silence wait)** |
-| OWNER | EM executor (reset/home fix) — holds deploy from 12:47pm PT Mon; others do not `--apply` until LIVE |
+| STATE | **LIVE — agent 49d8010, web 64b0652 (RESET-001 Start over + ?reset=1, HOME-002 home replies, SIL-002 gmail silence wait; quick ack ON via Fly secret)** |
+| OWNER | EM executor (reset/home fix) — deploy finished 12:58pm PT Mon. Later `--apply` runs = redeploys only; log them below |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
 ## Env files (gitignored, mode 600, values never committed/printed)
@@ -81,3 +81,4 @@ Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a
 - Mon 2:22AM PT — EM executor (voice polish) holds deploy: merged em/voice-polish (9f04f1e); qa fast/flow/harness/e2e/audit/visual + real-agent call smoke green; agent+web redeploy then smoke/audit/latency probe. PERSONA_VOICE_QUICK_ACK stays unset (OFF).
 - Mon 2:28AM PT — EM executor (voice polish): agent+web redeploy b7f24f8 LIVE (agent /health sha b7f24f8, Fly v13 checks passing; web build b7f24f8 aliased). smoke.sh 7/7 + LIVE button audit 215 rows PASS. PERSONA_VOICE_QUICK_ACK unset (OFF). Note: web deploy needs `--scope darran-s-projects --deploy-only`. STATE → LIVE.
 - Mon 12:47PM PT — EM executor (reset/home fix) holds deploy: merged em/reset-fix; qa fast/flow/e2e/audit (LOCAL 246 rows) green; agent+web redeploy, then live smoke + audit. Fly secrets untouched (PERSONA_VOICE_QUICK_ACK=1 stays on).
+- Mon 12:58PM PT — EM executor (reset/home fix): agent+web 64b0652 deployed; smoke.sh 7/7 + LIVE button audit 246 rows PASS (Start over full flow on resume + home). Follow-up agent redeploy 49d8010 (spelling-check "yes" confirms unchanged name), /health sha 49d8010, live replay of the 12:30pm transcript OK. Web unchanged since 64b0652. Fly secrets untouched (quick ack still set). STATE → LIVE.
