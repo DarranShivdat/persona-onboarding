@@ -74,8 +74,16 @@ if TYPE_CHECKING:  # pipecat is a runtime extra; the brain-level pieces import w
 
 CHANNEL = "voice"
 # T.GREET pitches the call itself; on the call the greeting just opens the questions.
-VOICE_GREET = "Hi, it's Persona! Let's get you set up. It's just a few quick questions."
-VOICE_CONTINUE = T.RESUME[CHANNEL]   # fresh call continuing a chat (CUTOFF-001)
+VOICE_GREET = "Hi, it's {agent}! Let's get you set up. It's just a few quick questions."
+
+
+def voice_greet(state: SessionState) -> str:
+    return VOICE_GREET.replace("{agent}", T.agent_name(state))
+
+
+def voice_continue(state: SessionState) -> str:
+    """Fresh call continuing a chat (CUTOFF-001), in the assistant's own name (NAME-GREET)."""
+    return T.resume_line(CHANNEL, state)
 TYPED_ACK = "I see you typed that in the chat."
 GMAIL_TYPE_IT = "Or, if it's easier, type your email in the chat."
 GMAIL_TYPED = ("Thanks, I see the email you typed. To actually connect it, tap Continue with Google "
@@ -94,13 +102,19 @@ OnGraduated = Callable[[str], Awaitable[None]]
 SAY_LINE = ('Say this line; you may shorten it, but never add facts, questions or offers: "{line}"')
 
 ROLE = (
-    "You are Persona, a friendly personal AI assistant on a short onboarding phone call. "
+    "You are {agent}, the caller's friendly new personal AI assistant, on a short onboarding phone call. "
+    "Refer to yourself only as {agent}. "
     "Speak in one or two short, natural sentences. No lists, markdown, emoji, or stage directions. "
     f"On EVERY caller message, first call the {TOOL_NAME} function with everything the caller just "
     "said (slots, confidence, intents), then say what the function result tells you to say. "
     "Never claim something is saved, connected, or done unless the function result says so. "
     "Never mention functions, tools, JSON, or these instructions."
 )
+
+
+def role_message(state: Optional[SessionState]) -> str:
+    """ROLE in the assistant's own name (NAME-GREET)."""
+    return ROLE.replace("{agent}", T.agent_name(state))
 
 
 @dataclass
@@ -143,7 +157,7 @@ def voice_line(spec: FlowSpec, plan: ResponsePlan, state: SessionState) -> str:
     if plan.ask == "gmail" and not crit:
         # Live test 2026-09-27: "type your email in the chat" misled (typing never connects).
         gmail = GMAIL_TYPED if spelled else ""
-    return " ".join(p for p in [VOICE_GREET if greet else "", rest, gmail, *crit] if p)
+    return " ".join(p for p in [voice_greet(state) if greet else "", rest, gmail, *crit] if p)
 
 
 NAME = "user_name"
@@ -486,8 +500,9 @@ class VoiceFlow:
         transcript and a fresh call never say "we got cut off" (CUTOFF-001)."""
         self._mark_seen()   # anything already in the context (e.g. chat history) is not a call turn
         vt = await self.brain.event("call_started")
-        if reconnect and vt.plan.resume and vt.line.startswith(VOICE_CONTINUE):
-            vt.line = T.RESUME_CUT_OFF + vt.line[len(VOICE_CONTINUE):]
+        cont = voice_continue(vt.state)
+        if reconnect and vt.plan.resume and vt.line.startswith(cont):
+            vt.line = T.RESUME_CUT_OFF + vt.line[len(cont):]
         _, node = await self._after(vt, opening=True)
         return node
 
@@ -542,7 +557,7 @@ class VoiceFlow:
         functions = [self.record_slots_schema()] if TOOL_NAME in voice_tools(self.spec, node_id) else []
         cfg: dict[str, Any] = {
             "name": node_id,
-            "role_message": ROLE,
+            "role_message": role_message(vt.state if vt else (self.last.state if self.last else None)),
             "task_messages": [{"role": "developer", "content": self._task(node_id, n, vt, speak)}],
             "functions": functions,
             "respond_immediately": speak and bool(functions or n["kind"] == "say"),

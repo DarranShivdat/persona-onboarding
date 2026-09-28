@@ -31,7 +31,21 @@ AGENT_NAME_NUDGE = "No pressure. How about {0}, or {1}? Anything you like works.
 # voice resume line is the fresh-call one; only a real reconnect (lease resumed inside the
 # grace window, VoiceFlow.opening(reconnect=True)) swaps in RESUME_CUT_OFF.
 RESUME = {"text": "Welcome back, let's pick up where we left off.",
-          "voice": "Hi, it's Persona! Let's pick up where we left off in the chat."}
+          "voice": "Hi, it's {agent}! Let's pick up where we left off in the chat."}
+# NAME-GREET (live 2026-09-28): on the call the assistant introduces itself by the name the user
+# gave it (the call header already shows it); "Persona" only when no name is filled yet.
+AGENT_FALLBACK = "Persona"
+
+
+def agent_name(state) -> str:
+    """The assistant's name as the user chose it (agent_name slot), else AGENT_FALLBACK."""
+    sv = state.slots.get("agent_name") if state is not None else None
+    v = (sv.value or "").strip().rstrip(".!?") if sv is not None and sv.value else ""
+    return v or AGENT_FALLBACK
+
+
+def resume_line(channel: str, state) -> str:
+    return RESUME[channel].replace("{agent}", agent_name(state))
 RESUME_CUT_OFF = "Hey, we got cut off. Let's pick up where we left off."
 ACK = "Got it."
 # Natural per-slot acknowledgements (live test 2026-09-27: "Got it: Juno." read like a form).

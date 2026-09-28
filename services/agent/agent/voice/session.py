@@ -73,7 +73,8 @@ def tracing_kwargs(cfg: VoiceConfig, *, call_id: str, session_id: Optional[str] 
         attrs["langfuse.session.id"] = session_id
     return {"enable_tracing": True, "conversation_id": call_id, "additional_span_attributes": attrs}
 
-GREETING = "Hi, it's Persona! Thanks for calling. What should I call you?"
+# NAME-GREET: no brain here (non-flows mode), so no assistant name to use; never "it's Persona".
+GREETING = "Hi! Thanks for calling. What should I call you?"
 GOODBYE_MAX_DURATION = "We're just about out of time on this call. Everything so far is saved, so you can pick up in the chat. Bye for now!"
 GOODBYE_STT_DOWN = "Sorry, I'm having trouble hearing you. Everything so far is saved, so let's keep going in the chat. Bye for now!"
 

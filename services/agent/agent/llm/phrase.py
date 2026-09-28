@@ -110,7 +110,7 @@ def template_reply(spec: FlowSpec, plan: ResponsePlan, state: SessionState,
     if "greet" in plan.say:
         parts.append(T.GREET)
     elif plan.resume:
-        parts.append(T.RESUME[channel])
+        parts.append(T.resume_line(channel, state))
     if plan.acknowledge:
         parts += [T.slot_ack(state, s) for s in plan.acknowledge]
     elif plan.changed:
