@@ -92,18 +92,18 @@ REASK = "Sorry, I missed that."
 # No id -> the fixed deflection RESPOND["off_topic"]. Never model-written.
 APPROVED_ANSWERS: dict[str, tuple[str, str]] = {  # id: (what it answers, line said verbatim)
     "what_is_persona": (
-        "who or what it is, what Persona is, or what it can do",
+        "who or what you are, what Persona is, or what you / it can do or help with",
         "Persona's a personal AI assistant that helps with your email, calendar, and everyday "
         "tasks. This trial covers setup only, so it doesn't carry out tasks yet."),
     "setup_length": (
-        "how long setup takes or how many questions are left",
+        "how long this / setup will take, how many questions are left, or what setup involves",
         "Setup is a few quick questions: what to call your assistant, your name, one thing you'd "
         "like help with, and connecting Gmail."),
     "can_skip": (
-        "whether they can skip a question or do it later",
+        "whether they can skip a question or step, or do it later",
         "You can skip any question and finish it later from the main screen."),
     "need_to_call": (
-        "whether they need to call or can just type",
+        "whether they need to call / talk, or can just type",
         "You don't need to call: typing works just as well, and a quick call is optional."),
     "asks_before_acting": (
         "whether it acts on its own or asks first",

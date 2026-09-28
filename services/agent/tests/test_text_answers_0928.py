@@ -133,3 +133,16 @@ def test_text_extractor_offers_the_answer_enum_and_parse_keeps_only_known_ids():
     assert props["answer"]["enum"] == list(T.APPROVED_ANSWERS)
     assert parse(SPEC, {"slots": {}, "intents": ["off_topic"], "answer": "setup_length"}).answer == "setup_length"
     assert parse(SPEC, {"slots": {}, "intents": [], "answer": "make_up_something"}).answer is None
+
+
+def test_a_question_at_the_need_step_is_not_saved_as_the_need():
+    st = _at("need")
+    r = engine.apply(SPEC, st, Turn("text", "what's the weather in Paris?",
+                                    Extraction(slots={"need": "what's the weather in Paris?"}, intents=["off_topic"])))
+    assert not r.state.filled("need") and r.state.node == "need"
+    text = ClaudeTurnLlm(SPEC, _Client()).phrase(spec=SPEC, state=r.state, plan=r.plan, channel="text")
+    assert text == f"{T.RESPOND['off_topic']} {T.ask_line('need', 'text')}"
+    # a need phrased as a question, with no question intent, is still a need
+    r = engine.apply(SPEC, st, Turn("text", "can you help me clean up my inbox?",
+                                    Extraction(slots={"need": "clean up my inbox?"})))
+    assert r.state.filled("need")
