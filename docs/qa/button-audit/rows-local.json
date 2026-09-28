@@ -1,0 +1,1874 @@
+[
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "home",
+  "control": "textbox:Message Juno @composer",
+  "expected": "message -> user bubble + agent reply visible on home",
+  "result": "FIXME",
+  "note": "owned by GRAD-001 (home composer rebuild): typed message must get a visible reply on home — action: expect(locator).toBeVisible() failed Locator: locator('[data-from=\"user\"]').filter({ hasText: 'what can you do first?' }).last() Expected: visible Timeout: 10000ms Error: element(s) not found Call log: - Expect \"toBeVisi"
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "home",
+  "control": "button:Send @composer",
+  "expected": "Send -> user bubble + agent reply visible on home",
+  "result": "FIXME",
+  "note": "owned by GRAD-001 (home composer rebuild): typed message must get a visible reply on home — action: expect(locator).toBeVisible() failed Locator: locator('[data-from=\"user\"]').filter({ hasText: 'thanks!' }).last() Expected: visible Timeout: 10000ms Error: element(s) not found Call log: - Expect \"toBeVisible\" locator('["
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "home",
+  "control": "textbox:Message Juno @composer",
+  "expected": "message -> user bubble + agent reply visible on home",
+  "result": "FIXME",
+  "note": "owned by GRAD-001 (home composer rebuild): typed message must get a visible reply on home — action: expect(locator).toBeVisible() failed Locator: locator('[data-from=\"user\"]').filter({ hasText: 'what can you do first?' }).last() Expected: visible Timeout: 10000ms Error: element(s) not found Call log: - Expect \"toBeVisi"
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "home",
+  "control": "button:Send @composer",
+  "expected": "Send -> user bubble + agent reply visible on home",
+  "result": "FIXME",
+  "note": "owned by GRAD-001 (home composer rebuild): typed message must get a visible reply on home — action: expect(locator).toBeVisible() failed Locator: locator('[data-from=\"user\"]').filter({ hasText: 'thanks!' }).last() Expected: visible Timeout: 10000ms Error: element(s) not found Call log: - Expect \"toBeVisible\" locator('["
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "about",
+  "control": "link:Persona @main",
+  "expected": "brand -> /",
+  "result": "PASS",
+  "note": "href / 200"
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "about",
+  "control": "link:Privacy Policy @main",
+  "expected": "inline -> /privacy",
+  "result": "PASS",
+  "note": "href /privacy 200"
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "about",
+  "control": "link:Set up your assistant @main",
+  "expected": "CTA -> /",
+  "result": "PASS",
+  "note": "href / 200"
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "about",
+  "control": "link:yourpersona.com @footer",
+  "expected": "external href resolves (no click-away)",
+  "result": "PASS",
+  "note": "external yourpersona.com (checked on LIVE)"
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "about",
+  "control": "link:Privacy Policy @footer",
+  "expected": "-> /privacy",
+  "result": "PASS",
+  "note": "href /privacy 200"
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-connected",
+  "control": "(screen)",
+  "expected": "Call: live + captions",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-connected",
+  "control": "textbox:Type instead of talking @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-connected",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-connected",
+  "control": "button:Mute @call-panel",
+  "expected": "mutes: aria-pressed=true, label Unmute",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-connected",
+  "control": "button:Type instead @call-panel",
+  "expected": "focuses the composer",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-connected",
+  "control": "button:End @call-panel",
+  "expected": "hangs up: status 'Call ended', lease released",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-ended",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-ended",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-ended",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-ended",
+  "control": "button:Call again @call-panel",
+  "expected": "redials: rail back to ringing/connected",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-ended",
+  "control": "button:Keep typing @call-panel",
+  "expected": "collapses the ended rail",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-muted",
+  "control": "textbox:Type instead of talking @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-muted",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-muted",
+  "control": "button:Unmute @call-panel",
+  "expected": "unmutes: aria-pressed=false, label Mute",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-muted",
+  "control": "button:Type instead @call-panel",
+  "expected": "focuses the composer",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-muted",
+  "control": "button:End @call-panel",
+  "expected": "hangs up: status 'Call ended'",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-offer",
+  "control": "button:Call Juno @call-offer",
+  "expected": "dials: rail opens ringing -> connected",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-offer",
+  "control": "button:Keep texting @call-offer",
+  "expected": "sends 'Keep texting' as a turn",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-offer",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-offer",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-offer",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-ringing",
+  "control": "textbox:Type instead of talking @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-ringing",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-ringing",
+  "control": "button:Mute @call-panel",
+  "expected": "disabled while ringing (native disabled, no pointer)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-ringing",
+  "control": "button:Type instead @call-panel",
+  "expected": "focuses the composer",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "call-ringing",
+  "control": "button:Cancel @call-panel",
+  "expected": "cancels the dial: rail closes, chat resumes",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "chat-agent-name",
+  "control": "(screen)",
+  "expected": "Text chat: agent name (chips)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "chat-agent-name",
+  "control": "chip:Juno @thread",
+  "expected": "chip sends its text as the user's turn",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "chat-agent-name",
+  "control": "chip:Atlas @thread",
+  "expected": "chip sends its text as the user's turn",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "chat-agent-name",
+  "control": "chip:Surprise me @thread",
+  "expected": "chip sends its text as the user's turn",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "chat-agent-name",
+  "control": "textbox:Type a name @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "chat-agent-name",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "error-agent-down",
+  "control": "(screen)",
+  "expected": "Error: agent down at start (banner + retry)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "error-agent-down",
+  "control": "button:Try again @notice",
+  "expected": "agent back: retry starts the session, banner clears, chat opens",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "error-agent-down",
+  "control": "button:Get started @main",
+  "expected": "still down: the banner stays (no dead click, no crash)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "error-turn",
+  "control": "(screen)",
+  "expected": "Error: agent down mid-chat (banner + retry)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "error-turn",
+  "control": "button:Try again @notice",
+  "expected": "agent back: re-sends the failed turn, banner clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "error-turn",
+  "control": "chip:Juno @thread",
+  "expected": "still down: chip send re-shows the banner",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "error-turn",
+  "control": "chip:Atlas @thread",
+  "expected": "still down: chip send re-shows the banner",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "error-turn",
+  "control": "chip:Surprise me @thread",
+  "expected": "still down: chip send re-shows the banner",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "error-turn",
+  "control": "textbox:Type a name @composer",
+  "expected": "still down: typed send keeps the banner up",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "error-turn",
+  "control": "button:Send @composer",
+  "expected": "still down: Send keeps the banner up",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-connected",
+  "control": "button:Not you? Use a different account @gmail-card",
+  "expected": "re-runs OAuth with the account chooser",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-connected",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-connected",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-connected",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-connecting",
+  "control": "button:Waiting for Google… @gmail-card",
+  "expected": "disabled + aria-busy while the popup is open",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-connecting",
+  "control": "button:Open the Google window again @gmail-card",
+  "expected": "re-opens the Google popup if it was closed",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-connecting",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-connecting",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-connecting",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-error",
+  "control": "button:Try again @gmail-card",
+  "expected": "re-opens Google OAuth",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-error",
+  "control": "button:Skip for now @gmail-card",
+  "expected": "sends 'Skip for now' (brain defers Gmail)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-error",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-error",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-error",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-idle",
+  "control": "button:Continue with Google @gmail-card",
+  "expected": "opens Google OAuth popup with our redirect_uri (LIVE: stop at accounts.google.com)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-idle",
+  "control": "button:Not now @gmail-card",
+  "expected": "sends 'Not now' (brain defers Gmail)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-idle",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-idle",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-idle",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-partial",
+  "control": "button:Allow full access @gmail-card",
+  "expected": "re-opens consent to grant send",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-partial",
+  "control": "button:Not you? Use a different account @gmail-card",
+  "expected": "re-runs OAuth with the account chooser",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-partial",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-partial",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-partial",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-wrong-account",
+  "control": "button:Use a different account @gmail-card",
+  "expected": "re-runs OAuth with the account chooser",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-wrong-account",
+  "control": "button:Keep this one @gmail-card",
+  "expected": "keeps the account: card -> connected",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-wrong-account",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-wrong-account",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "gmail-wrong-account",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "home",
+  "control": "button:Connect @deferred-prompt",
+  "expected": "deferred prompt opens Google OAuth",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "home",
+  "control": "button:Dismiss @deferred-prompt",
+  "expected": "hides the deferred prompt for this visit",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "landing",
+  "control": "button:Get started @main",
+  "expected": "POST /api/session, chat opens with the agent's first message",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "mic-denied",
+  "control": "(screen)",
+  "expected": "Mic denied (EC-03)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "mic-denied",
+  "control": "button:Call Juno @call-offer",
+  "expected": "retries the mic: explains the block again in text, rail stays closed (no call placed)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "mic-denied",
+  "control": "button:Keep texting @call-offer",
+  "expected": "sends 'Keep texting' as a turn",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "mic-denied",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call retries the mic (text explanation, no rail)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "mic-denied",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "mic-denied",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "not-found",
+  "control": "(screen)",
+  "expected": "404 route",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "not-found",
+  "control": "link:Persona @main",
+  "expected": "brand -> /",
+  "result": "PASS",
+  "note": "href / 200"
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "not-found",
+  "control": "link:Set up your assistant @main",
+  "expected": "-> / (setup)",
+  "result": "PASS",
+  "note": "href / 200"
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "not-found",
+  "control": "link:About Persona @footer",
+  "expected": "-> /about",
+  "result": "PASS",
+  "note": "href /about 200"
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "not-found",
+  "control": "link:Privacy Policy @footer",
+  "expected": "-> /privacy",
+  "result": "PASS",
+  "note": "href /privacy 200"
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "privacy",
+  "control": "link:Persona @main",
+  "expected": "brand -> /about",
+  "result": "PASS",
+  "note": "href /about 200"
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "privacy",
+  "control": "link:Google API Services User Data Policy @main",
+  "expected": "external href resolves",
+  "result": "PASS",
+  "note": "external developers.google.com (checked on LIVE)"
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "privacy",
+  "control": "link:myaccount.google.com/permissions @main",
+  "expected": "external href resolves",
+  "result": "PASS",
+  "note": "external myaccount.google.com (checked on LIVE)"
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "privacy",
+  "control": "link:darranshivdat1@gmail.com @main",
+  "expected": "valid mailto",
+  "result": "PASS",
+  "note": "mailto"
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "privacy",
+  "control": "link:About Persona @footer",
+  "expected": "-> /about",
+  "result": "PASS",
+  "note": "href /about 200"
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "privacy",
+  "control": "link:Set up your assistant @footer",
+  "expected": "-> /",
+  "result": "PASS",
+  "note": "href / 200"
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "resume",
+  "control": "(screen)",
+  "expected": "Refresh / resume (thread + checklist restored)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "resume",
+  "control": "button:Call Juno @call-offer",
+  "expected": "dials: rail opens ringing -> connected",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "resume",
+  "control": "button:Keep texting @call-offer",
+  "expected": "sends 'Keep texting' as a turn",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "resume",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "resume",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "resume",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "about",
+  "control": "link:Persona @main",
+  "expected": "brand -> /",
+  "result": "PASS",
+  "note": "href / 200"
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "about",
+  "control": "link:Privacy Policy @main",
+  "expected": "inline -> /privacy",
+  "result": "PASS",
+  "note": "href /privacy 200"
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "about",
+  "control": "link:Set up your assistant @main",
+  "expected": "CTA -> /",
+  "result": "PASS",
+  "note": "href / 200"
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "about",
+  "control": "link:yourpersona.com @footer",
+  "expected": "external href resolves (no click-away)",
+  "result": "PASS",
+  "note": "external yourpersona.com (checked on LIVE)"
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "about",
+  "control": "link:Privacy Policy @footer",
+  "expected": "-> /privacy",
+  "result": "PASS",
+  "note": "href /privacy 200"
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-connected",
+  "control": "(screen)",
+  "expected": "Call: live + captions",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-connected",
+  "control": "textbox:Type instead of talking @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-connected",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-connected",
+  "control": "button:Mute @call-panel",
+  "expected": "mutes: aria-pressed=true, label Unmute",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-connected",
+  "control": "button:Type instead @call-panel",
+  "expected": "focuses the composer",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-connected",
+  "control": "button:End @call-panel",
+  "expected": "hangs up: status 'Call ended', lease released",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-ended",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-ended",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-ended",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-ended",
+  "control": "button:Call again @call-panel",
+  "expected": "redials: rail back to ringing/connected",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-ended",
+  "control": "button:Keep typing @call-panel",
+  "expected": "collapses the ended rail",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-muted",
+  "control": "textbox:Type instead of talking @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-muted",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-muted",
+  "control": "button:Unmute @call-panel",
+  "expected": "unmutes: aria-pressed=false, label Mute",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-muted",
+  "control": "button:Type instead @call-panel",
+  "expected": "focuses the composer",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-muted",
+  "control": "button:End @call-panel",
+  "expected": "hangs up: status 'Call ended'",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-offer",
+  "control": "button:Call Juno @call-offer",
+  "expected": "dials: rail opens ringing -> connected",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-offer",
+  "control": "button:Keep texting @call-offer",
+  "expected": "sends 'Keep texting' as a turn",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-offer",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-offer",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-offer",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-ringing",
+  "control": "textbox:Type instead of talking @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-ringing",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-ringing",
+  "control": "button:Mute @call-panel",
+  "expected": "disabled while ringing (native disabled, no pointer)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-ringing",
+  "control": "button:Type instead @call-panel",
+  "expected": "focuses the composer",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "call-ringing",
+  "control": "button:Cancel @call-panel",
+  "expected": "cancels the dial: rail closes, chat resumes",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "chat-agent-name",
+  "control": "(screen)",
+  "expected": "Text chat: agent name (chips)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "chat-agent-name",
+  "control": "chip:Juno @thread",
+  "expected": "chip sends its text as the user's turn",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "chat-agent-name",
+  "control": "chip:Atlas @thread",
+  "expected": "chip sends its text as the user's turn",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "chat-agent-name",
+  "control": "chip:Surprise me @thread",
+  "expected": "chip sends its text as the user's turn",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "chat-agent-name",
+  "control": "textbox:Type a name @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "chat-agent-name",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "error-agent-down",
+  "control": "(screen)",
+  "expected": "Error: agent down at start (banner + retry)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "error-agent-down",
+  "control": "button:Try again @notice",
+  "expected": "agent back: retry starts the session, banner clears, chat opens",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "error-agent-down",
+  "control": "button:Get started @main",
+  "expected": "still down: the banner stays (no dead click, no crash)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "error-turn",
+  "control": "(screen)",
+  "expected": "Error: agent down mid-chat (banner + retry)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "error-turn",
+  "control": "button:Try again @notice",
+  "expected": "agent back: re-sends the failed turn, banner clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "error-turn",
+  "control": "chip:Juno @thread",
+  "expected": "still down: chip send re-shows the banner",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "error-turn",
+  "control": "chip:Atlas @thread",
+  "expected": "still down: chip send re-shows the banner",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "error-turn",
+  "control": "chip:Surprise me @thread",
+  "expected": "still down: chip send re-shows the banner",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "error-turn",
+  "control": "textbox:Type a name @composer",
+  "expected": "still down: typed send keeps the banner up",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "error-turn",
+  "control": "button:Send @composer",
+  "expected": "still down: Send keeps the banner up",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-connected",
+  "control": "button:Not you? Use a different account @gmail-card",
+  "expected": "re-runs OAuth with the account chooser",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-connected",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-connected",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-connected",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-connecting",
+  "control": "button:Waiting for Google… @gmail-card",
+  "expected": "disabled + aria-busy while the popup is open",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-connecting",
+  "control": "button:Open the Google window again @gmail-card",
+  "expected": "re-opens the Google popup if it was closed",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-connecting",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-connecting",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-connecting",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-error",
+  "control": "button:Try again @gmail-card",
+  "expected": "re-opens Google OAuth",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-error",
+  "control": "button:Skip for now @gmail-card",
+  "expected": "sends 'Skip for now' (brain defers Gmail)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-error",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-error",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-error",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-idle",
+  "control": "button:Continue with Google @gmail-card",
+  "expected": "opens Google OAuth popup with our redirect_uri (LIVE: stop at accounts.google.com)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-idle",
+  "control": "button:Not now @gmail-card",
+  "expected": "sends 'Not now' (brain defers Gmail)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-idle",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-idle",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-idle",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-partial",
+  "control": "button:Allow full access @gmail-card",
+  "expected": "re-opens consent to grant send",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-partial",
+  "control": "button:Not you? Use a different account @gmail-card",
+  "expected": "re-runs OAuth with the account chooser",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-partial",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-partial",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-partial",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-wrong-account",
+  "control": "button:Use a different account @gmail-card",
+  "expected": "re-runs OAuth with the account chooser",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-wrong-account",
+  "control": "button:Keep this one @gmail-card",
+  "expected": "keeps the account: card -> connected",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-wrong-account",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-wrong-account",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "gmail-wrong-account",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "home",
+  "control": "button:Connect @deferred-prompt",
+  "expected": "deferred prompt opens Google OAuth",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "home",
+  "control": "button:Dismiss @deferred-prompt",
+  "expected": "hides the deferred prompt for this visit",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "landing",
+  "control": "button:Get started @main",
+  "expected": "POST /api/session, chat opens with the agent's first message",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "mic-denied",
+  "control": "(screen)",
+  "expected": "Mic denied (EC-03)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "mic-denied",
+  "control": "button:Call Juno @call-offer",
+  "expected": "retries the mic: explains the block again in text, rail stays closed (no call placed)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "mic-denied",
+  "control": "button:Keep texting @call-offer",
+  "expected": "sends 'Keep texting' as a turn",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "mic-denied",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call retries the mic (text explanation, no rail)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "mic-denied",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "mic-denied",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "not-found",
+  "control": "(screen)",
+  "expected": "404 route",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "not-found",
+  "control": "link:Persona @main",
+  "expected": "brand -> /",
+  "result": "PASS",
+  "note": "href / 200"
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "not-found",
+  "control": "link:Set up your assistant @main",
+  "expected": "-> / (setup)",
+  "result": "PASS",
+  "note": "href / 200"
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "not-found",
+  "control": "link:About Persona @footer",
+  "expected": "-> /about",
+  "result": "PASS",
+  "note": "href /about 200"
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "not-found",
+  "control": "link:Privacy Policy @footer",
+  "expected": "-> /privacy",
+  "result": "PASS",
+  "note": "href /privacy 200"
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "privacy",
+  "control": "link:Persona @main",
+  "expected": "brand -> /about",
+  "result": "PASS",
+  "note": "href /about 200"
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "privacy",
+  "control": "link:Google API Services User Data Policy @main",
+  "expected": "external href resolves",
+  "result": "PASS",
+  "note": "external developers.google.com (checked on LIVE)"
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "privacy",
+  "control": "link:myaccount.google.com/permissions @main",
+  "expected": "external href resolves",
+  "result": "PASS",
+  "note": "external myaccount.google.com (checked on LIVE)"
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "privacy",
+  "control": "link:darranshivdat1@gmail.com @main",
+  "expected": "valid mailto",
+  "result": "PASS",
+  "note": "mailto"
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "privacy",
+  "control": "link:About Persona @footer",
+  "expected": "-> /about",
+  "result": "PASS",
+  "note": "href /about 200"
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "privacy",
+  "control": "link:Set up your assistant @footer",
+  "expected": "-> /",
+  "result": "PASS",
+  "note": "href / 200"
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "resume",
+  "control": "(screen)",
+  "expected": "Refresh / resume (thread + checklist restored)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "resume",
+  "control": "button:Call Juno @call-offer",
+  "expected": "dials: rail opens ringing -> connected",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "resume",
+  "control": "button:Keep texting @call-offer",
+  "expected": "sends 'Keep texting' as a turn",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "resume",
+  "control": "button:Call Juno @composer",
+  "expected": "composer call button dials (rail opens)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "resume",
+  "control": "textbox:Message Juno @composer",
+  "expected": "type + Enter sends the turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "resume",
+  "control": "button:Send @composer",
+  "expected": "Send posts the typed turn (user bubble), field clears",
+  "result": "PASS",
+  "note": ""
+ }
+]
