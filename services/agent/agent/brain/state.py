@@ -20,6 +20,8 @@ class SlotValue:
     validated_by: Optional[str] = None      # validator id, e.g. "gmail_oauth"
     attempts: int = 0
     needs_confirm: bool = False             # candidate awaiting an explicit affirm (joke name, spell-back)
+    confirm_attempts: int = 0               # candidates read back so far (user_name read-back cap)
+    low_confidence: bool = False            # filled at the confirm cap without an explicit yes
 
 
 @dataclass

@@ -68,7 +68,9 @@ def test_text_happy_path_greet_agent_name_call_offer_then_slots(spec):
     r = apply(spec, r.state, event("call_started", "voice"))
     assert r.state.active_channel == "voice" and r.plan.resume and r.plan.ask == "user_name"
     r = apply(spec, r.state, say("I'm Priya", "voice", conf={"user_name": 0.95}, user_name="Priya"))
-    assert r.state.node == "need"
+    assert r.state.node == "user_name" and r.plan.confirm == "user_name"   # NAME-001: always read back
+    r = apply(spec, r.state, say("yes", "voice", intents=["affirm"]))
+    assert r.state.node == "need" and r.plan.acknowledge == ["user_name"]
     r = apply(spec, r.state, say("inbox", "voice", need="triage my inbox"))
     assert r.state.node == "gmail" and r.plan.push_ui == ["gmail_connect_card"] and r.plan.explain_why
     r = apply(spec, r.state, say(channel="voice", oauth=True, gmail="Priya@Gmail.com"))
@@ -87,6 +89,8 @@ def test_greet_pass_through_on_first_utterance(spec):
 def test_voice_never_asks_agent_name(spec):
     st = at("user_name", "voice")
     r = apply(spec, st, say("Nova", "voice", agent_name="Nova", user_name="Sam"))
+    assert status(r, "agent_name") == "empty" and r.plan.confirm == "user_name"
+    r = apply(spec, r.state, say("yes", "voice", intents=["affirm"]))
     assert status(r, "agent_name") == "empty" and r.state.node == "need"
 
 
@@ -200,7 +204,7 @@ def test_gmail_budget_two_explains_then_defers(spec):
 def test_completion_without_need_graduates_without_demo(spec):
     st = at("user_name", "voice", agent_name="Nova", gmail="a@gmail.com")
     st.slots["need"] = SlotValue(status="skipped")
-    r = apply(spec, st, say("Dana", "voice", user_name="Dana"))
+    r = run(spec, st, say("Dana", "voice", user_name="Dana"), say("yes", "voice", intents=["affirm"]))
     assert r.state.graduated and r.plan.say == [] and r.state.deferred_prompts == ["need"]
     assert [(e["from"], e["to"]) for e in r.events if e["type"] == "transition"] == [("user_name", "graduated")]
 
@@ -230,7 +234,9 @@ def test_noise_fragment_absorbed_without_reask_EC11(spec):
     r1 = apply(spec, st, say("uh", "voice", intents=["noise_or_fragment"]))
     assert r1.plan.absorbed and r1.plan.ask is None and r1.state == st and types(r1) == ["intent", "absorbed"]
     r2 = apply(spec, r1.state, say("my name is... Jordan", "voice", conf={"user_name": 0.9}, user_name="Jordan"))
-    assert status(r2, "user_name") == "filled" and r2.state.node == "need"
+    assert status(r2, "user_name") == "candidate" and r2.plan.confirm == "user_name"
+    r3 = apply(spec, r2.state, say("yes", "voice", intents=["affirm"]))
+    assert status(r3, "user_name") == "filled" and r3.state.node == "need"
 
 
 def test_low_confidence_voice_name_needs_spell_back_EC11(spec):
@@ -318,6 +324,7 @@ def test_hangup_resume_picks_first_unfilled_slot_EC01(spec):
     st = at("user_name", "voice", agent_name="Nova")
     r = run(spec, st,
             say("I'm Priya", "voice", conf={"user_name": 0.92}, user_name="Priya"),
+            say("yes", "voice", intents=["affirm"]),
             say("investor emails", "voice", need="I need help staying on top of investor emails"),
             event("call_ended", "voice"))
     assert r.state.active_channel is None and r.state.node == "gmail"
@@ -373,7 +380,7 @@ def test_agent_name_validator(raw, outcome, value):
 
 @pytest.mark.parametrize("raw,kw,outcome,value", [
     ("Mary-Jane O'Brien", {}, "ok", "Mary-Jane O'Brien"), ("Lucía", {}, "ok", "Lucía"),
-    ("s i o b h a n", {}, "ok", "Siobhan"), ("R2D2", {}, "reject", None), ("", {}, "reject", None),
+    ("s i o b h a n", {}, "ok", "Siobhan"), ("R2D2", {}, "confirm", "R2D2"), ("12345", {}, "reject", None), ("", {}, "reject", None),
     ("a b c d e f g", {}, "ok", "Abcdefg"), ("Al Bo Cy Di Ed Fu", {}, "reject", None), ("x" * 51, {}, "reject", None),
     ("Nazi", {}, "reject", None), ("Sam", {"channel": "voice", "confidence": 0.5}, "confirm", "Sam"),
     ("Sam", {"channel": "voice", "confidence": 0.95}, "ok", "Sam"), ("Sam", {"channel": "voice"}, "ok", "Sam"),

@@ -23,12 +23,13 @@ The input state is never mutated.
 from __future__ import annotations
 
 import copy
+import re
 from dataclasses import dataclass, field
 from typing import Optional
 
 from .spec import START_NODE, TERMINAL_NODE, FlowSpec
 from .state import Channel, SessionState, SlotValue
-from .validators import VALIDATORS
+from .validators import VALIDATORS, assemble_spelling
 
 # Turn-level events (no utterance): open = session start / return visit.
 EVENTS = ("open", "call_started", "call_ended")
@@ -60,6 +61,8 @@ class ResponsePlan:
     changed: list[str] = field(default_factory=list)       # filled slots overwritten (change_answer)
     ask: Optional[str] = None                              # slot to ask for next
     confirm: Optional[str] = None                          # slot whose candidate needs a yes/no
+    denied: list[str] = field(default_factory=list)        # candidates the user just said "no" to
+    spell: Optional[str] = None                            # ask the user to spell this slot, letter by letter
     explain_why: bool = False
     suggest_examples: bool = False                         # need: offer 3 concrete examples
     rejected: dict[str, str] = field(default_factory=dict) # slot -> validator reason
@@ -105,6 +108,7 @@ def apply(spec: FlowSpec, state: SessionState, turn: Turn) -> TurnResult:
     node = st.node
     touched, rejected, unsure = _extract(spec, st, turn, intents, plan, ev)
     confirm_handled = _resolve_confirms(spec, st, touched, intents, plan, ev)
+    confirm_handled = _reopen_name(spec, st, turn, intents, touched, plan, ev) or confirm_handled
 
     if "noise_or_fragment" in intents and not touched and not confirm_handled:
         ev.append({"type": "absorbed", "node": node})
@@ -138,17 +142,20 @@ def _extract(spec, st, turn, intents, plan, ev):
     """Validate every extracted slot. Returns (touched, rejected, unsure)."""
     x = turn.extraction
     changing = "change_answer" in intents
+    spelled = _spelled_name(spec, st, turn)
     touched: set[str] = set()
     rejected: set[str] = set()
     unsure = False
     for name, sdef in spec.slots.items():
-        raw = x.slots.get(name)
+        raw = spelled if name == NAME_SLOT and spelled else x.slots.get(name)
         if not raw or turn.channel not in sdef["channels"]:
             continue
         vid = sdef["validator"]
         kw = {"channel": turn.channel, "confidence": x.confidences.get(name)}
         if vid == "gmail_oauth":
             kw["oauth_verified"] = turn.oauth_verified
+        if vid == "person_name":
+            kw.update(utterance=turn.utterance, confirm_policy=sdef.get("confirm_policy"))
         res = VALIDATORS[vid](raw, **kw)
         sv = st.slot(name)
         if res.outcome == "unsure":
@@ -161,23 +168,35 @@ def _extract(spec, st, turn, intents, plan, ev):
             continue
         if sv.status == "filled":
             # Filled slots change only on an explicit change_answer (or a fresh OAuth), and
-            # only to another fully valid value — never downgraded to a candidate.
-            if res.outcome != "ok" or not (changing or turn.oauth_verified) or res.value == sv.value:
+            # only to another fully valid value — never downgraded to a candidate. Exception:
+            # a spoken name correction is read back before it replaces the name (NAME-001).
+            reread = name == NAME_SLOT and res.outcome == "confirm" and changing
+            if (res.outcome != "ok" and not reread) or not (changing or turn.oauth_verified) \
+                    or res.value == sv.value:
                 continue
-            ev.append({"type": "slot_changed", "slot": name, "old": sv.value, "new": res.value})
-            plan.changed.append(name)
+            if reread:
+                # The old spoken name already missed once: read the new one back ("So that's ...?").
+                sv.confirm_attempts = 1
+            else:
+                ev.append({"type": "slot_changed", "slot": name, "old": sv.value, "new": res.value})
+                plan.changed.append(name)
         elif res.outcome == "ok":
             ev.append({"type": "slot_filled", "slot": name, "value": res.value, "validated_by": vid})
             plan.acknowledge.append(name)
         touched.add(name)
         sv.value, sv.source, sv.confidence = res.value, turn.channel, x.confidences.get(name)
         if res.outcome == "ok":
-            sv.status, sv.validated_by, sv.needs_confirm = "filled", vid, False
+            sv.status, sv.validated_by, sv.needs_confirm, sv.low_confidence = "filled", vid, False, False
+        elif name == NAME_SLOT and res.outcome == "confirm" and \
+                sv.confirm_attempts >= _name_policy(spec).get("max_attempts", NAME_MAX_ATTEMPTS):
+            # Read-back cap: keep this (latest, best) candidate and move on; never trap the user.
+            _fill_low_confidence(spec, st, name, plan, ev)
         else:
             sv.status, sv.validated_by, sv.needs_confirm = "candidate", None, res.outcome == "confirm"
             ev.append({"type": "slot_candidate", "slot": name, "value": res.value, "reason": res.reason})
             if sv.needs_confirm:
                 plan.confirm = name
+                sv.confirm_attempts += 1
     return touched, rejected, unsure
 
 
@@ -194,9 +213,12 @@ def _resolve_confirms(spec, st, touched, intents, plan, ev) -> bool:
             plan.acknowledge.append(name)
             handled = True
         elif "deny" in intents:
+            handled = True
+            if name == NAME_SLOT:
+                _deny_name(spec, st, sv, plan, ev)
+                continue
             st.slots[name] = SlotValue(attempts=sv.attempts)
             ev.append({"type": "slot_cleared", "slot": name})
-            handled = True
         else:
             plan.confirm = name  # still waiting on the yes/no
     return handled
@@ -287,6 +309,71 @@ def _apply_event(spec, st, turn, plan, ev) -> TurnResult:
     else:
         plan.resume = True
     return _advance(spec, st, turn.channel, plan, ev)
+
+
+# --- user_name read-back (NAME-001) --------------------------------------------
+
+NAME_SLOT = "user_name"
+NAME_SPELL_AFTER = 2
+NAME_MAX_ATTEMPTS = 3
+# "you've got my name wrong" / "that's not how you spell it": a correction with no new value.
+_NAME_WRONG = re.compile(r"\b(my name|spell|spelt|spelled|misspel\w*)\b", re.IGNORECASE)
+
+
+def _name_policy(spec) -> dict:
+    return spec.slots.get(NAME_SLOT, {}).get("confirm_policy") or {}
+
+
+def _spelled_name(spec, st, turn) -> Optional[str]:
+    """Voice: letters spelled out in the transcript ("D as in David, double R...") beat the
+    LLM's reading of them. Only where a name is in play (asked, pending, or extracted)."""
+    if turn.channel != "voice" or NAME_SLOT not in spec.slots:
+        return None
+    sv = st.slots.get(NAME_SLOT)
+    in_play = (_slot_of(spec, st.node) == NAME_SLOT or turn.extraction.slots.get(NAME_SLOT)
+               or (sv is not None and sv.needs_confirm))
+    letters = assemble_spelling(turn.utterance) if in_play else None
+    return "-".join(letters) if letters else None
+
+
+def _deny_name(spec, st, sv, plan, ev):
+    """ "No" to a read-back: re-ask; after `spell_after` misses ask for letters; at the cap
+    keep the best candidate (filled, low_confidence) and move on."""
+    pol = _name_policy(spec)
+    if sv.confirm_attempts >= pol.get("max_attempts", NAME_MAX_ATTEMPTS):
+        _fill_low_confidence(spec, st, NAME_SLOT, plan, ev)
+        return
+    st.slots[NAME_SLOT] = SlotValue(attempts=sv.attempts, confirm_attempts=sv.confirm_attempts)
+    ev.append({"type": "slot_cleared", "slot": NAME_SLOT})
+    plan.denied.append(NAME_SLOT)
+    if st.active_channel == "voice" or sv.source == "voice":
+        if sv.confirm_attempts >= pol.get("spell_after", NAME_SPELL_AFTER):
+            plan.spell = NAME_SLOT
+
+
+def _fill_low_confidence(spec, st, name, plan, ev):
+    sv = st.slot(name)
+    vid = spec.slots[name]["validator"]
+    sv.status, sv.validated_by, sv.needs_confirm, sv.low_confidence = "filled", vid, False, True
+    ev.append({"type": "slot_filled", "slot": name, "value": sv.value, "validated_by": vid,
+               "low_confidence": True})
+    plan.acknowledge.append(name)
+    plan.confirm = None
+
+
+def _reopen_name(spec, st, turn, intents, touched, plan, ev) -> bool:
+    """ "You've got my name wrong" (change_answer, no new value): reopen user_name and ask
+    again — to spell it on a call, since the spoken name already failed once."""
+    if ("change_answer" not in intents or touched or NAME_SLOT not in spec.slots
+            or not st.filled(NAME_SLOT) or not _NAME_WRONG.search(turn.utterance or "")):
+        return False
+    old = st.slot(NAME_SLOT)
+    st.slots[NAME_SLOT] = SlotValue(attempts=old.attempts, confirm_attempts=1)
+    ev.append({"type": "slot_cleared", "slot": NAME_SLOT, "reason": "user_correction"})
+    plan.denied.append(NAME_SLOT)
+    if turn.channel == "voice":
+        plan.spell = NAME_SLOT
+    return True
 
 
 # --- helpers -----------------------------------------------------------------
