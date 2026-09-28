@@ -141,8 +141,8 @@ See docs/qa/live-test-2026-09-27.md and docs/qa/requirements-audit.md.
 | Packet | What | Class | Depends | Acceptance |
 |---|---|---|---|---|
 | **LIVE-FIX** ✅ deployed 11:14pm PT | Prod text chat was FakeLlm → Claude extract + reaction-only phrasing; natural acks; gmail why once; no "type your email" line; graduation wording; image ships product-facts | EM | — | smoke 7/7; live text probe |
-| **NAME-001** 🟡 launched | Voice name read-back + letter spelling fallback; text confirm when unusual | B-high / impl | LIVE-FIX | qa:fast/flow |
+| **NAME-001** ✅ merged 5946a37 | Voice name read-back + letter spelling fallback; text confirm when unusual | B-high / impl | LIVE-FIX | qa:fast/flow |
 | **GRAD-001** 🟡 launched | Functional graduation screen: scoped replies, tap-to-edit, Connect Gmail, dismiss | B-high / frontend | LIVE-FIX | qa:fast/flow/e2e + grad e2e |
 | **AUDIT-001** 🟡 launched | Playwright button audit local + LIVE, desktop + mobile → docs/qa/button-audit.md; `qa:audit` gates deploys | B-high / frontend | — | qa:audit green |
-| **GUARD-001** ⏳ after NAME-001 | Per-node tool/extraction schema, reject out-of-node tool calls, modularity tests | B-high / impl | NAME-001 | qa:flow + new isolation tests |
+| **GUARD-001** 🟡 launched | Per-node tool/extraction schema, reject out-of-node tool calls, modularity tests | B-high / impl | NAME-001 | qa:flow + new isolation tests |
 | **LAT-001** ⏳ after GUARD-001 | Voice latency: single LLM round trip per turn, DB/agent region, cache | B-high / impl | GUARD-001 | p50 user-stop→audio < 1.5s |
