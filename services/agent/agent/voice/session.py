@@ -16,7 +16,8 @@ Hand-off (VOICE-003): `attach(control, session_id)` wires the call to `handoff.C
 `on_ended(reason)` routes a media drop into the reconnect grace window and anything else
 to a hangup + chat resume. `reconnect=True` opens with "we got cut off". A per-node
 silence floor (`silence.py`) nudges at ≈7s/≈15s, then offers the chat and ends
-(`silence_timeout`). Text typed in the chat during the call is acknowledged by voice.
+(`silence_timeout`). Text typed in the chat during the call is acknowledged by voice, and
+so are the Gmail card's out-of-band results (OAuth connected / consent failed, VOICE-004).
 
 LLM slot (`VoiceConfig.llm_mode`): `flows` = Claude under a Pipecat Flows `FlowManager`
 whose nodes and `record_slots` handler come from `flows.VoiceFlow` over a `BrainPort`
@@ -161,13 +162,15 @@ class CallSession:
     def current_node(self) -> Optional[str]:
         return self.flow.last.plan.node if self.flow is not None and self.flow.last is not None else None
 
-    async def on_typed(self, plan) -> None:
-        """A chat turn committed during the call: say the brain's result (EC-28)."""
+    async def on_typed(self, plan, source: str = "text", data: Optional[dict] = None) -> None:
+        """An out-of-band turn committed during the call: typed chat text (EC-28) or the
+        Gmail card's OAuth result (VOICE-004). Say the brain's result."""
         if self.flow is None or self._flow_manager is None or self._ending or self.teardown.started:
             return
         if self.silence:
             self.silence.user_activity()
-        node = await self.flow.typed_turn(plan)
+        node = await (self.flow.typed_turn(plan) if source == "text"
+                      else self.flow.typed_turn(plan, source=source, data=data))
         if node is not None and not self.teardown.started:
             await self._flow_manager.set_node_from_config(node)
 
@@ -282,7 +285,8 @@ class CallSession:
         if watch is not None:
             loop = asyncio.get_running_loop()
             # Called from the text turn's thread after commit: hop onto the call's loop.
-            self._unwatch = watch(lambda out: loop.call_soon_threadsafe(self._spawn, self.on_typed(out.plan)))
+            self._unwatch = watch(lambda out: loop.call_soon_threadsafe(
+                self._spawn, self.on_typed(out.plan, getattr(out, "source", "text"), getattr(out, "data", None))))
 
     async def run(self) -> None:
         self.stats.local_candidates = _candidate_types(self.connection)

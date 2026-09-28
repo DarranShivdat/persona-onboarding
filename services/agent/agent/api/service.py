@@ -17,7 +17,7 @@ import asyncio
 import hashlib
 import secrets
 import threading
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import Any, Callable, Optional
 
 from ..brain import engine
@@ -65,6 +65,8 @@ class TurnOutcome:
     plan: ResponsePlan
     snapshot: dict
     trace_id: str
+    source: str = "text"            # what committed it, for turn listeners: text | gmail_oauth | gmail_failed
+    data: dict = field(default_factory=dict)
 
 
 def snapshot(spec: FlowSpec, state: SessionState, lease: Optional[CallLease]) -> dict[str, Any]:
@@ -130,8 +132,9 @@ class SessionService:
             return self._locks.setdefault(session_id, threading.RLock())
 
     def add_text_listener(self, session_id: str, cb: TurnListener) -> Callable[[], None]:
-        """`cb(session_id, outcome)` after each committed text turn (a live call uses this
-        to acknowledge typed input by voice, EC-28). Called from the committing thread."""
+        """`cb(session_id, outcome)` after each out-of-band turn: typed text (a live call
+        acknowledges it by voice, EC-28), the OAuth gmail fill, and a failed consent
+        (`outcome.source`, VOICE-004). Called from the committing thread."""
         with self._locks_guard:
             self._listeners.setdefault(session_id, []).append(cb)
 
@@ -167,6 +170,9 @@ class SessionService:
             self.reconcile_call(session_id)
             out = self._run(session_id, "text_turn", "text", build, user_text=text,
                             expected_version=expected_version)
+        return self._notify_listeners(session_id, out)
+
+    def _notify_listeners(self, session_id: str, out: TurnOutcome) -> TurnOutcome:
         with self._locks_guard:
             listeners = list(self._listeners.get(session_id, ()))
         for cb in listeners:
@@ -187,8 +193,27 @@ class SessionService:
             return Turn(channel=channel, extraction=Extraction(slots={"gmail": email}), oauth_verified=True)
 
         gmail = {"email": email, "google_sub": google_sub, "scopes": scopes, **(sealed or {})}
-        return self._run(session_id, "gmail_oauth", channel, build, gmail=gmail,
-                         extra_pushes=[("gmail_connected", {"email": email})])
+        out = self._run(session_id, "gmail_oauth", channel, build, gmail=gmail,
+                        extra_pushes=[("gmail_connected", {"email": email})])
+        out.source, out.data = "gmail_oauth", {"email": email, "scopes": list(scopes)}
+        return self._notify_listeners(session_id, out)  # a live call says "connected" (VOICE-004)
+
+    def gmail_failed(self, session_id: str, *, reason: str) -> bool:
+        """The browser's Google consent was cancelled / closed / errored (EC-21). No state
+        change (gmail stays as it was; the card shows the retry path): logged, and a live
+        call on the gmail step offers retry, type-it, or skip. True if a call was told."""
+        with self.session_lock(session_id):
+            state = self.store.load(session_id)
+            live = self.store.lease(session_id) is not None
+            self.store.append_events(session_id, [{"kind": "brain", "channel": state.active_channel, "trace_id": None,
+                                                   "payload": {"type": "gmail_oauth_failed", "reason": reason,
+                                                               "node": state.node}}])
+        if not live or state.node != "gmail" or state.filled("gmail"):
+            return False
+        out = TurnOutcome(reply="", plan=ResponsePlan(node=state.node), snapshot={}, trace_id="",
+                          source="gmail_failed", data={"reason": reason})
+        self._notify_listeners(session_id, out)
+        return True
 
     def _run(self, session_id, name, channel, build, **kw) -> TurnOutcome:
         with self.session_lock(session_id):

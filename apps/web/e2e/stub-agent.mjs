@@ -86,6 +86,10 @@ function turn(s, text) {
   } else if (s.node === "call_offer") {
     s.node = YES.has(low) ? "call_offer" : nextMissing(s);
     reply = YES.has(low) ? "Tap the call button when you're ready." : ASK[s.node];
+  } else if (s.node === "gmail" && /^\S+@\S+\.\S+$/.test(text.trim())) {
+    // VOICE-004-lite "type it": a typed email is only a candidate until OAuth (never filled).
+    s.slots.gmail = { status: "candidate", value: text.trim(), source: "text", needs_confirm: false };
+    reply = "Thanks. To connect it, tap Continue with Google on the card and sign in there.";
   } else if (s.node === "gmail") {
     s.deferred = ["gmail"];
     s.slots.gmail = { ...s.slots.gmail, status: "skipped" };
@@ -118,6 +122,7 @@ function create(seed = {}) {
     deferred: seed.deferred ?? [],
     graduated: !!seed.graduated,
     callId: seed.call ? randomUUID() : null,
+    gmailFailed: [],
     bot: null,
     events: [],
     seq: 0,
@@ -252,6 +257,11 @@ const server = createServer(async (req, res) => {
     const { s } = create((await readJson(req)) ?? {});
     return send(res, 201, { id: s.id, token: s.token });
   }
+  const log = url.pathname.match(/^\/__test\/sessions\/([^/]+)\/log$/);
+  if (req.method === "GET" && log) {
+    const s = sessions.get(log[1]);
+    return s ? send(res, 200, { gmail_failed: s.gmailFailed, call_live: !!s.callId, node: s.node }) : send(res, 404, { error: "not_found" });
+  }
   const bot = url.pathname.match(/^\/__test\/sessions\/([^/]+)\/bot\/(offer|answer)$/);
   if (bot) {
     const s = sessions.get(bot[1]);
@@ -291,6 +301,13 @@ const server = createServer(async (req, res) => {
   if (!auth(req, url, s)) return send(res, 401, { error: "unauthorized" });
 
   if (req.method === "GET" && sub === "") return send(res, 200, snapshot(s));
+  if (req.method === "POST" && sub === "gmail/failed") {
+    // EC-21 on a call: logged, never changes state (the real agent tells the live call).
+    const body = (await readJson(req)) ?? {};
+    const reason = typeof body.reason === "string" ? body.reason : "cancelled";
+    s.gmailFailed.push(reason);
+    return send(res, 200, { noticed: !!s.callId && s.node === "gmail" });
+  }
   if (req.method === "POST" && sub === "turns") {
     const body = await readJson(req);
     if (!body || typeof body.text !== "string" || !body.text.trim()) return send(res, 422, { error: "bad_body" });

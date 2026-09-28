@@ -25,7 +25,13 @@ call — that turn already ran once through the text path (same serialized sessi
 the voice side only speaks the brain's result and moves to its node, never re-extracts.
 Lease/grace live in `handoff.py`; silence nudges in `silence.py`.
 
-Deliberately absent here: Gmail-on-call tools (VOICE-004).
+Gmail on the call (VOICE-004-lite): the brain already pushes `gmail_connect_card` on every
+gmail-node turn (same card, same OAuth, same `SessionService.gmail_connected` fill as text),
+so the call only speaks around it: the ask adds the "type your email in the chat" escape,
+a typed email is acknowledged without spelling it back (spoken NATO capture was cut; a
+typed/spoken email stays a `candidate` until OAuth), and out-of-band results reach the call
+through the session's turn listeners — `gmail_oauth` (connected; a partial grant is stated
+plainly) and `gmail_failed` (cancelled / closed consent: offer retry, type-it, or skip).
 """
 from __future__ import annotations
 
@@ -53,6 +59,18 @@ CHANNEL = "voice"
 VOICE_GREET = "Hi, it's Persona! Let's get you set up. It's just a few quick questions."
 VOICE_CONTINUE = "Hi, it's Persona! Let's pick up where we left off in the chat."
 TYPED_ACK = "I see you typed that in the chat."
+GMAIL_TYPE_IT = "Or, if it's easier, type your email in the chat."
+GMAIL_TYPED = ("Thanks, I see the email you typed. To actually connect it, tap Continue with Google "
+               "on your screen and sign in there.")
+GMAIL_FAILED = ("Looks like Google didn't finish signing you in. You can tap Try again on your screen, "
+                "type your email in the chat, or just say skip and we'll do it later.")
+GMAIL_CONNECTED = "Gmail's connected."
+# Scope -> what the assistant can't do without it (ARCHITECTURE §11 partial grants).
+GMAIL_CAPABILITY = {
+    "https://www.googleapis.com/auth/gmail.readonly": "read your email",
+    "https://www.googleapis.com/auth/gmail.modify": "organize your inbox",
+    "https://www.googleapis.com/auth/gmail.send": "send email",
+}
 OnGraduated = Callable[[str], Awaitable[None]]
 
 ROLE = (
@@ -91,9 +109,25 @@ def voice_line(spec: FlowSpec, plan: ResponsePlan, state: SessionState) -> str:
     if greet:
         plan = copy.copy(plan)
         plan.say = [s for s in plan.say if s != "greet"]
-    crit = critical_lines(plan, state, CHANNEL)
+    gm = state.slots.get("gmail")
+    spelled = T.email_readback(gm.value) if gm and gm.value and gm.status == "candidate" else None
+    # Never spell an email out on the call (NATO capture was cut): the card + chat carry it.
+    crit = [c for c in critical_lines(plan, state, CHANNEL) if c != spelled]
     rest = template_reply(spec, plan, state, CHANNEL, critical=bool(crit))
-    return " ".join(p for p in [VOICE_GREET if greet else "", rest, *crit] if p)
+    gmail = ""
+    if plan.ask == "gmail" and not crit:
+        gmail = GMAIL_TYPED if spelled else GMAIL_TYPE_IT
+    return " ".join(p for p in [VOICE_GREET if greet else "", rest, gmail, *crit] if p)
+
+
+def gmail_oauth_line(data: Optional[dict]) -> str:
+    """Spoken right after the OAuth callback filled gmail; a partial grant is stated plainly."""
+    granted = set((data or {}).get("scopes") or [])
+    missing = [can for scope, can in GMAIL_CAPABILITY.items() if granted and scope not in granted]
+    if not missing:
+        return GMAIL_CONNECTED
+    cant = missing[0] if len(missing) == 1 else ", ".join(missing[:-1]) + " or " + missing[-1]
+    return f"{GMAIL_CONNECTED} Google left out permission to {cant}, so I can do the rest, and you can allow it anytime."
 
 
 class LocalBrain:
@@ -151,7 +185,8 @@ class ServiceBrain:
         return await asyncio.to_thread(self.service.store.load, self.session_id)
 
     def watch_text(self, cb: Callable[[Any], None]) -> Callable[[], None]:
-        """`cb(outcome)` after each text turn committed on this session (EC-28)."""
+        """`cb(outcome)` after each out-of-band turn committed on this session: typed text
+        (EC-28), the OAuth fill, or a failed consent (`outcome.source`, VOICE-004)."""
         return self.service.add_text_listener(self.session_id, lambda _sid, out: cb(out))
 
     async def _run(self, name: str, build: Callable[[SessionState], Turn], **kw: Any) -> VoiceTurn:
@@ -173,7 +208,9 @@ class ServiceBrain:
 
 def voice_tools(spec: FlowSpec, node_id: str) -> list[str]:
     """Functions a node exposes on a call: the spec's tools, minus the ones that have no
-    meaning mid-call (start_call) or belong to later packets (gmail tools: VOICE-004)."""
+    meaning mid-call (start_call) or that code does instead of the LLM: the brain pushes
+    the Gmail card on every gmail-node turn and the ask always offers "type it"
+    (push_gmail_connect / request_typed_email); spoken NATO capture was cut."""
     return [t for t in spec.nodes[node_id]["tools"] if t == TOOL_NAME]
 
 
@@ -229,14 +266,27 @@ class VoiceFlow:
         _, node = await self._after(vt, opening=True)
         return node
 
-    async def typed_turn(self, plan: ResponsePlan) -> Optional["NodeConfig"]:
-        """A text turn landed during the call (already committed by the text path):
-        acknowledge it by voice and move to the brain's node. None if nothing to say."""
+    async def typed_turn(self, plan: ResponsePlan, *, source: str = "text",
+                         data: Optional[dict] = None) -> Optional["NodeConfig"]:
+        """A turn landed out of band during the call (already committed by the text path or
+        the OAuth callback): say it by voice and move to the brain's node. None if nothing
+        to say. `source`: text (typed in the chat) | gmail_oauth | gmail_failed."""
         state = await self.brain.current()
+        if source == "gmail_failed":
+            # No state change (the card shows the error); only while the call is still at gmail.
+            if state.node != "gmail" or state.filled("gmail"):
+                return None
+            vt = VoiceTurn(state, self.last.plan if self.last else ResponsePlan(node="gmail"), GMAIL_FAILED)
+            _, node = await self._after(vt, opening=True)
+            return node
         if plan.absorbed:
             return None
         line = voice_line(self.spec, plan, state)
-        vt = VoiceTurn(state, plan, f"{TYPED_ACK} {line}".strip() if not plan.graduate else line)
+        if source == "gmail_oauth":
+            line = f"{gmail_oauth_line(data)} {line}".strip()
+        elif not plan.graduate:
+            line = f"{TYPED_ACK} {line}".strip()
+        vt = VoiceTurn(state, plan, line)
         _, node = await self._after(vt, opening=True)
         return node
 

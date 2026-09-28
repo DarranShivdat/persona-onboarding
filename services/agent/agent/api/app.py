@@ -66,6 +66,10 @@ class TurnIn(BaseModel):
     version: Optional[int] = None             # optional client-side optimistic check
 
 
+class GmailFailedIn(BaseModel):
+    reason: str = Field(default="cancelled", pattern=r"^[a-z_]{1,32}$")   # e.g. cancelled | window_closed | access_denied
+
+
 class GmailIn(BaseModel):
     email: str = Field(min_length=3, max_length=320)
     google_sub: str = Field(min_length=1, max_length=255)
@@ -241,6 +245,15 @@ def create_app(
         await run_in_threadpool(store.load, session_id)
         revoked = await run_in_threadpool(gmail.disconnect, session_id)
         return {"revoked": revoked, "token_status": "revoked"}
+
+    @app.post("/v1/sessions/{session_id}/gmail/failed")
+    async def gmail_failed(session_id: str, body: GmailFailedIn, request: Request,
+                           authorization: Optional[str] = Header(None), x_session_token: Optional[str] = Header(None)):
+        """Browser: Google consent didn't finish (EC-21). Never changes state; a live call on
+        the gmail step offers retry / type-it / skip (VOICE-004)."""
+        await authorize(session_id, _bearer(authorization, x_session_token, None))
+        limit(request, session_id)
+        return {"noticed": await run_in_threadpool(svc.gmail_failed, session_id, reason=body.reason)}
 
     @app.get("/v1/sessions/{session_id}/gmail/demo")
     async def gmail_demo(session_id: str, request: Request,
