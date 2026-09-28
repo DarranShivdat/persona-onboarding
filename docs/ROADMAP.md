@@ -8,9 +8,8 @@ Ready packets live in `docs/orchestration/packets/`.
 **Submission due Mon Sep 28, 2026, 8:00pm ET = 5:00pm PT.** Target: hosted URL live and
 working end to end by **Mon 12:00pm PT** — **ahead: hosted + smoke PASS Sun ~10:48pm**.
 
-Status Mon ~1:53pm PT: **M1 ✅ M2 ✅ M3 ✅ M5 ✅**; **M6 DOCS/HOSTED/PROMPT ✅**; **M7** NAME/GRAD/AUDIT/GUARD/LAT/REQ + voice-polish + RESET/HOME/SIL + HONEST-001/NAME-003 + **NAME-004/VQA-002** ✅ — live agent **`ac6a1dd`** / web **`fc79338`** (smoke 7/7 PASS; LIVE audit 246 PASS at deploy).
-Main tip **`1a2e1cd`** (deploy-state LIVE stamp) matches live agent **`ac6a1dd`** / web **`fc79338`**. DEPLOY-STATE=LIVE (yes-loop/VQA owner finished ~1:50pm PT).
-Latency after polish: p50 **2.27s** / p90 **2.43s**; connect ~1.81s. `PERSONA_VOICE_QUICK_ACK` ON via Fly secret (left untouched).
+Status Mon ~2:51PM PT: **M1 ✅ M2 ✅ M3 ✅ M5 ✅**; **M6 DOCS/HOSTED/PROMPT ✅**; **M7** NAME/GRAD/AUDIT/GUARD/LAT/REQ + voice-polish + RESET/HOME/SIL + HONEST/NAME + VQA + **CUTOFF-001/CLIP-001/RESET-002/UI** + **NAME-GREET/RESUME-003** ✅; **GMAIL-NOTNOW/TYPED-001** on main, agent LIVE **`c574b9c`**, web tip still **`1293997`** while DEPLOY-STATE=**REDEPLOYING** (owner EM executor ~2:47pm PT).
+Main tip **`c574b9c`**. Smoke 7/7 PASS vs current surfaces. Latency prior polish: p50 **2.27s** / p90 **2.43s**. `PERSONA_VOICE_QUICK_ACK` ON via Fly secret (left untouched).
 Live: web `https://persona-onboarding-darran.vercel.app`, agent `https://persona-onboarding-agent.fly.dev`.
 Remaining Darran: Google Console test users + Branding homepage/privacy/authorized domain
 (see `docs/deploy/DEPLOY-STATE.md`). OAuth stays Testing until then.
@@ -106,7 +105,7 @@ READY FOR PRODUCT TEST to Darran.
 | **PROMPT-001** ✅ merged | Agent-name suggestion chips + tone polish from design copy (DQ-04 residual) | B-high / impl | FE-005 | chips on agent_name ask; qa:fast/flow/e2e |
 
 ## Parallelism
-Now (Mon ~1:53pm PT): NAME-004/VQA-002 **LIVE** agent `ac6a1dd` / web `fc79338`; smoke 7/7 PASS; DEPLOY-STATE=LIVE.
+Now (2:51PM PT): agent LIVE `c574b9c`; web `1293997` (REDEPLOYING GMAIL-NOTNOW/TYPED under owner). smoke 7/7 PASS.
 No ready Opus packets / no active workers. Do not invent inventory work.
 Next: Darran product smoke (text/voice/Gmail); Google Console test users/Branding unchanged; submit by Mon 5:00pm PT.
 
