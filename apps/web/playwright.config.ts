@@ -6,7 +6,13 @@ import { defineConfig, devices } from "@playwright/test";
 // (e2e/stub-agent.mjs on :3199), or a real agent via PERSONA_E2E_AGENT_URL.
 const PORT = Number(process.env.PERSONA_E2E_WEB_PORT ?? 3100);
 const STUB_PORT = Number(process.env.PERSONA_E2E_STUB_PORT ?? 3199);
-const external = process.env.PERSONA_WEB_URL;
+// HOSTED-001: PERSONA_E2E_HOSTED_WEB_URL switches to the "hosted" project only (e2e/hosted/*),
+// against the live deploy — no local build, no stub. Unset → hosted specs are ignored; set but
+// empty → fail closed (a misconfigured probe must not silently pass).
+const hostedEnv = process.env.PERSONA_E2E_HOSTED_WEB_URL;
+if (hostedEnv !== undefined && !hostedEnv.trim()) throw new Error("PERSONA_E2E_HOSTED_WEB_URL is set but empty");
+const hosted = hostedEnv?.trim().replace(/\/+$/, "");
+const external = hosted ?? process.env.PERSONA_WEB_URL;
 const useStub = !process.env.PERSONA_E2E_AGENT_URL;
 const agentUrl = process.env.PERSONA_E2E_AGENT_URL ?? `http://127.0.0.1:${STUB_PORT}`;
 process.env.PERSONA_E2E_AGENT_URL = agentUrl; // read by specs (seeding) — test-only
@@ -34,10 +40,12 @@ export default defineConfig({
     // the fake tone play without a gesture.
     launchOptions: { args: ["--disable-features=WebRtcHideLocalIpsWithMdns", "--autoplay-policy=no-user-gesture-required"] },
   },
-  projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
-    { name: "mobile", use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 }, hasTouch: true } },
-  ],
+  projects: hosted
+    ? [{ name: "hosted", testMatch: "hosted/**/*.spec.ts", timeout: 90_000, use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } }]
+    : [
+        { name: "desktop", testIgnore: "hosted/**", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
+        { name: "mobile", testIgnore: "hosted/**", use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 }, hasTouch: true } },
+      ],
   webServer: external
     ? undefined
     : [

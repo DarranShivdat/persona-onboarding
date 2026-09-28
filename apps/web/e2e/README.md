@@ -30,3 +30,10 @@ signaling double (`GET/POST /__test/sessions/{id}/bot/{offer,answer}`) and answe
 offer like the Pipecat bot would. The browser under test does the real offer -> `POST
 /api/session/call` -> answer -> ICE -> `connected`. The build uses host-only ICE
 (`NEXT_PUBLIC_PERSONA_ICE_URLS=none`) and Chromium runs without mDNS host obfuscation.
+
+Hosted probe (HOSTED-001: `e2e/hosted/`) checks the live deploy from a browser: agent
+`/health`, `/` `/about` `/privacy`, one throwaway session + one text turn (checklist fills),
+ICE includes a TURN URL, and OAuth start 302s to accounts.google.com (Location read, never
+followed). Run `bash scripts/hosted-e2e.sh` (defaults to the DEPLOY-STATE URLs). It runs only
+when `PERSONA_E2E_HOSTED_WEB_URL` is set — that selects the `hosted` project alone, with no local
+build or stub; set-but-empty fails closed. Default `qa:e2e` ignores `e2e/hosted/`.

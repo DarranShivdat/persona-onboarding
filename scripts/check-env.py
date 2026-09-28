@@ -154,6 +154,7 @@ REGISTRY: tuple[Var, ...] = (
     Var("PERSONA_E2E_AGENT_URL", (TEST,), section="test", note="Playwright: real agent instead of e2e/stub-agent.mjs"),
     Var("PERSONA_E2E_WEB_PORT", (TEST,), section="test", note="Playwright: web listen port (default 3100; FE-005 uses 3400 to avoid worker collisions)"),
     Var("PERSONA_E2E_STUB_PORT", (TEST,), section="test", note="Playwright: stub-agent listen port (default 3199)"),
+    Var("PERSONA_E2E_HOSTED_WEB_URL", (TEST,), section="test", note="Playwright: live web URL; selects only the hosted probe project (scripts/hosted-e2e.sh); set-but-empty fails"),
     Var("PERSONA_WEB_URL", (TEST,), section="test", note="Playwright: already-running web (skips build/start)"),
     Var("CI", (TEST,), section="test", note="Playwright: no server reuse"),
     Var("PERSONA_SPIKE_TOKEN", (TEST,), secret=True, section="test", note="INFRA-001 voice spike only"),
