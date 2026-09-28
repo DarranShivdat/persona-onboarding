@@ -86,5 +86,18 @@ Measured with the real voice prompt and tool against Claude Haiku 4.5 from the M
 Expected after #1, #3 and #4 with the ack off: p50 ≈ 1.9 s. With the ack on, the caller hears
 audio at ≈ 1.0–1.2 s. The measured before/after numbers are in the section below.
 
+## Measured locally before deploy (Mac, real Deepgram/Claude/Cartesia, host ICE, no TURN)
+
+Not comparable to hosted in absolute terms (no TURN, Mac→vendors), but the server spans are:
+
+| run | llm_tool | turn_wait | tts_ttfb | caller-stop → first audio (browser) |
+|---|---|---|---|---|
+| ack off | 900–1135 ms | ~440 ms | ~170 ms | 1825 / 1945 / 1906 / 1936 ms |
+| ack on (`PERSONA_VOICE_QUICK_ACK=1`) | 760–1220 ms | ~440 ms | ~170 ms | 2045 / 2055 / **1066 / 1065 ms** (ack on turns 3–4; `ack_ms` 565–593 server-side; no ack on the name turns, as designed) |
+
+Transcript check: turn 2 gave the need at the name read-back → "Perfect, thanks …" + need ack +
+Gmail ask (NAME-002 implicit yes); turn 3 asked "what is Persona?" → the model picked
+`answer=what_is_persona`, the approved line was spoken, then the Gmail ask (VQA-001).
+
 ## Measured after deploy
-(filled in after the redeploy: see "Results" below)
+(filled in after the redeploy)
