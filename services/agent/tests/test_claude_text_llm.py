@@ -71,3 +71,11 @@ def test_privacy_answer_is_policy_template_not_paraphrase():
     text = llm.phrase(spec=SPEC, state=r.state, plan=r.plan, channel="text")
     assert "encrypted everywhere" not in text and "Google sign-in" in text
     assert client.messages.calls == []
+
+
+def test_docker_image_ships_the_product_facts_the_phraser_reads():
+    # 2026-09-27 redeploy crash: /app/docs/product-facts.md was missing from the image.
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[3]
+    assert "!docs/product-facts.md" in (root / ".dockerignore").read_text().splitlines()
+    assert "COPY docs/product-facts.md /app/docs/product-facts.md" in (root / "infra/agent.Dockerfile").read_text()

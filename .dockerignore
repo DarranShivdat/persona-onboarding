@@ -5,6 +5,7 @@
 !packages/flow/
 !infra/agent-constraints.txt
 !infra/supabase/migrations/
+!docs/product-facts.md
 # never ship secrets / caches even inside allowlisted dirs
 **/.env
 **/.env.*

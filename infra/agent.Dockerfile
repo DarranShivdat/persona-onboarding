@@ -38,6 +38,8 @@ WORKDIR /app
 COPY packages/flow /app/packages/flow
 COPY infra/supabase/migrations /app/infra/supabase/migrations
 COPY services/agent/agent /app/services/agent/agent
+# Approved product facts: the text phraser + output guard read them at startup.
+COPY docs/product-facts.md /app/docs/product-facts.md
 # Build-time smoke: fail the (remote) build, not the first call, on a broken dep set.
 # Also pre-fetch the NLTK tokenizer so the non-root runtime never downloads at call time.
 RUN python -c "import nltk; nltk.download('punkt_tab', download_dir='/usr/local/share/nltk_data', quiet=True)" \

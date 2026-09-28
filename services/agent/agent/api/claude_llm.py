@@ -180,4 +180,8 @@ def llm_from_env(spec: FlowSpec, tracer: Any = None) -> Optional[ClaudeTurnLlm]:
         return None
     from ..llm.client import make_client
 
-    return ClaudeTurnLlm(spec, make_client(), tracer=tracer)
+    try:
+        return ClaudeTurnLlm(spec, make_client(), tracer=tracer)
+    except Exception as e:  # never take the API down over the text LLM: degrade to templates
+        logger.error(f"text LLM disabled, falling back to templates: {type(e).__name__}: {e}")
+        return None
