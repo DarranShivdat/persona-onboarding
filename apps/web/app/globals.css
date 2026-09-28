@@ -174,6 +174,28 @@ button:disabled { cursor: default; }
 .defer .t span { font: var(--t-callout); color: var(--ink-2); }
 .defer .x { width: var(--hit-min); height: var(--hit-min); margin: -4px; border-radius: 50%; border: 0; background: transparent; color: var(--ink-2); display: grid; place-items: center; padding: 0; }
 .home .composer { padding: var(--s6) 0 env(safe-area-inset-bottom); max-width: none; }
+.home .grid:has(.tile.gmail) { grid-template-columns: repeat(3, 1fr); }
+.tile:has(.editable) { position: relative; }
+/* Tap anywhere on an editable tile; the pencil sits in the corner so the text layout matches the mockup. */
+.tile .editable { display: block; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.tile .editable::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.tile .editable:focus-visible { outline: none; }
+.tile:has(.editable:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+.tile .editable .pencil { position: absolute; top: 14px; right: 14px; color: var(--ink-3); opacity: .7; }
+.tile .editable:hover .pencil, .tile .editable:focus-visible .pencil { opacity: 1; color: var(--ink); }
+.tile .editable.empty span { color: var(--ink-2); font-weight: 400; }
+.edit-field { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; margin-top: 6px; }
+.edit-input { flex: 1 1 200px; min-width: 0; min-height: var(--hit-min); padding: 0 14px; border: 1px solid var(--ink); border-radius: 12px; background: #fff; font: var(--t-body); color: var(--ink); }
+.edit-input[aria-invalid="true"] { border-color: var(--danger); }
+.edit-actions { display: flex; gap: 4px; }
+.edit-error { flex-basis: 100%; margin: 0; font: var(--t-callout); color: var(--danger-ink); }
+.btn.sm { padding: 10px 16px; font-size: 14px; }
+.tile.gmail { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.tile.gmail .v { display: flex; align-items: center; gap: 6px; }
+.tile.gmail .ok { color: var(--signal-ink); }
+.tile.gmail .sub { font: var(--t-callout); color: var(--ink-2); overflow-wrap: anywhere; }
+.tile.gmail .btn { margin-top: var(--s2); }
+.home-thread { display: flex; flex-direction: column; gap: var(--s2); margin-top: var(--s6); max-height: 40vh; overflow: auto; }
 
 /* ---------- motion ---------- */
 @keyframes message-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -218,6 +240,8 @@ button:disabled { cursor: default; }
   .landing .art .ring { width: 110px; height: 110px; border-width: 6px; }
   .landing .btn.lg { width: 100%; }
   .home { padding: var(--s5) var(--s4); }
+  .home .grid:has(.tile.gmail) { grid-template-columns: 1fr 1fr; }
+  .tile.gmail { grid-column: 1 / -1; }
   .home h1 { font-size: var(--t-home-title-mobile-size); }
   .defer { display: grid; grid-template-columns: 40px 1fr 36px; gap: var(--s3); padding: var(--s4); }
   .defer .btn { grid-column: 2 / 3; justify-self: start; }
