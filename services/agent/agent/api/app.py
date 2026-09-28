@@ -26,6 +26,7 @@ from ..brain.validators import gmail_oauth
 from ..gmail import GmailError, GmailService, GoogleOAuth, ReconnectRequired, TokenCipher
 from ..obs.tracing import Tracer, get_tracer
 from ..store import LeaseHeldError, NotFoundError, PgStore, VersionConflictError
+from ..voice.handoff import GRACE_REASONS, CallControl, HandoffSettings
 from .llm import FakeLlm, TurnLlm
 from .ratelimit import RateLimiter, SlidingWindowLimiter
 from .service import Notifier, SessionService, TurnOutcome
@@ -37,6 +38,8 @@ MAX_TEXT_LEN = 2000
 class Settings:
     internal_secret: Optional[str] = None     # shared secret for server-to-server routes (gmail)
     call_lease_ttl_s: float = 120.0
+    call_heartbeat_s: float = 30.0
+    call_grace_s: float = 20.0                # reconnect grace window (EC-04)
     sse_poll_s: float = 1.0                   # DB poll floor when no in-process notify arrives
     sse_keepalive_s: float = 15.0
 
@@ -45,7 +48,13 @@ class Settings:
         return cls(
             internal_secret=os.environ.get("PERSONA_INTERNAL_SECRET") or None,
             call_lease_ttl_s=float(os.environ.get("PERSONA_CALL_LEASE_TTL_S", "120")),
+            call_heartbeat_s=float(os.environ.get("PERSONA_CALL_HEARTBEAT_S", "30")),
+            call_grace_s=float(os.environ.get("PERSONA_CALL_GRACE_S", "20")),
         )
+
+    def handoff(self) -> HandoffSettings:
+        return HandoffSettings(lease_ttl_s=self.call_lease_ttl_s, heartbeat_s=self.call_heartbeat_s,
+                               grace_s=self.call_grace_s)
 
 
 class TurnIn(BaseModel):
@@ -64,6 +73,8 @@ class GmailIn(BaseModel):
 class CallIn(BaseModel):
     sdp: Optional[str] = None                 # SmallWebRTC offer (VOICE-001); ignored here
     type: Optional[str] = None
+    take_over: bool = False                   # explicit user confirm after a 409 call_in_progress (EC-02)
+    resume_call_id: Optional[str] = None      # reconnect inside the grace window (EC-04)
 
 
 class CallEndIn(BaseModel):
@@ -110,9 +121,11 @@ def create_app(
     ip_limiter = ip_limiter or SlidingWindowLimiter(120, 60)
     session_limiter = session_limiter or SlidingWindowLimiter(40, 60)
 
+    calls = CallControl(svc, settings.handoff())
+
     app = FastAPI(title="persona-agent", version="0.0.1")
     gmail = gmail or GmailService(store=store, cipher=None, oauth=None)
-    app.state.service, app.state.settings, app.state.gmail = svc, settings, gmail
+    app.state.service, app.state.settings, app.state.calls, app.state.gmail = svc, settings, calls, gmail
 
     @app.exception_handler(NotFoundError)
     async def _nf(_: Request, __: NotFoundError):
@@ -124,7 +137,8 @@ def create_app(
 
     @app.exception_handler(LeaseHeldError)
     async def _lh(_: Request, __: LeaseHeldError):
-        return JSONResponse({"error": "call_in_progress"}, status_code=409)
+        # Tab B: "call already in progress" + explicit take-over (retry with take_over=true).
+        return JSONResponse({"error": "call_in_progress", "can_take_over": True}, status_code=409)
 
     @app.exception_handler(ReconnectRequired)
     async def _rc(_: Request, exc: ReconnectRequired):
@@ -216,10 +230,29 @@ def create_app(
                         authorization: Optional[str] = Header(None), x_session_token: Optional[str] = Header(None)):
         await authorize(session_id, _bearer(authorization, x_session_token, None))
         limit(request, session_id)
-        lease = await run_in_threadpool(svc.acquire_call, session_id, ttl_s=settings.call_lease_ttl_s)
-        # Placeholder: VOICE-001 replaces this with the SmallWebRTC answer for body.sdp.
-        return {"call_id": lease.call_id, "lease_expires_at": lease.expires_at.isoformat(),
-                "answer": None, "status": "lease_acquired"}
+        body = body or CallIn()
+        if body.resume_call_id:
+            lease = await calls.reconnect(session_id, body.resume_call_id)
+            if lease is None:  # grace window closed (or taken over): the client starts a new call
+                return JSONResponse({"error": "call_ended", "call_id": body.resume_call_id}, status_code=409)
+            status = "resumed"
+        else:
+            lease = await calls.start(session_id, take_over=body.take_over)
+            status = "taken_over" if lease.replaced else "lease_acquired"
+        # Placeholder: the SmallWebRTC answer for body.sdp is attached when the API hosts the
+        # pipeline (CallSession.attach(calls, session_id) wires heartbeat/grace/hangup).
+        return JSONResponse({"call_id": lease.call_id, "lease_expires_at": lease.expires_at.isoformat(),
+                             "answer": None, "status": status, "replaced": lease.replaced,
+                             "grace_s": settings.call_grace_s, "heartbeat_s": settings.call_heartbeat_s},
+                            status_code=200 if status == "resumed" else 201)
+
+    @app.post("/v1/sessions/{session_id}/call/{call_id}/heartbeat")
+    async def heartbeat_call(session_id: str, call_id: str,
+                             authorization: Optional[str] = Header(None), x_session_token: Optional[str] = Header(None)):
+        await authorize(session_id, _bearer(authorization, x_session_token, None))
+        if not await calls.heartbeat(session_id, call_id):
+            return JSONResponse({"error": "call_lease_lost", "call_id": call_id}, status_code=409)
+        return {"ok": True}
 
     @app.delete("/v1/sessions/{session_id}/call/{call_id}")
     async def end_call(session_id: str, call_id: str, request: Request, body: Optional[CallEndIn] = None,
@@ -227,8 +260,12 @@ def create_app(
         await authorize(session_id, _bearer(authorization, x_session_token, None))
         limit(request, session_id)
         reason = (body or CallEndIn()).reason
-        released = await run_in_threadpool(svc.release_call, session_id, call_id, reason=reason)
-        return {"released": released}
+        if reason in GRACE_REASONS:
+            # Media lost, not a hangup: keep the call for the grace window (EC-04).
+            return {"released": False, "in_grace": await calls.dropped(session_id, call_id),
+                    "grace_s": settings.call_grace_s}
+        released, outcome = await calls.end(session_id, call_id, reason)
+        return {"released": released, **(_turn_json(outcome) if outcome is not None else {})}
 
     @app.get("/v1/sessions/{session_id}/events")
     async def events(session_id: str, request: Request, token: Optional[str] = None,

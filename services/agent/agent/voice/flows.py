@@ -18,8 +18,14 @@ in-memory `SessionState` (tests, offline calls); `ServiceBrain` runs the same tu
 through `agent.api.service.SessionService` — the store/session row the text channel
 writes — so a chat that continues on the call never forks state (invariant 6).
 
-Deliberately absent here: Gmail-on-call tools (VOICE-004), hangup lease/reconnect
-(VOICE-003), per-node silence-floor nudges.
+Call hand-off (VOICE-003): `opening(reconnect=True)` resumes a dropped call with the
+brain's "we got cut off" line (a fresh call that continues a chat says it is picking up
+instead); `typed_turn` acknowledges, by voice, text the user typed in the chat during the
+call — that turn already ran once through the text path (same serialized session), so
+the voice side only speaks the brain's result and moves to its node, never re-extracts.
+Lease/grace live in `handoff.py`; silence nudges in `silence.py`.
+
+Deliberately absent here: Gmail-on-call tools (VOICE-004).
 """
 from __future__ import annotations
 
@@ -45,6 +51,8 @@ if TYPE_CHECKING:  # pipecat is a runtime extra; the brain-level pieces import w
 CHANNEL = "voice"
 # T.GREET pitches the call itself; on the call the greeting just opens the questions.
 VOICE_GREET = "Hi, it's Persona! Let's get you set up. It's just a few quick questions."
+VOICE_CONTINUE = "Hi, it's Persona! Let's pick up where we left off in the chat."
+TYPED_ACK = "I see you typed that in the chat."
 OnGraduated = Callable[[str], Awaitable[None]]
 
 ROLE = (
@@ -142,9 +150,20 @@ class ServiceBrain:
     async def current(self) -> SessionState:
         return await asyncio.to_thread(self.service.store.load, self.session_id)
 
+    def watch_text(self, cb: Callable[[Any], None]) -> Callable[[], None]:
+        """`cb(outcome)` after each text turn committed on this session (EC-28)."""
+        return self.service.add_text_listener(self.session_id, lambda _sid, out: cb(out))
+
     async def _run(self, name: str, build: Callable[[SessionState], Turn], **kw: Any) -> VoiceTurn:
+        from ..store import VersionConflictError  # lazy: psycopg only where a store exists
+
         async with self._lock:
-            out = await asyncio.to_thread(self.service._run, self.session_id, name, CHANNEL, build, **kw)
+            try:
+                out = await asyncio.to_thread(self.service._run, self.session_id, name, CHANNEL, build, **kw)
+            except VersionConflictError:
+                # Another process committed first (in-process turns queue on the service's
+                # session lock). Nothing of ours was written: re-apply on the fresh state.
+                out = await asyncio.to_thread(self.service._run, self.session_id, name, CHANNEL, build, **kw)
             state = await self.current()
             return VoiceTurn(state, out.plan, voice_line(self.service.spec, out.plan, state))
 
@@ -198,10 +217,26 @@ class VoiceFlow:
         vt = await self.brain.turn(utterance, parse(self.spec, args if isinstance(args, dict) else {}))
         return await self._after(vt)
 
-    async def opening(self) -> "NodeConfig":
+    async def opening(self, *, reconnect: bool = False) -> "NodeConfig":
         """Call connected: `call_started` moves the session onto voice; speak the brain's
-        opening (greeting or "let's pick up") verbatim, then wait for the caller."""
+        opening verbatim, then wait for the caller. The brain's resume line ("we got cut
+        off") is right for a reconnect inside the grace window; a fresh call that
+        continues a chat says it is picking up from the chat instead."""
         vt = await self.brain.event("call_started")
+        cut_off = T.RESUME[CHANNEL]
+        if not reconnect and vt.plan.resume and vt.line.startswith(cut_off):
+            vt.line = VOICE_CONTINUE + vt.line[len(cut_off):]
+        _, node = await self._after(vt, opening=True)
+        return node
+
+    async def typed_turn(self, plan: ResponsePlan) -> Optional["NodeConfig"]:
+        """A text turn landed during the call (already committed by the text path):
+        acknowledge it by voice and move to the brain's node. None if nothing to say."""
+        state = await self.brain.current()
+        if plan.absorbed:
+            return None
+        line = voice_line(self.spec, plan, state)
+        vt = VoiceTurn(state, plan, f"{TYPED_ACK} {line}".strip() if not plan.graduate else line)
         _, node = await self._after(vt, opening=True)
         return node
 

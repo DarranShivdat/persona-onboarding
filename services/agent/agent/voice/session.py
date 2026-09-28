@@ -11,6 +11,13 @@ end, or goodbye-after-playout — whichever comes first; `on_ended(reason)` (the
 release hook) runs exactly once. Patterns adapted from Penciled voice-agent `bot.py`
 (Darran's IP): per-call teardown, graceful end after playout.
 
+Hand-off (VOICE-003): `attach(control, session_id)` wires the call to `handoff.CallControl`
+— lease heartbeat (a lost lease ends this pipeline: taken over elsewhere), and
+`on_ended(reason)` routes a media drop into the reconnect grace window and anything else
+to a hangup + chat resume. `reconnect=True` opens with "we got cut off". A per-node
+silence floor (`silence.py`) nudges at ≈7s/≈15s, then offers the chat and ends
+(`silence_timeout`). Text typed in the chat during the call is acknowledged by voice.
+
 LLM slot (`VoiceConfig.llm_mode`): `flows` = Claude under a Pipecat Flows `FlowManager`
 whose nodes and `record_slots` handler come from `flows.VoiceFlow` over a `BrainPort`
 (the shared brain; pass `brain=ServiceBrain(...)` to share the text session's state);
@@ -38,11 +45,13 @@ from ..brain.spec import FlowSpec, load_spec
 from ..brain.state import SessionState
 from .config import SAMPLE_RATE, VoiceConfig
 from .flows import BrainPort, LocalBrain, VoiceFlow
-from .lifecycle import CallTeardown, Step, end_after_playout
+from .lifecycle import CallTeardown, end_after_playout
 from .playout import PlayoutObserver
 from .services import build_llm, build_stt, build_tts
+from .silence import SilenceFloor, SilenceObserver, SilencePolicy, run_silence_floor, silence_line
 
 OnEnded = Callable[[str], Awaitable[None]]
+Heartbeat = Callable[[], Awaitable[Optional[bool]]]
 
 
 def tracing_kwargs(cfg: VoiceConfig, *, call_id: str, session_id: Optional[str] = None) -> dict:
@@ -105,11 +114,15 @@ def build_user_params(cfg: VoiceConfig):
 
 class CallSession:
     def __init__(self, connection, cfg: VoiceConfig, *, call_id: str,
-                 on_ended: Optional[OnEnded] = None, heartbeat: Optional[Step] = None,
+                 on_ended: Optional[OnEnded] = None, heartbeat: Optional[Heartbeat] = None,
                  heartbeat_s: float = 30.0, greeting: str = GREETING,
-                 spec: Optional[FlowSpec] = None, brain: Optional[BrainPort] = None):
+                 spec: Optional[FlowSpec] = None, brain: Optional[BrainPort] = None,
+                 reconnect: bool = False, silence: Optional[SilencePolicy] = SilencePolicy()):
         self.connection, self.cfg = connection, cfg
         self._spec, self._brain = spec, brain
+        self._reconnect = reconnect
+        self.silence = SilenceFloor(silence) if silence else None
+        self._unwatch: Optional[Callable[[], None]] = None
         self.flow: Optional[VoiceFlow] = None
         self._flow_manager = None
         self.stats = CallStats(call_id=call_id, pc_id=getattr(connection, "pc_id", "") or "")
@@ -126,6 +139,29 @@ class CallSession:
 
     async def hangup(self, reason: str = "server_hangup") -> None:
         await self.teardown(reason)
+
+    def attach(self, control, session_id: str) -> None:
+        """Wire lease heartbeat / grace / hangup-resume to a `handoff.CallControl`."""
+        self._on_ended, self._heartbeat = control.hooks(session_id, self.stats.call_id)
+        self._heartbeat_s = control.settings.heartbeat_s
+        control.attach(self.stats.call_id, self.hangup)
+
+    async def speak(self, text: str) -> None:
+        if self._worker is not None and not self._ending and not self.teardown.started:
+            await self._worker.queue_frame(TTSSpeakFrame(text))
+
+    def current_node(self) -> Optional[str]:
+        return self.flow.last.plan.node if self.flow is not None and self.flow.last is not None else None
+
+    async def on_typed(self, plan) -> None:
+        """A chat turn committed during the call: say the brain's result (EC-28)."""
+        if self.flow is None or self._flow_manager is None or self._ending or self.teardown.started:
+            return
+        if self.silence:
+            self.silence.user_activity()
+        node = await self.flow.typed_turn(plan)
+        if node is not None and not self.teardown.started:
+            await self._flow_manager.set_node_from_config(node)
 
     async def say_goodbye(self, text: str, reason: str) -> None:
         """Speak `text`, then end once it has played out (never cut the goodbye)."""
@@ -173,7 +209,7 @@ class CallSession:
             pipeline,
             params=PipelineParams(audio_in_sample_rate=SAMPLE_RATE, audio_out_sample_rate=SAMPLE_RATE,
                                   enable_metrics=True),
-            observers=[self._playout],
+            observers=[self._playout] + ([SilenceObserver(self.silence)] if self.silence else []),
             idle_timeout_secs=None,  # per-node spoken silence floors (VOICE-003) + max duration cap calls
             **tracing_kwargs(self.cfg, call_id=self.stats.call_id),
         )
@@ -186,9 +222,12 @@ class CallSession:
             self.stats.connected = True
             if self._flow_manager is not None:
                 # The brain's call_started turn picks the node and the opening line.
-                await self._flow_manager.initialize(await self.flow.opening())
+                await self._flow_manager.initialize(await self.flow.opening(reconnect=self._reconnect))
             elif self._greeting:
                 await self._worker.queue_frame(TTSSpeakFrame(self._greeting))
+            if self.silence and not self.silence.armed:
+                self.silence.start()
+                self._spawn(self._silence_floor())
 
         @transport.event_handler("on_client_disconnected")
         async def _disconnected(_t, _c):  # noqa: ANN001
@@ -217,11 +256,17 @@ class CallSession:
 
         self.flow = VoiceFlow(spec, brain, context=context, on_graduated=graduated)
         self._flow_manager = FlowManager(llm=llm, context_aggregator=aggregators, worker=self._worker)
+        watch = getattr(brain, "watch_text", None)
+        if watch is not None:
+            loop = asyncio.get_running_loop()
+            # Called from the text turn's thread after commit: hop onto the call's loop.
+            self._unwatch = watch(lambda out: loop.call_soon_threadsafe(self._spawn, self.on_typed(out.plan)))
 
     async def run(self) -> None:
         self.stats.local_candidates = _candidate_types(self.connection)
         transport = self._build()
         worker = self._worker
+        self.teardown.add("unwatch_text", self._stop_watching)
         self.teardown.add("cancel_background", self._cancel_background)
         self.teardown.add("worker_cancel", lambda: worker.cancel())
         self.teardown.add("transport_cleanup", transport.cleanup)
@@ -243,6 +288,20 @@ class CallSession:
         if self._on_ended:
             await self._on_ended(self.teardown.reason or "unknown")
 
+    async def _stop_watching(self) -> None:
+        if self.silence:
+            self.silence.stop()
+        if self._unwatch:
+            self._unwatch()
+            self._unwatch = None
+
+    async def _silence_floor(self) -> None:
+        spec = self._spec or load_spec()
+        await run_silence_floor(self.silence, speak=self.speak,
+                                park=lambda line: self.say_goodbye(line, "silence_timeout"),
+                                line=lambda action: silence_line(spec, self.current_node(), action),
+                                sleep=asyncio.sleep)
+
     async def _cancel_background(self) -> None:
         me = asyncio.current_task()
         for t in self._bg:
@@ -259,9 +318,16 @@ class CallSession:
         while True:
             await asyncio.sleep(self._heartbeat_s)
             try:
-                await self._heartbeat()
+                held = await self._heartbeat()
             except Exception as e:  # noqa: BLE001 - a missed renewal must not drop the call
                 logger.warning(f"call heartbeat failed: {e}")
+                continue
+            if held is False:
+                # Another tab/device took the call over (or the lease was released):
+                # never two bots on one session.
+                logger.info("call lease lost; ending this pipeline")
+                await self.teardown("lease_lost")
+                return
 
 
 class _AudioInCounter(FrameProcessor):
