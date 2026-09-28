@@ -275,8 +275,10 @@ def test_voice_llm_settings():
 
     cfg = VoiceConfig.from_env({"DEEPGRAM_API_KEY": "dummy", "ANTHROPIC_API_KEY": "dummy"})
     llm = build_llm(cfg)
-    assert (VOICE_LLM_MAX_TOKENS, VOICE_LLM_TEMPERATURE) == (120, 0.3)
-    assert llm._settings.max_tokens == 120 and llm._settings.temperature == 0.3
+    from agent.llm.extract import EXTRACT_MAX_TOKENS
+    # Must fit a full record_slots call (a 120 cap truncated it in prod, 2026-09-28).
+    assert VOICE_LLM_MAX_TOKENS >= EXTRACT_MAX_TOKENS and VOICE_LLM_TEMPERATURE == 0.3
+    assert llm._settings.max_tokens == VOICE_LLM_MAX_TOKENS and llm._settings.temperature == 0.3
 
 
 def test_voice_task_says_the_line_without_adding():
