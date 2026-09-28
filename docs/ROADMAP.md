@@ -8,7 +8,7 @@ Ready packets live in `docs/orchestration/packets/`.
 **Submission due Mon Sep 28, 2026, 8:00pm ET = 5:00pm PT.** Target: hosted URL live and
 working end to end by **Mon 12:00pm PT** — **ahead: hosted + smoke PASS Sun ~10:48pm**.
 
-Status Mon ~2:52am: **M1 ✅ M2 ✅ M3 ✅ M5 ✅**; **M6 DOCS/HOSTED/PROMPT ✅**; **M7** NAME/GRAD/AUDIT/GUARD/LAT-001/LAT-002/REQ-001 + voice-polish (LAT-003/VQA/NAME-002/ICE-002/VIS-001/WRK-001) ✅ **LIVE**.
+Status Mon ~3:19am: **M1 ✅ M2 ✅ M3 ✅ M5 ✅**; **M6 DOCS/HOSTED/PROMPT ✅**; **M7** NAME/GRAD/AUDIT/GUARD/LAT-001/LAT-002/REQ-001 + voice-polish (LAT-003/VQA/NAME-002/ICE-002/VIS-001/WRK-001) ✅ **LIVE**.
 Agent+web tip **`b7f24f8`** (voice polish redeploy ~2:28am). Smoke 7/7 + LIVE audit 215 PASS; pages 200. Latency after polish: p50 **2.27s** / p90 **2.43s** (was 2.29–2.36s); connect ~1.81s. `PERSONA_VOICE_QUICK_ACK` built, flag **OFF** in prod. Target <1.5s still open.
 Live: web `https://persona-onboarding-darran.vercel.app`, agent `https://persona-onboarding-agent.fly.dev`.
 Remaining Darran: Google Console test users + Branding homepage/privacy/authorized domain
@@ -105,7 +105,7 @@ READY FOR PRODUCT TEST to Darran.
 | **PROMPT-001** ✅ merged | Agent-name suggestion chips + tone polish from design copy (DQ-04 residual) | B-high / impl | FE-005 | chips on agent_name ask; qa:fast/flow/e2e |
 
 ## Parallelism
-Now (Mon ~2:52am PT): voice-polish **merged + LIVE** (`b7f24f8`); smoke 7/7 + LIVE audit PASS; latency p50 2.27s.
+Now (Mon ~3:19am PT): voice-polish **merged + LIVE** (`b7f24f8`); smoke 7/7 reconfirmed; latency p50 2.27s.
 No ready Opus packets (no branches ahead of main; no unfinished worker packets). Do not invent inventory work.
 Next: Mon morning hosted human smoke (text/voice/Gmail/hangup); keep latency notes in `docs/penciled-comparison.md`; Darran Google Console test users.
 
