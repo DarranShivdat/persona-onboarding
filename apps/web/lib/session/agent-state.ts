@@ -29,6 +29,8 @@ export interface AgentTranscript {
   role: "user" | "assistant";
   text: string;
   channel: "text" | "voice";
+  /** Optional reply suggestions for the ask in `text` (agent_name only); rendered as chips. */
+  suggestions?: string[];
 }
 
 export function toChecklist(s: AgentState): Checklist {
@@ -55,8 +57,8 @@ export function composerFor(s: AgentState): SessionSnapshot["composer"] {
 
 const DEFER_COPY: Record<SlotName, (agent: string) => { title: string; reason: string; action: string }> = {
   gmail: (a) => ({ title: "Connect Gmail when you’re ready", reason: `${a} needs it to sort your inbox. Takes a minute.`, action: "Connect" }),
-  need: (a) => ({ title: "Tell me what to start on", reason: `One thing ${a} can take off your plate.`, action: "Add" }),
-  user_name: (a) => ({ title: "Tell me your name", reason: `So ${a} knows who it’s working for.`, action: "Add" }),
+  need: (a) => ({ title: `Tell ${a} what to start on`, reason: `One thing ${a} can take off your plate.`, action: "Add" }),
+  user_name: (a) => ({ title: `Tell ${a} your name`, reason: `So ${a} knows who it’s working for.`, action: "Add" }),
   agent_name: () => ({ title: "Name your assistant", reason: "Pick whatever feels right.", action: "Add" }),
 };
 
@@ -85,7 +87,7 @@ export function offerItem(agent: string): ThreadItem {
     id: "offer",
     kind: "offer",
     title: `Talk it through with ${agent}`,
-    subtitle: "A quick call, about two minutes.",
+    subtitle: "About a minute. Typing works too.",
     primary: `Call ${agent}`,
     secondary: "Keep texting",
     secondaryAction: "decline_call",

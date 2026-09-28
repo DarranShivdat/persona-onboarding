@@ -96,6 +96,8 @@ def snapshot(spec: FlowSpec, state: SessionState, lease: Optional[CallLease]) ->
     }
 
 
+# Offered with the text agent_name ask (spec §8 chat-agent-name); the web renders them as chips.
+AGENT_NAME_SUGGESTIONS = ("Juno", "Atlas", "Surprise me")
 SLOT_LABELS = {"agent_name": "naming your assistant", "user_name": "your name",
                "need": "what you'd like help with", "gmail": "connecting Gmail"}
 
@@ -258,7 +260,10 @@ class SessionService:
         for t, data in extra_pushes:
             push(t, data)
         if reply:
-            push("transcript", {"role": "assistant", "text": reply, "channel": channel})
+            t = {"role": "assistant", "text": reply, "channel": channel}
+            if channel == "text" and result.plan.node == "agent_name" and not new.filled("agent_name"):
+                t["suggestions"] = list(AGENT_NAME_SUGGESTIONS)  # chips in the web UI; they send text only
+            push("transcript", t)
         snap = snapshot(self.spec, new, lease)
         push("state", snap)
         for p in result.plan.push_ui:

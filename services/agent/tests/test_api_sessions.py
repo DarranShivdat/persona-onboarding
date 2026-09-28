@@ -79,6 +79,18 @@ def test_create_session_greets_and_asks_agent_name(client):
     assert snap["call"] == {"live": False, "call_id": None, "expires_at": None}
 
 
+def test_agent_name_ask_carries_suggestions_only_until_named(client, store):
+    sid, auth, _ = new_session(client)
+
+    def assistant_transcripts():
+        return [e.payload["data"] for e in store.events_after(sid, kinds=["ui_push"], limit=1000)
+                if e.payload["type"] == "transcript" and e.payload["data"]["role"] == "assistant"]
+
+    assert assistant_transcripts()[0]["suggestions"] == ["Juno", "Atlas", "Surprise me"]
+    turn(client, sid, auth, "Nova")
+    assert "suggestions" not in assistant_transcripts()[-1]
+
+
 def test_session_routes_require_the_session_token(client):
     sid, auth, _ = new_session(client)
     assert client.get(f"/v1/sessions/{sid}").status_code == 401

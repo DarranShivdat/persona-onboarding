@@ -20,8 +20,8 @@ test("EC-03 live: mic denied keeps texting at the same node without taking the l
   await page.getByTestId("call-offer").getByRole("button", { name: "Call Juno" }).click();
 
   const thread = page.getByTestId("thread");
-  await expect(thread.getByText("your browser blocked the microphone", { exact: false })).toBeVisible();
-  await expect(thread.getByText("set Microphone to Allow", { exact: false })).toBeVisible();
+  await expect(thread.getByText("Your browser’s blocking the mic", { exact: false })).toBeVisible();
+  await expect(thread.getByText("Allow microphone access for this site", { exact: false })).toBeVisible();
   await expect(thread.getByText("Or we can just keep texting. So, what should I call you?")).toBeVisible();
   await expect(page.getByTestId("call-panel")).toHaveCount(0);
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
@@ -32,5 +32,5 @@ test("EC-03 live: mic denied keeps texting at the same node without taking the l
   // Same node: the next typed answer is the brain's user_name turn.
   await page.getByPlaceholder("Message Juno…").fill("Keep texting");
   await page.keyboard.press("Enter");
-  await expect(thread.getByText("And what should I call you?", { exact: false })).toBeVisible();
+  await expect(thread.getByText("What should I call you?", { exact: true })).toBeVisible();
 });

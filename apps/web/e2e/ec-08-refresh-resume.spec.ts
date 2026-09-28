@@ -6,7 +6,7 @@ test("EC-08 refresh mid-onboarding restores transcript and progress", async ({ p
   await page.goto("/");
   await page.getByRole("button", { name: "Get started" }).click();
   const thread = page.getByTestId("thread");
-  await expect(thread).toContainText("What would you like to call your assistant?");
+  await expect(thread).toContainText("what would you like to call me?");
 
   const composer = page.getByRole("textbox");
   await composer.fill("Juno");
@@ -14,7 +14,7 @@ test("EC-08 refresh mid-onboarding restores transcript and progress", async ({ p
   await expect(thread).toContainText("Got it: Juno.");
   await composer.fill("no");
   await composer.press("Enter");
-  await expect(thread).toContainText("And what should I call you?");
+  await expect(thread).toContainText("What should I call you?");
   await composer.fill("Maya");
   await composer.press("Enter");
   await expect(thread).toContainText("What's one thing you'd love a hand with this week?");
@@ -25,7 +25,7 @@ test("EC-08 refresh mid-onboarding restores transcript and progress", async ({ p
 
   await page.reload();
   await expect(thread).toContainText("What's one thing you'd love a hand with this week?");
-  await expect(thread.getByText("What would you like to call your assistant?")).toHaveCount(1); // no re-greeting
+  await expect(thread.getByText("what would you like to call me?")).toHaveCount(1); // no re-greeting
   await expect(thread.getByText("Maya", { exact: true })).toHaveCount(1); // de-duped replay
   const checklist = page.locator('[data-testid^="checklist-"]:visible');
   await expect(checklist.locator('[data-slot="agent_name"]')).toHaveAttribute("aria-label", /Juno/);

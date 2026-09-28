@@ -57,7 +57,7 @@ const offer = (): ThreadItem => ({
   id: "offer",
   kind: "offer",
   title: "Talk it through with Juno",
-  subtitle: "A quick call, about two minutes.",
+  subtitle: "About a minute. Typing works too.",
   primary: "Call Juno",
   secondary: "Keep texting",
   secondaryAction: "decline_call",
@@ -206,7 +206,7 @@ const BUILDERS: Record<StateName, () => SessionSnapshot> = {
       checklist: checklist({ agent_name: A }),
       thread: earlyThread(),
       composer: texting,
-      call: call({ status: "elsewhere", elapsed: 0, ring: "ended", captions: [] }),
+      call: call({ status: "elsewhere", elapsed: 0, ring: "ended", captions: [{ who: "", tone: "hint", text: "This call is open in another tab. Take it over here, or keep typing." }] }),
     }),
 
   "gmail-card-idle": () =>
@@ -288,7 +288,7 @@ const BUILDERS: Record<StateName, () => SessionSnapshot> = {
         stamp("Today 9:48 AM"),
         u("oops, that’s my work account"),
         a("No problem. Here’s the account I have. Switch it whenever you’re ready."),
-        gmail({ state: "wrong_account", account: MAYA }),
+        gmail({ state: "wrong_account", account: { name: "Maya R.", email: "maya@work.co", initials: "MR" } }),
       ],
       composer: { placeholder: "Message Juno…", callButton: false },
     }),
@@ -301,7 +301,7 @@ const BUILDERS: Record<StateName, () => SessionSnapshot> = {
         offer(),
         u("Call Juno"),
         a(
-          "I can’t hear you yet: your browser blocked the microphone. To allow it, click the icon at the left of the address bar, set Microphone to Allow, then call again.",
+          "Your browser’s blocking the mic, so I can’t hear you. Allow microphone access for this site in your browser’s settings, then call again.",
         ),
         a("Or we can just keep texting. So, what should I call you?"),
       ],

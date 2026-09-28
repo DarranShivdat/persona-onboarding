@@ -2,6 +2,10 @@ import type { GmailCard as Card, GmailCapability, UIAction } from "@/lib/session
 import { AlertIcon, CheckIcon, MailIcon } from "./icons";
 
 const CAN: Record<GmailCapability, string> = { read: "read your email", organize: "organize your inbox", send: "send email" };
+const canStill = (missing: GmailCapability[]) => {
+  const left = (Object.keys(CAN) as GmailCapability[]).filter((c) => !missing.includes(c)).map((c) => CAN[c]);
+  return left.length ? left.join(" and ") : "do the rest";
+};
 
 /** Gmail connect card (spec §4.5). `inCall` enables the compact variant on mobile (CSS). */
 export function GmailCard({ card, agent, inCall, onAct }: { card: Card; agent: string; inCall: boolean; onAct: (a: UIAction) => void }) {
@@ -37,7 +41,7 @@ export function GmailCard({ card, agent, inCall, onAct }: { card: Card; agent: s
         <p className="full">Nothing is sent or changed without your OK. You sign in on Google, so {agent} never sees your password.</p>
         <p className="compact">{agent} will read, organize, draft, and send email for you. Nothing is sent or changed without your OK.</p>
         <div className="note">
-          <b>Heads up:</b> this is a trial, so Google will say it hasn’t verified the app. Choose <b>Continue</b> to go on.
+          <b>Heads up:</b> this is a trial, so Google will say it hasn’t verified the app. Choose <b>Continue</b>, then tick the Gmail boxes (or <b>Select all</b>). Only invited Google accounts can connect for now.
         </div>
         <div className="actions">
           {busy ? (
@@ -61,7 +65,7 @@ export function GmailCard({ card, agent, inCall, onAct }: { card: Card; agent: s
             </>
           )}
         </div>
-        <div className="fine full">You can disconnect Gmail anytime in Settings.</div>
+        <div className="fine full">You can disconnect Gmail anytime.</div>
       </div>
     );
   }
@@ -84,7 +88,7 @@ export function GmailCard({ card, agent, inCall, onAct }: { card: Card; agent: s
         )}
         {card.state === "wrong_account" ? (
           <>
-            <p>Wrong account? Disconnect it and pick another one on Google.</p>
+            <p>Wrong account? Switch to another one on Google.</p>
             <div className="actions">
               <button type="button" className="btn primary" onClick={() => onAct("gmail_disconnect")}>
                 Use a different account
@@ -99,12 +103,12 @@ export function GmailCard({ card, agent, inCall, onAct }: { card: Card; agent: s
             {!!card.missing?.length && (
               // Partial grant (ARCHITECTURE §11): connected, with the reduced capability stated plainly.
               <p className="limited" data-testid="gmail-limited">
-                Connected without permission to {card.missing.map((c) => CAN[c]).join(" or ")}. {agent} can still do the rest. Reconnect anytime to allow it.
+                Connected, but without permission to {card.missing.map((c) => CAN[c]).join(" or ")}. {agent} can still {canStill(card.missing)}. Allow it anytime.
               </p>
             )}
             <div className="actions">
               {!!card.missing?.length && (
-                <button type="button" className="btn quiet" onClick={() => onAct("gmail_retry")}>
+                <button type="button" className="btn secondary" onClick={() => onAct("gmail_retry")}>
                   Allow full access
                 </button>
               )}
@@ -122,10 +126,10 @@ export function GmailCard({ card, agent, inCall, onAct }: { card: Card; agent: s
     <div className="gcard err" role="group" aria-label="Gmail not connected" data-testid="gmail-card" data-state="error">
       {head("Gmail isn’t connected yet", null, <AlertIcon />)}
       <div className="alert" role="alert">
-        Google didn’t finish signing in. The window may have closed, or access wasn’t allowed.
+        Google didn’t finish signing in. The window may have closed, access wasn’t allowed, or this account isn’t on the trial list.
       </div>
       <p>
-        Try again and choose <b>Continue</b> on the “unverified app” screen, then <b>Allow</b>.
+        Try again: choose <b>Continue</b> on the “unverified app” screen, tick the Gmail boxes, then <b>Continue</b>.
       </p>
       <div className="actions">
         <button type="button" className="btn primary" onClick={() => onAct("gmail_retry")}>

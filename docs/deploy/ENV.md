@@ -107,6 +107,8 @@ Check a target by name only (never prints values):
 | `PERSONA_TEST_DATABASE_URL` | test | optional | secret | — | — | server on which tests create/drop scratch DBs |
 | `PERSONA_QA_LIVE` | test | optional | no | — | — | `1` = live LLM tier (costs money) |
 | `PERSONA_E2E_AGENT_URL` | test | optional | no | — | — | Playwright: real agent instead of e2e/stub-agent.mjs |
+| `PERSONA_E2E_WEB_PORT` | test | optional | no | — | — | Playwright: web listen port (default 3100; FE-005 uses 3400 to avoid worker collisions) |
+| `PERSONA_E2E_STUB_PORT` | test | optional | no | — | — | Playwright: stub-agent listen port (default 3199) |
 | `PERSONA_WEB_URL` | test | optional | no | — | — | Playwright: already-running web (skips build/start) |
 | `CI` | test | optional | no | — | — | Playwright: no server reuse |
 | `PERSONA_SPIKE_TOKEN` | test | optional | secret | — | — | INFRA-001 voice spike only |
