@@ -108,7 +108,7 @@ READY FOR PRODUCT TEST to Darran.
 
 ## Parallelism
 Now (Mon ~1:21am PT): M7 LAT-001 ✅ (dda04e8) + LAT-002 ✅ (5acf776) merged. REQ-001 running
-(req-001-20260928-012020). Claude CLI early-exited LAT-002 workers twice (same pattern as
+(req-001-20260928-012154). Claude CLI early-exited LAT-002 workers twice (same pattern as
 LAT-001 235340); work was already committed on branch — merged after qa:fast/flow PASS.
 Redeploy agent with LAT tip still pending (EM; go-ahead already given — status-check only
 this cycle; live agent still sha 7a4ea2a).
@@ -154,4 +154,4 @@ See docs/qa/live-test-2026-09-27.md and docs/qa/requirements-audit.md.
 | **GUARD-001** ✅ merged fe9c8cc | Per-node tool/extraction schema, reject out-of-node tool calls, modularity tests | B-high / impl | NAME-001 | qa:flow + new isolation tests |
 | **LAT-001** ✅ merged dda04e8 (~1:16am PT) | Voice latency: 2 DB RTs/turn, direct brain speech (skip LLM #2), timing + bench (handler p50 143ms @65ms RTT); region rec: Fly→iad | B-high / impl | GUARD-001 | qa:fast/flow; bench handler <200ms |
 | **LAT-002** ✅ merged 5acf776 (~1:21am PT) | Compact record_slots (voice), ICE mint cache, VAD/turn tune, hosted latency probe | B-high / impl | LAT-001 | qa:fast/flow |
-| **REQ-001** 🟡 running req-001-20260928-012020 | Refresh requirements-audit after M7 merges | B-high / impl | LAT-001 | docs only; qa:fast |
+| **REQ-001** 🟡 running req-001-20260928-012154 | Refresh requirements-audit after M7 merges | B-high / impl | LAT-001 | docs only; qa:fast |
