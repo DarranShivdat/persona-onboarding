@@ -177,10 +177,9 @@ button:disabled { cursor: default; }
 .home .grid:has(.tile.gmail) { grid-template-columns: repeat(3, 1fr); }
 .tile:has(.editable) { position: relative; }
 /* Tap anywhere on an editable tile; the pencil sits in the corner so the text layout matches the mockup. */
-.tile .editable { display: block; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.tile .editable { display: block; width: 100%; min-height: var(--hit-min); padding: 0; border: 0; border-radius: 8px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
 .tile .editable::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
-.tile .editable:focus-visible { outline: none; }
-.tile:has(.editable:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+.tile .editable:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .tile .editable .pencil { position: absolute; top: 14px; right: 14px; color: var(--ink-3); opacity: .7; }
 .tile .editable:hover .pencil, .tile .editable:focus-visible .pencil { opacity: 1; color: var(--ink); }
 .tile .editable.empty span { color: var(--ink-2); font-weight: 400; }

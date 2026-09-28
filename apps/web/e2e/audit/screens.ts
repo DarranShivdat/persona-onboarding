@@ -532,8 +532,8 @@ export const SCREENS: Screen[] = [
           await expect(ctx.page.getByTestId("deferred-prompt")).toHaveCount(0);
         },
       },
-      { match: /^textbox:.+ @(main|composer)$/, expected: "message -> user bubble + agent reply visible on home", fixme: GRAD, run: homeReply("enter") },
-      { match: /^button:Send @(main|composer)$/, expected: "Send -> user bubble + agent reply visible on home", fixme: GRAD, run: homeReply("button") },
+      { match: /^textbox:.+ @(main|composer)$/, expected: "message -> user bubble + agent reply visible on home", run: homeReply("enter") },
+      { match: /^button:Send @(main|composer)$/, expected: "Send -> user bubble + agent reply visible on home", run: homeReply("button") },
       {
         match: /^button:(Edit|Change) .+/,
         optional: true,
