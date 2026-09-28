@@ -1,0 +1,1690 @@
+{
+ "landing@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": null,
+  "gcard": null,
+  "thread": null,
+  "threadScrollable": null,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "chat-agent-name@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": null,
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "call-offer@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": null,
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "call-declined@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": null,
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "call-ringing@desktop": {
+  "hOverflow": false,
+  "rail": {
+   "top": 64,
+   "bottom": 900,
+   "h": 836,
+   "w": 440
+  },
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": null,
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 76
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 91
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 76
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "call-connected@desktop": {
+  "hOverflow": false,
+  "rail": {
+   "top": 64,
+   "bottom": 900,
+   "h": 836,
+   "w": 440
+  },
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": null,
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 76
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 91
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 76
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "call-muted@desktop": {
+  "hOverflow": false,
+  "rail": {
+   "top": 64,
+   "bottom": 900,
+   "h": 836,
+   "w": 440
+  },
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": null,
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 76
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 91
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 76
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "call-reconnecting@desktop": {
+  "hOverflow": false,
+  "rail": {
+   "top": 64,
+   "bottom": 900,
+   "h": 836,
+   "w": 440
+  },
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": null,
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 76
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 91
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 76
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "call-ended@desktop": {
+  "hOverflow": false,
+  "rail": {
+   "top": 64,
+   "bottom": 900,
+   "h": 836,
+   "w": 440
+  },
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": null,
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 76
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 86
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "call-elsewhere@desktop": {
+  "hOverflow": false,
+  "rail": {
+   "top": 64,
+   "bottom": 900,
+   "h": 836,
+   "w": 440
+  },
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": null,
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 102
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 86
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "mic-denied@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": null,
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "gmail-card-idle@desktop": {
+  "hOverflow": false,
+  "rail": {
+   "top": 64,
+   "bottom": 900,
+   "h": 836,
+   "w": 440
+  },
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": {
+   "top": 373,
+   "bottom": 799,
+   "h": 426,
+   "w": 440
+  },
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": true,
+  "ctrls": [
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 76
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 91
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 76
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "gmail-card-connecting@desktop": {
+  "hOverflow": false,
+  "rail": {
+   "top": 64,
+   "bottom": 900,
+   "h": 836,
+   "w": 440
+  },
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": {
+   "top": 321,
+   "bottom": 799,
+   "h": 478,
+   "w": 440
+  },
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": true,
+  "ctrls": [
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 76
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 91
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 76
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "gmail-card-connected@desktop": {
+  "hOverflow": false,
+  "rail": {
+   "top": 64,
+   "bottom": 900,
+   "h": 836,
+   "w": 440
+  },
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": {
+   "top": 506,
+   "bottom": 750,
+   "h": 244,
+   "w": 440
+  },
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": true,
+  "ctrls": [
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 76
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 91
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 76
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "gmail-card-error@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": {
+   "top": 432,
+   "bottom": 722,
+   "h": 290,
+   "w": 440
+  },
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "gmail-card-wrong-account@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": {
+   "top": 501,
+   "bottom": 799,
+   "h": 298,
+   "w": 440
+  },
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "gmail-card-partial@desktop": {
+  "hOverflow": false,
+  "rail": {
+   "top": 64,
+   "bottom": 900,
+   "h": 836,
+   "w": 440
+  },
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": {
+   "top": 400,
+   "bottom": 750,
+   "h": 350,
+   "w": 440
+  },
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": true,
+  "ctrls": [
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 76
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 91
+   },
+   {
+    "top": 739,
+    "bottom": 828,
+    "h": 89,
+    "w": 76
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "graduation@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 594,
+   "bottom": 674,
+   "h": 81,
+   "w": 712
+  },
+  "gcard": null,
+  "thread": null,
+  "threadScrollable": null,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "welcome-back@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": null,
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-1-landing@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": null,
+  "gcard": null,
+  "thread": null,
+  "threadScrollable": null,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-2-greeting@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": null,
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-3-agentname-idk@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": null,
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-4-call-offer@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": null,
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-5-keep-texting@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": null,
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-6-user-name@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": null,
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-7-privacy@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 815,
+   "bottom": 900,
+   "h": 85,
+   "w": 680
+  },
+  "gcard": {
+   "top": 373,
+   "bottom": 799,
+   "h": 426,
+   "w": 440
+  },
+  "thread": {
+   "top": 64,
+   "bottom": 815,
+   "h": 751,
+   "w": 680
+  },
+  "threadScrollable": true,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-8-gmail-ask@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 573,
+   "bottom": 653,
+   "h": 81,
+   "w": 712
+  },
+  "gcard": null,
+  "thread": null,
+  "threadScrollable": null,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-9-focus-ring@desktop": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 573,
+   "bottom": 653,
+   "h": 81,
+   "w": 712
+  },
+  "gcard": null,
+  "thread": null,
+  "threadScrollable": null,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "landing@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": null,
+  "gcard": null,
+  "thread": null,
+  "threadScrollable": null,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "chat-agent-name@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": null,
+  "thread": {
+   "top": 107,
+   "bottom": 771,
+   "h": 665,
+   "w": 390
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "call-offer@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": null,
+  "thread": {
+   "top": 107,
+   "bottom": 771,
+   "h": 665,
+   "w": 390
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "call-declined@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": null,
+  "thread": {
+   "top": 107,
+   "bottom": 771,
+   "h": 665,
+   "w": 390
+  },
+  "threadScrollable": true,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "call-ringing@mobile": {
+  "hOverflow": false,
+  "rail": {
+   "top": 107,
+   "bottom": 349,
+   "h": 242,
+   "w": 390
+  },
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": null,
+  "thread": {
+   "top": 349,
+   "bottom": 771,
+   "h": 423,
+   "w": 390
+  },
+  "threadScrollable": true,
+  "ctrls": [
+   {
+    "top": 255,
+    "bottom": 332,
+    "h": 77,
+    "w": 64
+   },
+   {
+    "top": 255,
+    "bottom": 332,
+    "h": 77,
+    "w": 91
+   },
+   {
+    "top": 255,
+    "bottom": 332,
+    "h": 77,
+    "w": 64
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "call-connected@mobile": {
+  "hOverflow": false,
+  "rail": {
+   "top": 107,
+   "bottom": 404,
+   "h": 297,
+   "w": 390
+  },
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": null,
+  "thread": {
+   "top": 404,
+   "bottom": 771,
+   "h": 368,
+   "w": 390
+  },
+  "threadScrollable": true,
+  "ctrls": [
+   {
+    "top": 310,
+    "bottom": 387,
+    "h": 77,
+    "w": 64
+   },
+   {
+    "top": 310,
+    "bottom": 387,
+    "h": 77,
+    "w": 91
+   },
+   {
+    "top": 310,
+    "bottom": 387,
+    "h": 77,
+    "w": 64
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "call-muted@mobile": {
+  "hOverflow": false,
+  "rail": {
+   "top": 107,
+   "bottom": 386,
+   "h": 280,
+   "w": 390
+  },
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": null,
+  "thread": {
+   "top": 386,
+   "bottom": 771,
+   "h": 385,
+   "w": 390
+  },
+  "threadScrollable": true,
+  "ctrls": [
+   {
+    "top": 293,
+    "bottom": 369,
+    "h": 77,
+    "w": 64
+   },
+   {
+    "top": 293,
+    "bottom": 369,
+    "h": 77,
+    "w": 91
+   },
+   {
+    "top": 293,
+    "bottom": 369,
+    "h": 77,
+    "w": 64
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "call-reconnecting@mobile": {
+  "hOverflow": false,
+  "rail": {
+   "top": 107,
+   "bottom": 392,
+   "h": 286,
+   "w": 390
+  },
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": null,
+  "thread": {
+   "top": 392,
+   "bottom": 771,
+   "h": 379,
+   "w": 390
+  },
+  "threadScrollable": true,
+  "ctrls": [
+   {
+    "top": 299,
+    "bottom": 375,
+    "h": 77,
+    "w": 64
+   },
+   {
+    "top": 299,
+    "bottom": 375,
+    "h": 77,
+    "w": 91
+   },
+   {
+    "top": 299,
+    "bottom": 375,
+    "h": 77,
+    "w": 64
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "call-ended@mobile": {
+  "hOverflow": false,
+  "rail": {
+   "top": 107,
+   "bottom": 349,
+   "h": 242,
+   "w": 390
+  },
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": null,
+  "thread": {
+   "top": 349,
+   "bottom": 771,
+   "h": 423,
+   "w": 390
+  },
+  "threadScrollable": true,
+  "ctrls": [
+   {
+    "top": 255,
+    "bottom": 332,
+    "h": 77,
+    "w": 72
+   },
+   {
+    "top": 255,
+    "bottom": 332,
+    "h": 77,
+    "w": 86
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "call-elsewhere@mobile": {
+  "hOverflow": false,
+  "rail": {
+   "top": 107,
+   "bottom": 349,
+   "h": 242,
+   "w": 390
+  },
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": null,
+  "thread": {
+   "top": 349,
+   "bottom": 771,
+   "h": 423,
+   "w": 390
+  },
+  "threadScrollable": false,
+  "ctrls": [
+   {
+    "top": 255,
+    "bottom": 332,
+    "h": 77,
+    "w": 102
+   },
+   {
+    "top": 255,
+    "bottom": 332,
+    "h": 77,
+    "w": 86
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "mic-denied@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": null,
+  "thread": {
+   "top": 107,
+   "bottom": 771,
+   "h": 665,
+   "w": 390
+  },
+  "threadScrollable": true,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "gmail-card-idle@mobile": {
+  "hOverflow": false,
+  "rail": {
+   "top": 107,
+   "bottom": 383,
+   "h": 276,
+   "w": 390
+  },
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": {
+   "top": 435,
+   "bottom": 763,
+   "h": 328,
+   "w": 358
+  },
+  "thread": {
+   "top": 383,
+   "bottom": 771,
+   "h": 389,
+   "w": 390
+  },
+  "threadScrollable": true,
+  "ctrls": [
+   {
+    "top": 289,
+    "bottom": 366,
+    "h": 77,
+    "w": 64
+   },
+   {
+    "top": 289,
+    "bottom": 366,
+    "h": 77,
+    "w": 91
+   },
+   {
+    "top": 289,
+    "bottom": 366,
+    "h": 77,
+    "w": 64
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "gmail-card-connecting@mobile": {
+  "hOverflow": false,
+  "rail": {
+   "top": 107,
+   "bottom": 356,
+   "h": 249,
+   "w": 390
+  },
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": {
+   "top": 383,
+   "bottom": 763,
+   "h": 380,
+   "w": 358
+  },
+  "thread": {
+   "top": 356,
+   "bottom": 771,
+   "h": 416,
+   "w": 390
+  },
+  "threadScrollable": true,
+  "ctrls": [
+   {
+    "top": 262,
+    "bottom": 339,
+    "h": 77,
+    "w": 64
+   },
+   {
+    "top": 262,
+    "bottom": 339,
+    "h": 77,
+    "w": 91
+   },
+   {
+    "top": 262,
+    "bottom": 339,
+    "h": 77,
+    "w": 64
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "gmail-card-connected@mobile": {
+  "hOverflow": false,
+  "rail": {
+   "top": 107,
+   "bottom": 356,
+   "h": 249,
+   "w": 390
+  },
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": {
+   "top": 465,
+   "bottom": 694,
+   "h": 228,
+   "w": 358
+  },
+  "thread": {
+   "top": 356,
+   "bottom": 771,
+   "h": 416,
+   "w": 390
+  },
+  "threadScrollable": true,
+  "ctrls": [
+   {
+    "top": 262,
+    "bottom": 339,
+    "h": 77,
+    "w": 64
+   },
+   {
+    "top": 262,
+    "bottom": 339,
+    "h": 77,
+    "w": 91
+   },
+   {
+    "top": 262,
+    "bottom": 339,
+    "h": 77,
+    "w": 64
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "gmail-card-error@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": {
+   "top": 366,
+   "bottom": 661,
+   "h": 295,
+   "w": 358
+  },
+  "thread": {
+   "top": 107,
+   "bottom": 771,
+   "h": 665,
+   "w": 390
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "gmail-card-wrong-account@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": {
+   "top": 429,
+   "bottom": 763,
+   "h": 334,
+   "w": 358
+  },
+  "thread": {
+   "top": 107,
+   "bottom": 771,
+   "h": 665,
+   "w": 390
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "gmail-card-partial@mobile": {
+  "hOverflow": false,
+  "rail": {
+   "top": 107,
+   "bottom": 356,
+   "h": 249,
+   "w": 390
+  },
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": {
+   "top": 338,
+   "bottom": 694,
+   "h": 355,
+   "w": 358
+  },
+  "thread": {
+   "top": 356,
+   "bottom": 771,
+   "h": 416,
+   "w": 390
+  },
+  "threadScrollable": true,
+  "ctrls": [
+   {
+    "top": 262,
+    "bottom": 339,
+    "h": 77,
+    "w": 64
+   },
+   {
+    "top": 262,
+    "bottom": 339,
+    "h": 77,
+    "w": 91
+   },
+   {
+    "top": 262,
+    "bottom": 339,
+    "h": 77,
+    "w": 64
+   }
+  ],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "graduation@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 677,
+   "bottom": 750,
+   "h": 73,
+   "w": 358
+  },
+  "gcard": null,
+  "thread": null,
+  "threadScrollable": null,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "welcome-back@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": null,
+  "thread": {
+   "top": 107,
+   "bottom": 771,
+   "h": 665,
+   "w": 390
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-1-landing@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": null,
+  "gcard": null,
+  "thread": null,
+  "threadScrollable": null,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-2-greeting@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": null,
+  "thread": {
+   "top": 107,
+   "bottom": 771,
+   "h": 665,
+   "w": 390
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-3-agentname-idk@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": null,
+  "thread": {
+   "top": 107,
+   "bottom": 771,
+   "h": 665,
+   "w": 390
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-4-call-offer@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": null,
+  "thread": {
+   "top": 107,
+   "bottom": 771,
+   "h": 665,
+   "w": 390
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-5-keep-texting@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": null,
+  "thread": {
+   "top": 107,
+   "bottom": 771,
+   "h": 665,
+   "w": 390
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-6-user-name@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": null,
+  "thread": {
+   "top": 107,
+   "bottom": 771,
+   "h": 665,
+   "w": 390
+  },
+  "threadScrollable": false,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-7-privacy@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 771,
+   "bottom": 844,
+   "h": 73,
+   "w": 390
+  },
+  "gcard": {
+   "top": 311,
+   "bottom": 763,
+   "h": 452,
+   "w": 358
+  },
+  "thread": {
+   "top": 107,
+   "bottom": 771,
+   "h": 665,
+   "w": 390
+  },
+  "threadScrollable": true,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-8-gmail-ask@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 656,
+   "bottom": 729,
+   "h": 73,
+   "w": 358
+  },
+  "gcard": null,
+  "thread": null,
+  "threadScrollable": null,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ },
+ "live-9-focus-ring@mobile": {
+  "hOverflow": false,
+  "rail": null,
+  "composer": {
+   "top": 656,
+   "bottom": 729,
+   "h": 73,
+   "w": 358
+  },
+  "gcard": null,
+  "thread": null,
+  "threadScrollable": null,
+  "ctrls": [],
+  "fonts": [
+   "-apple-system"
+  ]
+ }
+}
