@@ -33,7 +33,9 @@ def test_closing_line_uses_current_confirmed_values():
     st = at("gmail", agent_name="jarvis", user_name="Darran", need="connect email")
     r = apply(SPEC, st, say("later", intents=["refuse_slot"]))
     line = template_phrase(SPEC, r.state, r.plan)
-    assert line.startswith("You're all set, Darran. jarvis has noted what you'd like help with: connect email.")
+    # GMAIL-NOTNOW: a just-deferred Gmail is acknowledged first.
+    assert line.startswith("No problem, you can connect it later. You're all set, Darran. "
+                           "jarvis has noted what you'd like help with: connect email.")
     assert "Juno" not in line and "Darren" not in line and "mom" not in line
 
 

@@ -123,7 +123,13 @@ function turn(s, text) {
     s.slots.gmail = { ...s.slots.gmail, status: "skipped" };
     s.node = "graduated";
     s.graduated = true;
-    reply = ASK.graduated;
+    reply = `No problem, you can connect it later. ${ASK.graduated}`;
+    if (s.callId) {
+      // GMAIL-NOTNOW: graduating on a call says the closing line, then ends the call politely.
+      const callId = s.callId;
+      s.callId = null;
+      setTimeout(() => push(s, "call_state", { state: "ended", call_id: callId, reason: "graduated" }), 50);
+    }
   } else if (s.node === "user_name" || s.node === "need") {
     fill(s, s.node, text.trim());
     s.node = nextMissing(s);

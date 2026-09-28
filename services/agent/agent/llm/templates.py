@@ -85,6 +85,7 @@ def slot_ack(state: SessionState, slot: str, changed: bool = False) -> str:
 
 CHANGED = "Updated."
 SKIPPED = "No problem, we can come back to that later."
+GMAIL_DEFERRED = "No problem, you can connect it later."
 SUGGEST = "A few ideas: getting your inbox under control, drafting replies, or keeping your calendar in check."
 REJECTED = {
     "abusive": "Let's pick a different one.",
@@ -271,7 +272,9 @@ def graduation_summary(state: SessionState, deferred: list[str]) -> str:
     need = state.slots.get("need")
     who = agent.value if agent and agent.status == "filled" and agent.value else "Your assistant"
     hi = f"You're all set, {user.value}." if user and user.status == "filled" and user.value else "You're all set."
-    parts = [hi]
+    gmail = state.slots.get("gmail")
+    # GMAIL-NOTNOW: Gmail was just deferred ("Not now"): acknowledge it first, briefly.
+    parts = ([GMAIL_DEFERRED] if gmail is not None and gmail.status == "skipped" else []) + [hi]
     if need and need.status == "filled" and need.value:
         # HONEST-001: restate the need, no claim that the assistant will (or can) do it.
         parts.append(f"{who} has noted what you'd like help with: {_lower_first(need.value.rstrip('.'))}.")

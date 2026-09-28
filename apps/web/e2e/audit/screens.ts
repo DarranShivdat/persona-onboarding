@@ -477,13 +477,13 @@ export const SCREENS: Screen[] = [
       { match: "button:Continue with Google @gmail-card", expected: "opens Google OAuth popup with our redirect_uri (LIVE: stop at accounts.google.com)", run: (c, ctx) => opensGoogle(c, ctx) },
       {
         match: "button:Not now @gmail-card",
-        expected: "sends 'Not now': brain defers Gmail (bubble, or graduation home once need is filled)",
+        expected: "defers Gmail at once (no re-ask) and graduates to home: 'You're all set' + deferred 'Connect Gmail when you're ready'",
         skipLive: "LOCAL covers it; LIVE keeps one session per viewport",
         run: async (ctl, ctx) => {
           await ctl.click();
-          // Gmail was the last step, so deferring it may graduate straight to home (GRAD-001),
-          // which replaces the thread; either outcome proves the control worked.
-          await expect(userBubble(ctx.page, "Not now").last().or(ctx.page.getByRole("heading", { level: 1, name: /all set/ }))).toBeVisible({ timeout: 15_000 });
+          // GMAIL-NOTNOW: always straight to home with Gmail as the deferred amber prompt.
+          await expect(ctx.page.getByRole("heading", { level: 1, name: /all set/ })).toBeVisible({ timeout: 15_000 });
+          await expect(ctx.page.getByText("Connect Gmail when you’re ready")).toBeVisible();
         },
       },
       ...composerControls({ email: true }).map((e) => ({ ...e, skipLive: e.skipLive ?? "LOCAL covers it; LIVE keeps one session per viewport" })),

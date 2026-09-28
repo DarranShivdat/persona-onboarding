@@ -123,6 +123,14 @@ def apply(spec: FlowSpec, state: SessionState, turn: Turn) -> TurnResult:
         plan.respond_to.append("prompt_injection")
         _describe(spec, state, plan)
         return TurnResult(copy.deepcopy(state), plan, ev)
+    if _slot_of(spec, st.node) == GMAIL_SLOT and not st.resolved(GMAIL_SLOT) and is_gmail_defer(turn.utterance):
+        # GMAIL-NOTNOW (live 2026-09-28): the card's "Not now" (or saying it on the call) defers
+        # Gmail at once and graduates; no re-ask, no why. Gmail becomes the deferred prompt.
+        sv = st.slot(GMAIL_SLOT)
+        sv.status, sv.needs_confirm = "skipped", False
+        plan.skipped.append(GMAIL_SLOT)
+        ev.append({"type": "slot_skipped", "slot": GMAIL_SLOT, "reason": "not_now"})
+        return _advance(spec, st, turn.channel, plan, ev)
 
     node = st.node
     touched, rejected, unsure = _extract(spec, st, turn, intents, plan, ev)
@@ -300,6 +308,18 @@ _YES_TAIL = r"((that'?s|that is|it'?s|it is|you got it|you have it|you('ve| have
 _EXPLICIT_YES = re.compile(
     rf"^\s*({_YES_WORD}( {_YES_WORD})*( {_YES_TAIL})?|(that'?s|that is|it'?s|it is) (right|correct|it)|you got it|spot on)"
     r"[\s.!,]*$", re.IGNORECASE)
+
+
+GMAIL_SLOT = "gmail"
+# The card's buttons send their words ("Not now", "Skip for now"); on a call the same words said.
+_GMAIL_DEFER = re.compile(
+    r"^\s*(ok(ay)?,? )?(no,? )?(not now|not right now|not yet|not today|skip( it| that| gmail| this)?( for now)?|"
+    r"maybe later|later|i'?ll (do|connect) (it|that|gmail) later|do (it|that) later|no thanks?( you)?)"
+    r"(,? thanks?( you)?)?[\s.!,]*$", re.IGNORECASE)
+
+
+def is_gmail_defer(utterance: str) -> bool:
+    return bool(_GMAIL_DEFER.match((utterance or "").replace("’", "'")))
 
 
 def is_explicit_yes(utterance: str) -> bool:
