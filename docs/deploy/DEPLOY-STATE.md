@@ -28,3 +28,13 @@ password, and the direct host `db.<ref>.supabase.co` is IPv6-only (Darran's Mac 
 supabase-db.sh --apply → fly-agent.sh --apply (sjc) → vercel-web.sh --apply → set
 PERSONA_AGENT_BASE_URL (Vercel) + GOOGLE_OAUTH_REDIRECT_URL → vercel redeploy → smoke.sh →
 Google Cloud redirect URI / homepage / privacy / authorized domain.
+
+## Google Cloud values (predicted; confirm after `vercel-web.sh --apply` prints the domain)
+Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a third party's).
+- Authorized redirect URI: `https://persona-onboarding-darran.vercel.app/api/oauth/google/callback`
+- Authorized JavaScript origin (optional): `https://persona-onboarding-darran.vercel.app`
+- Branding → Application home page: `https://persona-onboarding-darran.vercel.app/about`
+- Branding → Privacy policy link: `https://persona-onboarding-darran.vercel.app/privacy`
+- Branding → Authorized domain: `vercel.app` is on the Public Suffix List, so Google requires
+  the full host `persona-onboarding-darran.vercel.app` (Google accepts PSL entries+1 label).
+- Fly agent (server-side only, not in Google): `https://persona-onboarding-agent.fly.dev`

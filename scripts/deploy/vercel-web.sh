@@ -14,7 +14,7 @@ set -euo pipefail
 
 parse_apply "$@"
 ENV_FILE="$ROOT/.persona-deploy/web.env"
-PROJECT="persona-onboarding"
+PROJECT="persona-onboarding-darran"  # persona-onboarding.vercel.app is taken by a third party (checked 2026-09-27)
 SCOPE=""
 ENVS="production preview"
 DO_LINK=1; DO_ENV=1; DO_DEPLOY=1

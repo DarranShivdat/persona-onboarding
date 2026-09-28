@@ -1,0 +1,27 @@
+/* Static public pages (homepage + privacy policy) required by Google OAuth branding. */
+.page {
+  min-height: 100dvh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  padding: var(--s7) var(--s5) var(--s8);
+}
+.wrap { max-width: 680px; margin: 0 auto; }
+.brand { font: var(--t-heading); color: var(--ink); text-decoration: none; }
+.h1 { font: var(--t-title); margin: var(--s6) 0 var(--s3); }
+.h2 { font: var(--t-heading); margin: var(--s6) 0 var(--s2); }
+.lede { font: var(--t-body); color: var(--ink-2); margin: 0 0 var(--s5); }
+.body, .body li { font: var(--t-body); color: var(--ink-2); }
+.body ul { padding-left: var(--s5); margin: var(--s2) 0; }
+.body p { margin: var(--s2) 0; }
+.body a, .foot a { color: var(--ink); }
+.cta {
+  display: inline-flex; align-items: center; min-height: var(--hit-min);
+  padding: 0 var(--s5); border-radius: var(--r-pill);
+  background: var(--ink); color: var(--paper); font: var(--t-body-strong); text-decoration: none;
+}
+.cta:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.foot {
+  margin-top: var(--s8); padding-top: var(--s4); border-top: 1px solid var(--line);
+  font: var(--t-caption); color: var(--ink-3); display: flex; gap: var(--s4); flex-wrap: wrap;
+}

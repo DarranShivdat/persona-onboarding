@@ -57,8 +57,8 @@ Fill by name (how-to per name: `docs/deploy/ENV.md`):
 | `PERSONA_AGENT_BASE_URL` | | ✓ | `https://persona-onboarding-agent.fly.dev` (no trailing `/`) |
 | `LANGFUSE_*` + `PERSONA_TRACING=langfuse` | optional | | Langfuse project keys |
 
-The Vercel domain is predictable (`https://persona-onboarding.vercel.app` if the project name
-is free); if step 5 gives a different one, fix `GOOGLE_OAUTH_REDIRECT_URL` + step 6 and re-run
+The Vercel domain is predictable: project `persona-onboarding-darran` → `https://persona-onboarding-darran.vercel.app`
+(`persona-onboarding.vercel.app` is already taken by someone else — checked Sun Sep 27); if step 5 gives a different one, fix `GOOGLE_OAUTH_REDIRECT_URL` + step 6 and re-run
 `vercel-web.sh --apply --env-only` + `--deploy-only`.
 
 ### Spend caps (set while you're in each console)

@@ -2,7 +2,7 @@
 # Post-deploy smoke test (read-mostly; creates one throwaway onboarding session).
 #
 #   bash scripts/deploy/smoke.sh <web-url> <agent-url>
-#   e.g. bash scripts/deploy/smoke.sh https://persona-onboarding.vercel.app https://persona-onboarding-agent.fly.dev
+#   e.g. bash scripts/deploy/smoke.sh https://persona-onboarding-darran.vercel.app https://persona-onboarding-agent.fly.dev
 #
 # Checks: agent /health (+db ok), web home page, session create via the web proxy (cookie),
 # one text turn via the proxy, direct agent session + turn, ICE route (TURN present), Google OAuth

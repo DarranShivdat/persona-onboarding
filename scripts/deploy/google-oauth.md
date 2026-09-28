@@ -45,7 +45,7 @@ Testing-mode facts to expect (not bugs):
 1. **APIs & Services → Credentials → Create credentials → OAuth client ID →
    Web application**, name `persona-onboarding-web`.
 2. **Authorized JavaScript origins**: `https://<vercel-domain>` (e.g.
-   `https://persona-onboarding.vercel.app`). Optional for our server-side flow, harmless.
+   `https://persona-onboarding-darran.vercel.app`). Optional for our server-side flow, harmless.
 3. **Authorized redirect URIs** — exact string match, scheme + host + path, no trailing slash:
    - `https://<vercel-domain>/api/oauth/google/callback`
    - optional local: `http://localhost:3200/api/oauth/google/callback` (local-stack) — Google
