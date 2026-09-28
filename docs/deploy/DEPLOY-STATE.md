@@ -5,8 +5,8 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **REDEPLOYING — agent + web from main 904c0da (HONEST-001 fixed need ack / permissions-only Gmail pitch, NAME-003 name read-back until explicit yes). Previous LIVE: agent 49d8010, web 64b0652** |
-| OWNER | EM executor (honest-need/name fix) — started 1:15pm PT Mon |
+| STATE | **LIVE — agent c029e5d, web c029e5d (HONEST-001 one fixed need ack 'Noted: {need}.' + permissions-only Gmail pitch, no capability claims; NAME-003 spoken names incl. spelled are read back until an explicit yes, cap 4; plus RESET-001/HOME-002/SIL-002; quick ack ON via Fly secret)** |
+| OWNER | EM executor (honest-need/name fix) — deploy finished 1:25pm PT Mon. Later `--apply` runs = redeploys only; log them below |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
 ## Env files (gitignored, mode 600, values never committed/printed)
@@ -82,3 +82,4 @@ Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a
 - Mon 2:28AM PT — EM executor (voice polish): agent+web redeploy b7f24f8 LIVE (agent /health sha b7f24f8, Fly v13 checks passing; web build b7f24f8 aliased). smoke.sh 7/7 + LIVE button audit 215 rows PASS. PERSONA_VOICE_QUICK_ACK unset (OFF). Note: web deploy needs `--scope darran-s-projects --deploy-only`. STATE → LIVE.
 - Mon 12:47PM PT — EM executor (reset/home fix) holds deploy: merged em/reset-fix; qa fast/flow/e2e/audit (LOCAL 246 rows) green; agent+web redeploy, then live smoke + audit. Fly secrets untouched (PERSONA_VOICE_QUICK_ACK=1 stays on).
 - Mon 12:58PM PT — EM executor (reset/home fix): agent+web 64b0652 deployed; smoke.sh 7/7 + LIVE button audit 246 rows PASS (Start over full flow on resume + home). Follow-up agent redeploy 49d8010 (spelling-check "yes" confirms unchanged name), /health sha 49d8010, live replay of the 12:30pm transcript OK. Web unchanged since 64b0652. Fly secrets untouched (quick ack still set). STATE → LIVE.
+- Mon 1:25PM PT — EM executor (honest-need/name fix): agent+web c029e5d (code 904c0da) deployed; smoke.sh 7/7 + LIVE button audit 246 rows PASS; live API replay: 'Text messages.' / 'book reservations for me' / 'clean up my inbox' all get the identical 'Noted: … To get started, let's connect your Gmail. …' line.
