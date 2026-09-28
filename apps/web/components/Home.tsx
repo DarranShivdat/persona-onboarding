@@ -4,7 +4,7 @@ import type { EditableSlot, EditResult, HomeView, ThreadItem, UIAction } from "@
 import { CheckIcon, MailIcon, XIcon } from "./icons";
 
 const DISMISS_KEY = "persona:home-dismissed";
-const EDIT_LABEL: Record<EditableSlot, string> = { agent_name: "assistant’s name", user_name: "name", need: "what you’d like help with" };
+const EDIT_LABEL: Record<EditableSlot, string> = { agent_name: "your assistant’s name", user_name: "your name", need: "what you’d like help with" };
 
 type OnEdit = (slot: EditableSlot, value: string) => Promise<EditResult>;
 
@@ -144,7 +144,7 @@ function EditableValue({
         ref={trigger}
         type="button"
         className={`${className} editable${empty ? " empty" : ""}`}
-        aria-label={`Edit your ${EDIT_LABEL[slot]}: ${value}`}
+        aria-label={`Edit ${EDIT_LABEL[slot]}: ${value}`}
         data-testid={`edit-${slot}`}
         onClick={() => setEditing(slot)}
       >
@@ -167,7 +167,7 @@ function EditableValue({
         className="edit-input"
         value={draft}
         maxLength={slot === "need" ? 200 : 50}
-        aria-label={`Your ${EDIT_LABEL[slot]}`}
+        aria-label={EDIT_LABEL[slot].charAt(0).toUpperCase() + EDIT_LABEL[slot].slice(1)}
         aria-invalid={!!error}
         aria-describedby={error ? errId : undefined}
         data-testid={`edit-${slot}-input`}
@@ -228,7 +228,7 @@ function HomeThread({ items, agent }: { items: ThreadItem[]; agent: string }) {
     <div className="home-thread" role="log" aria-live="polite" aria-label={`Conversation with ${agent}`} ref={ref} data-testid="home-thread">
       {items.map((it) =>
         it.kind === "msg" ? (
-          <div key={it.id} className={`msg ${it.from}`}>
+          <div key={it.id} className={`msg ${it.from}`} data-from={it.from}>
             {it.text}
           </div>
         ) : it.kind === "stamp" ? (

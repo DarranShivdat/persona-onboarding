@@ -430,7 +430,17 @@ export const SCREENS: Screen[] = [
     sequential: TARGET_LIVE(),
     controls: [
       { match: "button:Continue with Google @gmail-card", expected: "opens Google OAuth popup with our redirect_uri (LIVE: stop at accounts.google.com)", run: (c, ctx) => opensGoogle(c, ctx) },
-      { match: "button:Not now @gmail-card", expected: "sends 'Not now' (brain defers Gmail)", skipLive: "LOCAL covers it; LIVE keeps one session per viewport", run: sends("Not now") },
+      {
+        match: "button:Not now @gmail-card",
+        expected: "sends 'Not now': brain defers Gmail (bubble, or graduation home once need is filled)",
+        skipLive: "LOCAL covers it; LIVE keeps one session per viewport",
+        run: async (ctl, ctx) => {
+          await ctl.click();
+          // Gmail was the last step, so deferring it may graduate straight to home (GRAD-001),
+          // which replaces the thread; either outcome proves the control worked.
+          await expect(userBubble(ctx.page, "Not now").last().or(ctx.page.getByRole("heading", { level: 1, name: /all set/ }))).toBeVisible({ timeout: 15_000 });
+        },
+      },
       ...composerControls({ email: true }).map((e) => ({ ...e, skipLive: e.skipLive ?? "LOCAL covers it; LIVE keeps one session per viewport" })),
     ],
   },
@@ -455,6 +465,7 @@ export const SCREENS: Screen[] = [
         },
       },
       ...composerControls({ email: true }).map((e) => ({ ...e, skipLive: e.skipLive ?? undefined })),
+      ...gmailCallPanel, // the LIVE fixture shows the card during a (mock) call
     ],
   },
   {
@@ -532,8 +543,8 @@ export const SCREENS: Screen[] = [
           await expect(ctx.page.getByTestId("deferred-prompt")).toHaveCount(0);
         },
       },
-      { match: /^textbox:.+ @(main|composer)$/, expected: "message -> user bubble + agent reply visible on home", fixme: GRAD, run: homeReply("enter") },
-      { match: /^button:Send @(main|composer)$/, expected: "Send -> user bubble + agent reply visible on home", fixme: GRAD, run: homeReply("button") },
+      { match: /^textbox:.+ @(main|composer)$/, expected: "message -> user bubble + agent reply visible on home", run: homeReply("enter") },
+      { match: /^button:Send @(main|composer)$/, expected: "Send -> user bubble + agent reply visible on home", run: homeReply("button") },
       {
         match: /^button:(Edit|Change) .+/,
         optional: true,

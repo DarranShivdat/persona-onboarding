@@ -255,7 +255,10 @@ export const composerField = (p: Page) => p.locator("form.composer textarea");
 /** The user's words land in the thread (and, on the live driver, a turn is posted). */
 export async function expectSent(p: Page, text: string, act: () => Promise<void>) {
   await act();
-  await expect(userBubble(p, text).last()).toBeVisible({ timeout: 15_000 });
+  // A deferral on the last step (Gmail "Not now"/"Skip for now") can graduate straight to the
+  // home screen (GRAD-001), which replaces the onboarding thread before the bubble is seen.
+  const home = p.getByRole("heading", { level: 1, name: /all set/ });
+  await expect(userBubble(p, text).last().or(home)).toBeVisible({ timeout: 15_000 });
 }
 
 export async function typeAndSend(p: Page, text: string, via: "enter" | "button") {

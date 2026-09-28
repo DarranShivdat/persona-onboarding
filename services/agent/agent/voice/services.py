@@ -21,7 +21,12 @@ from .stub_llm import StubTurnLLM
 # GUARD-001: the voice LLM only says (a shortened) brain line or fills record_slots args.
 # 120 tokens covers a two-sentence line or one record_slots call; low temperature keeps it
 # on the line instead of improvising.
-VOICE_LLM_MAX_TOKENS = 120
+# HOTFIX 2026-09-28: 120 truncated the record_slots tool call (its JSON args alone run
+# ~100-200 tokens), so the call never reached the handler and every caller turn fell
+# through to the silence floor ("Are you still there?"). The cap must fit a full
+# extraction call, same as the text extractor; spoken length is bounded by the prompt and
+# the speech guard (MAX_SENTENCES), not by max_tokens.
+VOICE_LLM_MAX_TOKENS = 512
 VOICE_LLM_TEMPERATURE = 0.3
 
 VOICE_SYSTEM_PROMPT = (

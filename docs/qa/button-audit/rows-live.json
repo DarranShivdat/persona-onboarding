@@ -5,8 +5,8 @@
   "screen": "about",
   "control": "link:Persona @main",
   "expected": "brand -> /",
-  "result": "FAIL",
-  "note": "expected control is missing"
+  "result": "PASS",
+  "note": "href / 200"
  },
  {
   "target": "live",
@@ -14,8 +14,8 @@
   "screen": "about",
   "control": "link:Privacy Policy @main",
   "expected": "inline -> /privacy",
-  "result": "FAIL",
-  "note": "expected control is missing"
+  "result": "PASS",
+  "note": "href /privacy 200"
  },
  {
   "target": "live",
@@ -23,8 +23,8 @@
   "screen": "about",
   "control": "link:Set up your assistant @main",
   "expected": "CTA -> /",
-  "result": "FAIL",
-  "note": "expected control is missing"
+  "result": "PASS",
+  "note": "href / 200"
  },
  {
   "target": "live",
@@ -32,8 +32,8 @@
   "screen": "about",
   "control": "link:yourpersona.com @footer",
   "expected": "external href resolves (no click-away)",
-  "result": "FAIL",
-  "note": "expected control is missing"
+  "result": "PASS",
+  "note": "href yourpersona.com 200"
  },
  {
   "target": "live",
@@ -41,458 +41,8 @@
   "screen": "about",
   "control": "link:Privacy Policy @footer",
   "expected": "-> /privacy",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "error-agent-down",
-  "control": "(screen setup)",
-  "expected": "Error: agent down at start (banner + retry)",
-  "result": "FAIL",
-  "note": "locator.click: Test timeout of 180000ms exceeded."
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "error-turn",
-  "control": "(screen setup)",
-  "expected": "Error: agent down mid-chat (banner + retry)",
-  "result": "FAIL",
-  "note": "locator.click: Test timeout of 180000ms exceeded."
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "gmail-connected",
-  "control": "button:Mute @call-panel",
-  "expected": "(none)",
-  "result": "FAIL",
-  "note": "no expectation: new control?"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "gmail-connected",
-  "control": "button:Type instead @call-panel",
-  "expected": "(none)",
-  "result": "FAIL",
-  "note": "no expectation: new control?"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "gmail-connected",
-  "control": "button:End @call-panel",
-  "expected": "(none)",
-  "result": "FAIL",
-  "note": "no expectation: new control?"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "gmail-connecting",
-  "control": "button:Mute @call-panel",
-  "expected": "(none)",
-  "result": "FAIL",
-  "note": "no expectation: new control?"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "gmail-connecting",
-  "control": "button:Type instead @call-panel",
-  "expected": "(none)",
-  "result": "FAIL",
-  "note": "no expectation: new control?"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "gmail-connecting",
-  "control": "button:End @call-panel",
-  "expected": "(none)",
-  "result": "FAIL",
-  "note": "no expectation: new control?"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "not-found",
-  "control": "(screen)",
-  "expected": "404 route",
-  "result": "FAIL",
-  "note": "expect(received).toBe(expected) // Object.is equality"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "not-found",
-  "control": "link:Persona @main",
-  "expected": "brand -> /",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "not-found",
-  "control": "link:Set up your assistant @main",
-  "expected": "-> / (setup)",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "not-found",
-  "control": "link:About Persona @footer",
-  "expected": "-> /about",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "not-found",
-  "control": "link:Privacy Policy @footer",
-  "expected": "-> /privacy",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "privacy",
-  "control": "link:Persona @main",
-  "expected": "brand -> /about",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "privacy",
-  "control": "link:Google API Services User Data Policy @main",
-  "expected": "external href resolves",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "privacy",
-  "control": "link:myaccount.google.com/permissions @main",
-  "expected": "external href resolves",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "privacy",
-  "control": "link:darranshivdat1@gmail.com @main",
-  "expected": "valid mailto",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "privacy",
-  "control": "link:About Persona @footer",
-  "expected": "-> /about",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "privacy",
-  "control": "link:Set up your assistant @footer",
-  "expected": "-> /",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "about",
-  "control": "link:Persona @main",
-  "expected": "brand -> /",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "about",
-  "control": "link:Privacy Policy @main",
-  "expected": "inline -> /privacy",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "about",
-  "control": "link:Set up your assistant @main",
-  "expected": "CTA -> /",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "about",
-  "control": "link:yourpersona.com @footer",
-  "expected": "external href resolves (no click-away)",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "about",
-  "control": "link:Privacy Policy @footer",
-  "expected": "-> /privacy",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "chat-agent-name",
-  "control": "chip:Juno @thread",
-  "expected": "chip sends its text as the user's turn",
-  "result": "FAIL",
-  "note": "tap target 64x36 < 44px"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "chat-agent-name",
-  "control": "chip:Atlas @thread",
-  "expected": "chip sends its text as the user's turn",
-  "result": "FAIL",
-  "note": "tap target 65x36 < 44px"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "chat-agent-name",
-  "control": "chip:Surprise me @thread",
-  "expected": "chip sends its text as the user's turn",
-  "result": "FAIL",
-  "note": "tap target 114x36 < 44px"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "error-agent-down",
-  "control": "(screen setup)",
-  "expected": "Error: agent down at start (banner + retry)",
-  "result": "FAIL",
-  "note": "expect(locator).toBeVisible() failed"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "error-turn",
-  "control": "(screen setup)",
-  "expected": "Error: agent down mid-chat (banner + retry)",
-  "result": "FAIL",
-  "note": "locator.click: Test timeout of 180000ms exceeded."
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "gmail-connected",
-  "control": "button:Mute @call-panel",
-  "expected": "(none)",
-  "result": "FAIL",
-  "note": "no expectation: new control?"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "gmail-connected",
-  "control": "button:Type instead @call-panel",
-  "expected": "(none)",
-  "result": "FAIL",
-  "note": "no expectation: new control?"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "gmail-connected",
-  "control": "button:End @call-panel",
-  "expected": "(none)",
-  "result": "FAIL",
-  "note": "no expectation: new control?"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "gmail-connecting",
-  "control": "button:Mute @call-panel",
-  "expected": "(none)",
-  "result": "FAIL",
-  "note": "no expectation: new control?"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "gmail-connecting",
-  "control": "button:Type instead @call-panel",
-  "expected": "(none)",
-  "result": "FAIL",
-  "note": "no expectation: new control?"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "gmail-connecting",
-  "control": "button:End @call-panel",
-  "expected": "(none)",
-  "result": "FAIL",
-  "note": "no expectation: new control?"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "not-found",
-  "control": "(screen)",
-  "expected": "404 route",
-  "result": "FAIL",
-  "note": "expect(received).toBe(expected) // Object.is equality"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "not-found",
-  "control": "link:Persona @main",
-  "expected": "brand -> /",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "not-found",
-  "control": "link:Set up your assistant @main",
-  "expected": "-> / (setup)",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "not-found",
-  "control": "link:About Persona @footer",
-  "expected": "-> /about",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "not-found",
-  "control": "link:Privacy Policy @footer",
-  "expected": "-> /privacy",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "privacy",
-  "control": "link:Persona @main",
-  "expected": "brand -> /about",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "privacy",
-  "control": "link:Google API Services User Data Policy @main",
-  "expected": "external href resolves",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "privacy",
-  "control": "link:myaccount.google.com/permissions @main",
-  "expected": "external href resolves",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "privacy",
-  "control": "link:darranshivdat1@gmail.com @main",
-  "expected": "valid mailto",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "privacy",
-  "control": "link:About Persona @footer",
-  "expected": "-> /about",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "privacy",
-  "control": "link:Set up your assistant @footer",
-  "expected": "-> /",
-  "result": "FAIL",
-  "note": "expected control is missing"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "home",
-  "control": "textbox:Message Juno @composer",
-  "expected": "message -> user bubble + agent reply visible on home",
-  "result": "FIXME",
-  "note": "owned by GRAD-001 (home composer rebuild): typed message must get a visible reply on home — action: expect(locator).toBeVisible() failed Locator: locator('[data-from=\"user\"]').filter({ hasText: 'what can you do first?' }).last() Expected: visible Timeout: 10000ms Error: element(s) not found Call log: - Expect \"toBeVisi"
- },
- {
-  "target": "live",
-  "viewport": "desktop",
-  "screen": "home",
-  "control": "button:Send @composer",
-  "expected": "Send -> user bubble + agent reply visible on home",
-  "result": "FIXME",
-  "note": "owned by GRAD-001 (home composer rebuild): typed message must get a visible reply on home — action: control button:Send @composer not found on a fresh copy of the screen (have: )"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "home",
-  "control": "textbox:Message Juno @composer",
-  "expected": "message -> user bubble + agent reply visible on home",
-  "result": "FIXME",
-  "note": "owned by GRAD-001 (home composer rebuild): typed message must get a visible reply on home — action: expect(locator).toBeVisible() failed Locator: locator('[data-from=\"user\"]').filter({ hasText: 'what can you do first?' }).last() Expected: visible Timeout: 10000ms Error: element(s) not found Call log: - Expect \"toBeVisi"
- },
- {
-  "target": "live",
-  "viewport": "mobile",
-  "screen": "home",
-  "control": "button:Send @composer",
-  "expected": "Send -> user bubble + agent reply visible on home",
-  "result": "FIXME",
-  "note": "owned by GRAD-001 (home composer rebuild): typed message must get a visible reply on home — action: expect(locator).toBeVisible() failed Locator: locator('[data-from=\"user\"]').filter({ hasText: 'thanks!' }).last() Expected: visible Timeout: 10000ms Error: element(s) not found Call log: - Expect \"toBeVisible\" locator('["
+  "result": "PASS",
+  "note": "href /privacy 200"
  },
  {
   "target": "live",
@@ -830,6 +380,96 @@
  {
   "target": "live",
   "viewport": "desktop",
+  "screen": "error-agent-down",
+  "control": "(screen)",
+  "expected": "Error: agent down at start (banner + retry)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "error-agent-down",
+  "control": "button:Try again @notice",
+  "expected": "agent back: retry starts the session, banner clears, chat opens",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "error-agent-down",
+  "control": "button:Get started @main",
+  "expected": "still down: the banner stays (no dead click, no crash)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "error-turn",
+  "control": "(screen)",
+  "expected": "Error: agent down mid-chat (banner + retry)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "error-turn",
+  "control": "button:Try again @notice",
+  "expected": "agent back: re-sends the failed turn, banner clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "error-turn",
+  "control": "chip:Juno @thread",
+  "expected": "still down: chip send re-shows the banner",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "error-turn",
+  "control": "chip:Atlas @thread",
+  "expected": "still down: chip send re-shows the banner",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "error-turn",
+  "control": "chip:Surprise me @thread",
+  "expected": "still down: chip send re-shows the banner",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "error-turn",
+  "control": "textbox:Type a name @composer",
+  "expected": "still down: typed send keeps the banner up",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "error-turn",
+  "control": "button:Send @composer",
+  "expected": "still down: Send keeps the banner up",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
   "screen": "gmail-connected",
   "control": "button:Not you? Use a different account @gmail-card",
   "expected": "re-runs OAuth with the account chooser",
@@ -853,6 +493,33 @@
   "expected": "Send posts the typed turn (user bubble), field clears",
   "result": "PASS",
   "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "gmail-connected",
+  "control": "button:Mute @call-panel",
+  "expected": "mutes (aria-pressed)",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: fixture (mock driver) on LIVE; real call controls verified on call-live"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "gmail-connected",
+  "control": "button:Type instead @call-panel",
+  "expected": "focuses the composer",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: fixture (mock driver) on LIVE; real call controls verified on call-live"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "gmail-connected",
+  "control": "button:End @call-panel",
+  "expected": "hangs up: status 'Call ended'",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: fixture (mock driver) on LIVE; real call controls verified on call-live"
  },
  {
   "target": "live",
@@ -889,6 +556,33 @@
   "expected": "Send posts the typed turn (user bubble), field clears",
   "result": "PASS",
   "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "gmail-connecting",
+  "control": "button:Mute @call-panel",
+  "expected": "mutes (aria-pressed)",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: fixture (mock driver) on LIVE; real call controls verified on call-live"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "gmail-connecting",
+  "control": "button:Type instead @call-panel",
+  "expected": "focuses the composer",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: fixture (mock driver) on LIVE; real call controls verified on call-live"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "gmail-connecting",
+  "control": "button:End @call-panel",
+  "expected": "hangs up: status 'Call ended'",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: fixture (mock driver) on LIVE; real call controls verified on call-live"
  },
  {
   "target": "live",
@@ -949,7 +643,7 @@
   "viewport": "desktop",
   "screen": "gmail-idle",
   "control": "button:Not now @gmail-card",
-  "expected": "sends 'Not now' (brain defers Gmail)",
+  "expected": "sends 'Not now': brain defers Gmail (bubble, or graduation home once need is filled)",
   "result": "PASS",
   "note": "action SKIP on LIVE: LOCAL covers it; LIVE keeps one session per viewport"
  },
@@ -1020,6 +714,33 @@
   "target": "live",
   "viewport": "desktop",
   "screen": "home",
+  "control": "button:Edit what you’d like help with: Getting your inbox under control @main",
+  "expected": "tap-to-edit: opens an editable field for that item (GRAD-001)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "home",
+  "control": "button:Edit your assistant’s name: Juno @main",
+  "expected": "tap-to-edit: opens an editable field for that item (GRAD-001)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "home",
+  "control": "button:Edit your name: Maya @main",
+  "expected": "tap-to-edit: opens an editable field for that item (GRAD-001)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "home",
   "control": "button:Connect @deferred-prompt",
   "expected": "deferred prompt opens Google OAuth",
   "result": "PASS",
@@ -1031,6 +752,24 @@
   "screen": "home",
   "control": "button:Dismiss @deferred-prompt",
   "expected": "hides the deferred prompt for this visit",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "home",
+  "control": "textbox:Message Juno @composer",
+  "expected": "message -> user bubble + agent reply visible on home",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "home",
+  "control": "button:Send @composer",
+  "expected": "Send -> user bubble + agent reply visible on home",
   "result": "PASS",
   "note": ""
  },
@@ -1068,7 +807,7 @@
   "control": "button:Keep texting @call-offer",
   "expected": "sends 'Keep texting' as a turn",
   "result": "PASS",
-  "note": ""
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
  },
  {
   "target": "live",
@@ -1086,7 +825,7 @@
   "control": "textbox:Message Juno @composer",
   "expected": "type + Enter sends the turn (user bubble), field clears",
   "result": "PASS",
-  "note": ""
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
  },
  {
   "target": "live",
@@ -1095,7 +834,106 @@
   "control": "button:Send @composer",
   "expected": "Send posts the typed turn (user bubble), field clears",
   "result": "PASS",
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "not-found",
+  "control": "(screen)",
+  "expected": "404 route",
+  "result": "PASS",
   "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "not-found",
+  "control": "link:Persona @main",
+  "expected": "brand -> /",
+  "result": "PASS",
+  "note": "href / 200"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "not-found",
+  "control": "link:Set up your assistant @main",
+  "expected": "-> / (setup)",
+  "result": "PASS",
+  "note": "href / 200"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "not-found",
+  "control": "link:About Persona @footer",
+  "expected": "-> /about",
+  "result": "PASS",
+  "note": "href /about 200"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "not-found",
+  "control": "link:Privacy Policy @footer",
+  "expected": "-> /privacy",
+  "result": "PASS",
+  "note": "href /privacy 200"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "privacy",
+  "control": "link:Persona @main",
+  "expected": "brand -> /about",
+  "result": "PASS",
+  "note": "href /about 200"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "privacy",
+  "control": "link:Google API Services User Data Policy @main",
+  "expected": "external href resolves",
+  "result": "PASS",
+  "note": "href developers.google.com 200"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "privacy",
+  "control": "link:myaccount.google.com/permissions @main",
+  "expected": "external href resolves",
+  "result": "PASS",
+  "note": "href myaccount.google.com 200"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "privacy",
+  "control": "link:darranshivdat1@gmail.com @main",
+  "expected": "valid mailto",
+  "result": "PASS",
+  "note": "mailto"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "privacy",
+  "control": "link:About Persona @footer",
+  "expected": "-> /about",
+  "result": "PASS",
+  "note": "href /about 200"
+ },
+ {
+  "target": "live",
+  "viewport": "desktop",
+  "screen": "privacy",
+  "control": "link:Set up your assistant @footer",
+  "expected": "-> /",
+  "result": "PASS",
+  "note": "href / 200"
  },
  {
   "target": "live",
@@ -1122,7 +960,7 @@
   "control": "button:Keep texting @call-offer",
   "expected": "sends 'Keep texting' as a turn",
   "result": "PASS",
-  "note": ""
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
  },
  {
   "target": "live",
@@ -1140,7 +978,7 @@
   "control": "textbox:Message Juno @composer",
   "expected": "type + Enter sends the turn (user bubble), field clears",
   "result": "PASS",
-  "note": ""
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
  },
  {
   "target": "live",
@@ -1149,7 +987,52 @@
   "control": "button:Send @composer",
   "expected": "Send posts the typed turn (user bubble), field clears",
   "result": "PASS",
-  "note": ""
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "about",
+  "control": "link:Persona @main",
+  "expected": "brand -> /",
+  "result": "PASS",
+  "note": "href / 200"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "about",
+  "control": "link:Privacy Policy @main",
+  "expected": "inline -> /privacy",
+  "result": "PASS",
+  "note": "href /privacy 200"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "about",
+  "control": "link:Set up your assistant @main",
+  "expected": "CTA -> /",
+  "result": "PASS",
+  "note": "href / 200"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "about",
+  "control": "link:yourpersona.com @footer",
+  "expected": "external href resolves (no click-away)",
+  "result": "PASS",
+  "note": "href yourpersona.com 200"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "about",
+  "control": "link:Privacy Policy @footer",
+  "expected": "-> /privacy",
+  "result": "PASS",
+  "note": "href /privacy 200"
  },
  {
   "target": "live",
@@ -1398,6 +1281,33 @@
   "target": "live",
   "viewport": "mobile",
   "screen": "chat-agent-name",
+  "control": "chip:Juno @thread",
+  "expected": "chip sends its text as the user's turn",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "chat-agent-name",
+  "control": "chip:Atlas @thread",
+  "expected": "chip sends its text as the user's turn",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "chat-agent-name",
+  "control": "chip:Surprise me @thread",
+  "expected": "chip sends its text as the user's turn",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "chat-agent-name",
   "control": "textbox:Type a name @composer",
   "expected": "type + Enter sends the turn (user bubble), field clears",
   "result": "PASS",
@@ -1411,6 +1321,96 @@
   "expected": "Send posts the typed turn (user bubble), field clears",
   "result": "PASS",
   "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "error-agent-down",
+  "control": "(screen)",
+  "expected": "Error: agent down at start (banner + retry)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "error-agent-down",
+  "control": "button:Try again @notice",
+  "expected": "agent back: retry starts the session, banner clears, chat opens",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "error-agent-down",
+  "control": "button:Get started @main",
+  "expected": "still down: the banner stays (no dead click, no crash)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "error-turn",
+  "control": "(screen)",
+  "expected": "Error: agent down mid-chat (banner + retry)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "error-turn",
+  "control": "button:Try again @notice",
+  "expected": "agent back: re-sends the failed turn, banner clears",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "error-turn",
+  "control": "chip:Juno @thread",
+  "expected": "still down: chip send re-shows the banner",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "error-turn",
+  "control": "chip:Atlas @thread",
+  "expected": "still down: chip send re-shows the banner",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "error-turn",
+  "control": "chip:Surprise me @thread",
+  "expected": "still down: chip send re-shows the banner",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "error-turn",
+  "control": "textbox:Type a name @composer",
+  "expected": "still down: typed send keeps the banner up",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "error-turn",
+  "control": "button:Send @composer",
+  "expected": "still down: Send keeps the banner up",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
  },
  {
   "target": "live",
@@ -1438,6 +1438,33 @@
   "expected": "Send posts the typed turn (user bubble), field clears",
   "result": "PASS",
   "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "gmail-connected",
+  "control": "button:Mute @call-panel",
+  "expected": "mutes (aria-pressed)",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: fixture (mock driver) on LIVE; real call controls verified on call-live"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "gmail-connected",
+  "control": "button:Type instead @call-panel",
+  "expected": "focuses the composer",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: fixture (mock driver) on LIVE; real call controls verified on call-live"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "gmail-connected",
+  "control": "button:End @call-panel",
+  "expected": "hangs up: status 'Call ended'",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: fixture (mock driver) on LIVE; real call controls verified on call-live"
  },
  {
   "target": "live",
@@ -1474,6 +1501,33 @@
   "expected": "Send posts the typed turn (user bubble), field clears",
   "result": "PASS",
   "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "gmail-connecting",
+  "control": "button:Mute @call-panel",
+  "expected": "mutes (aria-pressed)",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: fixture (mock driver) on LIVE; real call controls verified on call-live"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "gmail-connecting",
+  "control": "button:Type instead @call-panel",
+  "expected": "focuses the composer",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: fixture (mock driver) on LIVE; real call controls verified on call-live"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "gmail-connecting",
+  "control": "button:End @call-panel",
+  "expected": "hangs up: status 'Call ended'",
+  "result": "PASS",
+  "note": "action SKIP on LIVE: fixture (mock driver) on LIVE; real call controls verified on call-live"
  },
  {
   "target": "live",
@@ -1534,7 +1588,7 @@
   "viewport": "mobile",
   "screen": "gmail-idle",
   "control": "button:Not now @gmail-card",
-  "expected": "sends 'Not now' (brain defers Gmail)",
+  "expected": "sends 'Not now': brain defers Gmail (bubble, or graduation home once need is filled)",
   "result": "PASS",
   "note": "action SKIP on LIVE: LOCAL covers it; LIVE keeps one session per viewport"
  },
@@ -1605,6 +1659,33 @@
   "target": "live",
   "viewport": "mobile",
   "screen": "home",
+  "control": "button:Edit what you’d like help with: Getting your inbox under control @main",
+  "expected": "tap-to-edit: opens an editable field for that item (GRAD-001)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "home",
+  "control": "button:Edit your assistant’s name: Juno @main",
+  "expected": "tap-to-edit: opens an editable field for that item (GRAD-001)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "home",
+  "control": "button:Edit your name: Maya @main",
+  "expected": "tap-to-edit: opens an editable field for that item (GRAD-001)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "home",
   "control": "button:Connect @deferred-prompt",
   "expected": "deferred prompt opens Google OAuth",
   "result": "PASS",
@@ -1616,6 +1697,24 @@
   "screen": "home",
   "control": "button:Dismiss @deferred-prompt",
   "expected": "hides the deferred prompt for this visit",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "home",
+  "control": "textbox:Message Juno @composer",
+  "expected": "message -> user bubble + agent reply visible on home",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "home",
+  "control": "button:Send @composer",
+  "expected": "Send -> user bubble + agent reply visible on home",
   "result": "PASS",
   "note": ""
  },
@@ -1653,7 +1752,7 @@
   "control": "button:Keep texting @call-offer",
   "expected": "sends 'Keep texting' as a turn",
   "result": "PASS",
-  "note": ""
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
  },
  {
   "target": "live",
@@ -1671,7 +1770,7 @@
   "control": "textbox:Message Juno @composer",
   "expected": "type + Enter sends the turn (user bubble), field clears",
   "result": "PASS",
-  "note": ""
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
  },
  {
   "target": "live",
@@ -1680,7 +1779,106 @@
   "control": "button:Send @composer",
   "expected": "Send posts the typed turn (user bubble), field clears",
   "result": "PASS",
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "not-found",
+  "control": "(screen)",
+  "expected": "404 route",
+  "result": "PASS",
   "note": ""
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "not-found",
+  "control": "link:Persona @main",
+  "expected": "brand -> /",
+  "result": "PASS",
+  "note": "href / 200"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "not-found",
+  "control": "link:Set up your assistant @main",
+  "expected": "-> / (setup)",
+  "result": "PASS",
+  "note": "href / 200"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "not-found",
+  "control": "link:About Persona @footer",
+  "expected": "-> /about",
+  "result": "PASS",
+  "note": "href /about 200"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "not-found",
+  "control": "link:Privacy Policy @footer",
+  "expected": "-> /privacy",
+  "result": "PASS",
+  "note": "href /privacy 200"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "privacy",
+  "control": "link:Persona @main",
+  "expected": "brand -> /about",
+  "result": "PASS",
+  "note": "href /about 200"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "privacy",
+  "control": "link:Google API Services User Data Policy @main",
+  "expected": "external href resolves",
+  "result": "PASS",
+  "note": "href developers.google.com 200"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "privacy",
+  "control": "link:myaccount.google.com/permissions @main",
+  "expected": "external href resolves",
+  "result": "PASS",
+  "note": "href myaccount.google.com 200"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "privacy",
+  "control": "link:darranshivdat1@gmail.com @main",
+  "expected": "valid mailto",
+  "result": "PASS",
+  "note": "mailto"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "privacy",
+  "control": "link:About Persona @footer",
+  "expected": "-> /about",
+  "result": "PASS",
+  "note": "href /about 200"
+ },
+ {
+  "target": "live",
+  "viewport": "mobile",
+  "screen": "privacy",
+  "control": "link:Set up your assistant @footer",
+  "expected": "-> /",
+  "result": "PASS",
+  "note": "href / 200"
  },
  {
   "target": "live",
@@ -1707,7 +1905,7 @@
   "control": "button:Keep texting @call-offer",
   "expected": "sends 'Keep texting' as a turn",
   "result": "PASS",
-  "note": ""
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
  },
  {
   "target": "live",
@@ -1725,7 +1923,7 @@
   "control": "textbox:Message Juno @composer",
   "expected": "type + Enter sends the turn (user bubble), field clears",
   "result": "PASS",
-  "note": ""
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
  },
  {
   "target": "live",
@@ -1734,6 +1932,6 @@
   "control": "button:Send @composer",
   "expected": "Send posts the typed turn (user bubble), field clears",
   "result": "PASS",
-  "note": ""
+  "note": "action SKIP on LIVE: LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)"
  }
 ]
