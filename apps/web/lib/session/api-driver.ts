@@ -14,7 +14,7 @@ import {
   type AgentTranscript,
 } from "./agent-state";
 import type { SlotName } from "@/lib/flow-types";
-import type { Caption, CallView, GmailCapability, GmailCard, SessionDriver, SessionSnapshot, ThreadItem, UIAction, UIPush } from "./types";
+import type { Caption, CallView, EditableSlot, EditResult, GmailCapability, GmailCard, SessionDriver, SessionSnapshot, ThreadItem, UIAction, UIPush } from "./types";
 import { MicError, openMic, prepareCall, releaseMic, type CallMedia, type LinkState, type MicProblem } from "./webrtc";
 
 const PUSH_TYPES = ["transcript", "state", "gmail_connect_card", "gmail_connected", "start_call", "end_call", "call_state", "graduate"] as const;
@@ -63,6 +63,8 @@ function gmailCallHint(card: GmailCard | null): Caption | null {
 const ELSEWHERE: Caption = { ...HINT, text: "This call is open in another tab. Take it over here, or keep typing." };
 const CAPTION_TURNS = 3;
 const ICE_FETCH_TIMEOUT_MS = 2500;
+/** Home keeps a compact thread: the latest post-graduation turns only. */
+const HOME_THREAD_MAX = 12;
 const SPEAKING_ON = 0.12;
 const SPEAKING_OFF = 0.05;
 
@@ -110,6 +112,8 @@ export class ApiSessionDriver implements SessionDriver {
   private levelListeners = new Set<(l: number) => void>();
   private offPageHide: (() => void) | null = null;
   private snap: SessionSnapshot;
+  /** Index into `items` where the post-graduation (home) conversation starts. */
+  private homeFrom: number | null = null;
   private lastEventId = 0;
   private pending = 0;
   private es: EventSource | null = null;
@@ -168,6 +172,24 @@ export class ApiSessionDriver implements SessionDriver {
     const text = ACTION_TEXT[action];
     if (text) return this.sendText(text);
     if (action === "call_take_over") return this.takeOver();
+  }
+
+  /** Home tap-to-edit (GRAD-001). The agent's validators decide; a refusal comes back as a message. */
+  async editSlot(slot: EditableSlot, value: string): Promise<EditResult> {
+    const v = value.trim();
+    if (!v) return { ok: false, message: "That’s empty. Try again." };
+    try {
+      const r = await fetch(`${this.base}/edit`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ slot, value: v }) });
+      const body = (await r.json().catch(() => null)) as { state?: AgentState; message?: string } | null;
+      if (r.ok) {
+        if (body?.state) this.applyState(body.state);
+        return { ok: true };
+      }
+      if (r.status === 422 && body?.message) return { ok: false, message: body.message };
+    } catch {
+      // fall through
+    }
+    return { ok: false, message: "Couldn’t save that. Check your connection and try again." };
   }
 
   async sendText(text: string): Promise<void> {
@@ -384,6 +406,9 @@ export class ApiSessionDriver implements SessionDriver {
         return this.render();
       }
       case "graduate":
+        // Everything after this point is the home conversation (the summary itself is the headline).
+        this.homeFrom ??= this.items.length;
+        return this.render();
       case "start_call":
       case "end_call":
         // Surface follows `state.graduated`; call pushes wire up with FE-004.
@@ -672,8 +697,12 @@ export class ApiSessionDriver implements SessionDriver {
       thread,
       composer: liveCall ? { placeholder: gmailStep ? "Or type your email here…" : "Type instead of talking…", callButton: false } : composerFor(s),
       call,
-      home: s.graduated ? toHome(s) : null,
+      home: s.graduated ? toHome(s, { gmail: this.gmailCard()?.state, thread: this.homeThread() }) : null,
     };
+  }
+
+  private homeThread(): ThreadItem[] {
+    return this.items.slice(this.homeFrom ?? 0).filter((i) => i.kind === "msg" || i.kind === "stamp").slice(-HOME_THREAD_MAX);
   }
 
   private render() {

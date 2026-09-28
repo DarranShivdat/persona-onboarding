@@ -45,12 +45,29 @@ export interface CallView {
   badge?: string;
 }
 
+/** Slots the home screen can edit (tap-to-edit); the agent's validators decide (GRAD-001). */
+export type EditableSlot = "agent_name" | "user_name" | "need";
+export interface HomeTile {
+  label: string;
+  value: string;
+  /** Tap-to-edit target; absent = read-only. */
+  slot?: EditableSlot;
+  /** Shown instead of `value` when the slot is still empty (e.g. "Add your name"). */
+  empty?: boolean;
+}
 export interface HomeView {
   userName: string;
-  focus: { label: string; value: string; detail: string };
-  tiles: { label: string; value: string }[];
+  focus: { label: string; value: string; detail: string; slot?: EditableSlot };
+  tiles: HomeTile[];
+  /** Gmail status tile (connect / connecting / connected / error). Absent in older fixtures. */
+  gmail?: { state: GmailCardState; email?: string };
   deferred: { id: string; slot: SlotName; title: string; reason: string; action: string }[];
+  /** Post-graduation conversation (compact thread under the tiles). */
+  thread?: ThreadItem[];
 }
+
+/** Result of a tap-to-edit save: the brain accepted it, or a validator refused with a reason. */
+export type EditResult = { ok: true } | { ok: false; message: string };
 
 export interface SessionSnapshot {
   surface: "landing" | "chat" | "home";
@@ -93,6 +110,8 @@ export interface SessionDriver {
   endCall(): Promise<void>;
   setMuted(muted: boolean): Promise<void>;
   act(action: UIAction): Promise<void>;
+  /** Home tap-to-edit (GRAD-001): forwards the value; the agent validates and pushes state. */
+  editSlot?(slot: EditableSlot, value: string): Promise<EditResult>;
   onPush(cb: (push: UIPush) => void): () => void;
   /** Fake/real agent output level 0..1 for the ring glow (not part of the snapshot). */
   onLevel?(cb: (level: number) => void): () => void;
@@ -105,6 +124,8 @@ export function applyPush(s: SessionSnapshot, p: UIPush): SessionSnapshot {
     case "snapshot":
       return p.snapshot;
     case "transcript":
+      // On home the conversation continues in the compact home thread (spec §4.6).
+      if (s.surface === "home" && s.home) return { ...s, home: { ...s.home, thread: [...(s.home.thread ?? []), ...p.items] } };
       return { ...s, thread: [...s.thread, ...p.items] };
     case "state":
       return { ...s, checklist: p.checklist, justFilled: p.justFilled, composer: p.composer };

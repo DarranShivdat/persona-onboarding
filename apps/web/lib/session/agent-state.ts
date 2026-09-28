@@ -2,7 +2,7 @@
 // from the brain's snapshot to what the UI draws. Rendering only: nothing here decides a
 // node, fills a slot or picks what happens next — the brain already did that.
 import { SLOT_NAMES, type NodeId, type SlotName, type SlotStatus } from "@/lib/flow-types";
-import type { Checklist, HomeView, SessionSnapshot, ThreadItem } from "./types";
+import type { Checklist, GmailCardState, HomeView, SessionSnapshot, ThreadItem } from "./types";
 
 export interface AgentSlot {
   status: SlotStatus;
@@ -62,22 +62,28 @@ const DEFER_COPY: Record<SlotName, (agent: string) => { title: string; reason: s
   agent_name: () => ({ title: "Name your assistant", reason: "Pick whatever feels right.", action: "Add" }),
 };
 
-export function toHome(s: AgentState): HomeView {
+export function toHome(s: AgentState, extra: { gmail?: GmailCardState; thread?: ThreadItem[] } = {}): HomeView {
   const agent = agentNameOf(s) ?? "Your assistant";
   const user = s.slots.user_name?.status === "filled" ? (s.slots.user_name.value ?? "") : "";
   const need = s.slots.need?.status === "filled" ? (s.slots.need.value ?? "") : "";
+  const gmail = s.slots.gmail?.status === "filled" ? s.slots.gmail.value ?? undefined : undefined;
+  // Rendering only: the tile shows the brain's gmail slot; the card state only covers an attempt in flight.
+  const gmailState: GmailCardState = gmail ? "connected" : extra.gmail === "connecting" || extra.gmail === "error" ? extra.gmail : "idle";
   return {
     userName: user || "there",
     focus: {
       label: `${agent} is starting with`,
       value: need || "Getting to know you",
       detail: "Nothing gets sent or changed without your OK.",
+      slot: "need",
     },
     tiles: [
-      { label: "Your assistant", value: agent },
-      ...(user ? [{ label: "You", value: user }] : []),
+      { label: "Your assistant", value: agentNameOf(s) ?? "Name your assistant", slot: "agent_name", empty: !agentNameOf(s) },
+      { label: "You", value: user || "Add your name", slot: "user_name", empty: !user },
     ],
+    gmail: { state: gmailState, email: gmail },
     deferred: s.deferred_prompts.map((slot) => ({ id: `defer-${slot}`, slot, ...DEFER_COPY[slot](agent) })),
+    thread: extra.thread ?? [],
   };
 }
 
