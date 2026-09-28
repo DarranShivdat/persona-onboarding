@@ -15,6 +15,7 @@ from typing import Any, Optional
 from ..brain.engine import ResponsePlan
 from ..brain.spec import FlowSpec
 from ..brain.state import Channel, SessionState
+from ..brain.validators import AGENT_NAME_SUGGESTIONS
 from ..obs.tracing import NoopTracer, Tracer
 from . import templates as T
 from .client import LLMClient, blocks, field, usage_dict
@@ -66,6 +67,7 @@ def build_brief(plan: ResponsePlan, state: SessionState, channel: Channel,
         "offer_call": plan.offer_call and not critical,
         "explain_why": plan.explain_why and not critical,
         "suggest_examples": plan.suggest_examples,
+        "suggest_names": list(AGENT_NAME_SUGGESTIONS[:2]) if _hesitated_on_agent_name(plan, state) else None,
         "gmail_connected": state.filled("gmail"),
         "gmail_button_on_screen": "gmail_connect_card" in plan.push_ui,
         "end_without_question": critical,
@@ -94,17 +96,25 @@ def template_reply(spec: FlowSpec, plan: ResponsePlan, state: SessionState,
     if plan.skipped:
         parts.append(T.SKIPPED)
     if not critical:
-        parts += _ask_parts(spec, plan, channel)
+        parts += _ask_parts(spec, plan, channel, state)
     return " ".join(dict.fromkeys(parts))
 
 
-def _ask_parts(spec: FlowSpec, plan: ResponsePlan, channel: Channel) -> list[str]:
+def _hesitated_on_agent_name(plan: ResponsePlan, state: SessionState) -> bool:
+    return plan.ask == "agent_name" and state.node_attempts.get("agent_name", 0) > 0
+
+
+def _ask_parts(spec: FlowSpec, plan: ResponsePlan, channel: Channel, state: SessionState) -> list[str]:
     parts: list[str] = []
     if plan.ask and plan.explain_why:
         parts.append(T.why_line(spec, plan.ask))
     if plan.suggest_examples:
         parts.append(T.SUGGEST)
-    if plan.ask:
+    if plan.ask == "agent_name" and "greet" in plan.say:
+        parts.append(T.FIRST_ASK_AGENT_NAME)
+    elif _hesitated_on_agent_name(plan, state) and not plan.explain_why:
+        parts.append(T.agent_name_nudge())
+    elif plan.ask:
         parts.append(T.ask_line(plan.ask, channel))
     elif plan.offer_call:
         parts.append(T.OFFER_CALL)
@@ -166,7 +176,7 @@ class Phraser:
             text, source = fallback, "template"
         elif not crit and (plan.ask or plan.offer_call) and "?" not in text and not _mentions_button(text, plan):
             # The model (or the guard) lost the question: append the templated ask.
-            text, source = text + " " + " ".join(_ask_parts(self.spec, plan, channel)[-1:]), "mixed"
+            text, source = text + " " + " ".join(_ask_parts(self.spec, plan, channel, state)[-1:]), "mixed"
         if crit:
             source = "mixed" if source == "llm" else source
         res = PhraseResult(_join(text, crit), source, g.dropped, brief, usage, latency, err)

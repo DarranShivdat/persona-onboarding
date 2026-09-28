@@ -8,9 +8,10 @@ from typing import Optional
 
 from ..brain.spec import FlowSpec
 from ..brain.state import Channel, SessionState
+from ..brain.validators import AGENT_NAME_SUGGESTIONS
 
 ASK: dict[str, dict[str, str]] = {
-    "agent_name": {"text": "What would you like to call your assistant?"},
+    "agent_name": {"text": "What would you like to call me?"},
     "user_name": {"text": "What should I call you?", "voice": "What should I call you?"},
     "need": {
         "text": "What's one thing you'd most like help with first?",
@@ -21,8 +22,11 @@ ASK: dict[str, dict[str, str]] = {
         "voice": "I've put a Connect Gmail button on your screen. Tap it whenever you're ready.",
     },
 }
-OFFER_CALL = "Want to finish setup on a quick call? Typing works just as well."
-GREET = "Hi! Let's get your Persona assistant set up. It's four quick things, and you can finish by call if you'd rather talk."
+# copy.md A-01 / A-03 / A-05 (DESIGN-002 tone pass).
+OFFER_CALL = "The rest goes faster out loud. Quick call? Texting works just as well."
+GREET = "Hi! I'm your new assistant. I'll help with email, your calendar, and the everyday stuff."
+FIRST_ASK_AGENT_NAME = "First things first: what would you like to call me?"
+AGENT_NAME_NUDGE = "No pressure. How about {0}, or {1}? Anything you like works."
 RESUME = {"text": "Welcome back, let's pick up where we left off.", "voice": "Hey, we got cut off. Let's pick up where we left off."}
 ACK = "Got it."
 CHANGED = "Updated."
@@ -59,6 +63,10 @@ EMAIL_CHUNK = 4
 def ask_line(slot: str, channel: Channel) -> str:
     lines = ASK[slot]
     return lines.get(channel) or lines["text"]
+
+
+def agent_name_nudge() -> str:
+    return AGENT_NAME_NUDGE.format(*AGENT_NAME_SUGGESTIONS[:2])
 
 
 def spell(value: str) -> str:
