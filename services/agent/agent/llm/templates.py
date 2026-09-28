@@ -31,7 +31,7 @@ AGENT_NAME_NUDGE = "No pressure. How about {0}, or {1}? Anything you like works.
 # voice resume line is the fresh-call one; only a real reconnect (lease resumed inside the
 # grace window, VoiceFlow.opening(reconnect=True)) swaps in RESUME_CUT_OFF.
 RESUME = {"text": "Welcome back, let's pick up where we left off.",
-          "voice": "Hi, it's {agent}! Let's pick up where we left off in the chat."}
+          "voice": "Hi, it's {agent}!"}   # RESUME-003: flows straight into the ask ("So, what should I call you?")
 # NAME-GREET (live 2026-09-28): on the call the assistant introduces itself by the name the user
 # gave it (the call header already shows it); "Persona" only when no name is filled yet.
 AGENT_FALLBACK = "Persona"

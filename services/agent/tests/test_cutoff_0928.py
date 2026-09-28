@@ -14,7 +14,7 @@ from agent.brain.state import SessionState, SlotValue  # noqa: E402
 from agent.llm import templates as T  # noqa: E402
 from agent.voice.flows import LocalBrain, VoiceFlow, voice_line  # noqa: E402
 
-VOICE_CONTINUE = "Hi, it's Atlas! Let's pick up where we left off in the chat."
+VOICE_CONTINUE = "Hi, it's Atlas! So, what should I call you?"
 
 from test_voice_flows import SPEC, _Ctx  # noqa: E402
 

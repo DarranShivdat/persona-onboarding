@@ -32,7 +32,7 @@ def _opening(st, reconnect=False):
 
 def test_fresh_call_introduces_the_assistant_by_its_name():
     node, said = _opening(_named())
-    assert said.startswith("Hi, it's Atlas! Let's pick up where we left off in the chat.")
+    assert said.startswith("Hi, it's Atlas! So, what should I call you?")
     assert "Persona" not in said
     assert "You are Atlas" in node["role_message"] and "Persona" not in node["role_message"]
 

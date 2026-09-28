@@ -82,8 +82,26 @@ def voice_greet(state: SessionState) -> str:
 
 
 def voice_continue(state: SessionState) -> str:
-    """Fresh call continuing a chat (CUTOFF-001), in the assistant's own name (NAME-GREET)."""
-    return T.resume_line(CHANNEL, state)
+    """Fresh call continuing a chat (CUTOFF-001), in the assistant's own name (NAME-GREET),
+    leading straight into the next ask (RESUME-003): "Hi, it's Atlas! So, what should I call you?"."""
+    return T.resume_line(CHANNEL, state) + " So,"
+
+
+def _lower_first(text: str) -> str:
+    first = text.split(" ", 1)[0]
+    if first == "I" or first.startswith("I'") or (len(first) > 1 and first[1].isupper()):
+        return text
+    return text[:1].lower() + text[1:]
+
+
+def _resume_into_ask(rest: str, state: SessionState) -> str:
+    """RESUME-003 (live 2026-09-28): one short sentence into the ask, not a separate "pick up
+    where we left off in the chat" clause (it sounded laggy on TTS)."""
+    greet = T.resume_line(CHANNEL, state)
+    if not rest.startswith(greet):
+        return rest
+    tail = rest[len(greet):].strip()
+    return f"{voice_continue(state)} {_lower_first(tail)}" if tail else greet
 TYPED_ACK = "I see you typed that in the chat."
 GMAIL_TYPE_IT = "Or, if it's easier, type your email in the chat."
 GMAIL_TYPED = ("Thanks, I see the email you typed. To actually connect it, tap Continue with Google "
@@ -153,6 +171,8 @@ def voice_line(spec: FlowSpec, plan: ResponsePlan, state: SessionState) -> str:
         generic = T.confirm_line(NAME, state.slots[NAME].value, CHANNEL) if plan.confirm == NAME else None
         crit = [c for c in crit if c != generic] + [name_line]
     rest = _name_ack(plan, state, template_reply(spec, plan, state, CHANNEL, critical=bool(crit)))
+    if plan.resume and not greet:
+        rest = _resume_into_ask(rest, state)
     gmail = ""
     if plan.ask == "gmail" and not crit:
         # Live test 2026-09-27: "type your email in the chat" misled (typing never connects).
@@ -502,7 +522,8 @@ class VoiceFlow:
         vt = await self.brain.event("call_started")
         cont = voice_continue(vt.state)
         if reconnect and vt.plan.resume and vt.line.startswith(cont):
-            vt.line = T.RESUME_CUT_OFF + vt.line[len(cont):]
+            tail = vt.line[len(cont):].strip()
+            vt.line = T.RESUME_CUT_OFF + (" " + tail[:1].upper() + tail[1:] if tail else "")
         _, node = await self._after(vt, opening=True)
         return node
 
