@@ -4,26 +4,26 @@ Worker-sized packets (≤ ~40 Opus turns each). Class: A (Grok), B-low (Grok Bui
 B-high (Opus 5.5 worker), C (Fable). Role: impl / design / frontend.
 Ready packets live in `docs/orchestration/packets/`.
 
-## Deadline and timeline (all times PT) — revised Sun Sep 27, 9:51pm
+## Deadline and timeline (all times PT) — revised Sun Sep 27, 10:48pm
 **Submission due Mon Sep 28, 2026, 8:00pm ET = 5:00pm PT.** Target: hosted URL live and
-working end to end by **Mon 12:00pm PT**.
+working end to end by **Mon 12:00pm PT** — **ahead: hosted + smoke PASS Sun ~10:48pm**.
 
-Status Sun ~9:51pm: **M1 ✅ M2 ✅ M3 ✅**. No new worker finishes this reconcile; main still
-at FE-005 ✅ + VOICE-004-lite ✅ + INFRA-002c ✅ + PUBLIC-001 ✅. Deploy (INFRA-002b) still
-⛔BLOCKED on (1) Session pooler `PERSONA_DATABASE_URL` (env still has direct
-`db.<ref>.supabase.co:5432` IPv6 host **and** a classic bracketed password placeholder)
-and (2) `fly auth login`. Vendor keys + TURN + OAuth client + Vercel CLI PASS. OAuth app
-stays in Testing until live `/about`+/privacy` after deploy. Opus queue empty (M6
-unpacketed; INFRA-002b is A-class EM).
+Status Sun ~10:48pm: **M1 ✅ M2 ✅ M3 ✅ M5 ✅ (INFRA-002b DEPLOYED + SMOKE PASS)**.
+Live: web `https://persona-onboarding-darran.vercel.app`, agent
+`https://persona-onboarding-agent.fly.dev` (`/health` db ok). Smoke 7/7 PASS.
+Remaining Darran (not deploy): Google Console test users + Branding homepage/privacy/
+authorized domain (see `docs/deploy/DEPLOY-STATE.md`). OAuth stays Testing until then.
+M6 packets launching tonight: DOCS-001, HOSTED-001, PROMPT-001.
 
 | When (PT) | Milestone | Owner |
 |---|---|---|
 | Sun ~8:25pm | **VOICE-005** ✅ + **INFRA-002** ✅ (kit) + **DESIGN-002** ✅ | done |
 | Sun ~8:36–8:37pm | **INFRA-002c** ✅ + **PUBLIC-001** ✅ (`/about`+/privacy`) | done |
 | Sun ~8:55pm | **FE-005** ✅ + **VOICE-004-lite** ✅ → **M2 ✅ M3 ✅** | done |
-| ASAP (blocks Mon 6am deploy) | Darran: Supabase **Session pooler** connection string (real password) into agent `.env`; `fly auth login` on Mac. Reviewer test-user emails for OAuth Testing. | Darran |
-| Mon 6:00–8:00am | EM runs INFRA-002b `scripts/deploy/* --apply` once unblocked: Supabase → Fly agent → Vercel web → Google redirect; **staging URL by 8:00am** | EM |
-| Mon 8:00–10:00am | Hosted smoke: text flow, voice call (normal + TURN-only), Gmail OAuth test user, hangup/redial; fix-only from FE-005/VOICE-004-lite | EM + workers |
+| Sun ~10:35–10:48pm | **INFRA-002b ✅** deploy + smoke PASS (pooler DB, Fly agent, Vercel web) | done |
+| ASAP (blocks Gmail demo) | Darran: Google Console — add reviewer test-user emails; Branding homepage `/about` + privacy + authorized domain + confirm redirect URI (URLs in DEPLOY-STATE). | Darran |
+| Sun night – Mon 8:00am | M6 packets (DOCS-001 reviewer handoff, HOSTED-001 hosted e2e probe, PROMPT-001 tone/chips polish); real voice call smoke | EM + workers |
+| Mon 8:00–10:00am | Hosted smoke (human): text flow, voice call (normal + TURN-only), Gmail OAuth test user, hangup/redial; fix-only | EM + Darran |
 | Mon 10:00am–12:00pm | Hosted edge-case sweep (hangup, refusal, nonsense, early graduation, two tabs), latency tuning, fix-only; spend caps set | EM + workers |
 | **Mon 12:00pm** | **Hosted URL live and end-to-end** | EM |
 | Mon 12:00–3:00pm | Darran product test → fixes only; reviewer README + walkthrough script | Darran / EM |
@@ -90,7 +90,7 @@ Repo, flow spec + invariants, edge-case catalog, QA tiers, ported supervisor, do
 | **INFRA-002** ✅ merged (partial) | Deploy kit (no cloud): env contract, check-env, migrations, Dockerfile/fly.toml, dry-run deploy scripts + smoke | B-high / impl | INFRA-001, FLOW-003 |
 | **INFRA-002c** ✅ merged Sun 8:36pm | local-stack.sh + RUNBOOK.md + google-oauth.md + cloudflare-turn.md (INFRA-002 remainder) | B-high / impl | INFRA-002 |
 | **PUBLIC-001** ✅ inline Sun 8:37pm | Public `/about` homepage + `/privacy` policy (Google OAuth Branding needs both) + e2e spec | A (EM) | — |
-| **INFRA-002b** ⛔BLOCKED (owner: EM executor; see docs/deploy/DEPLOY-STATE.md) | Execute the runbook (`--apply`) — go-ahead given Sun 8:09pm: Supabase → Fly agent → Vercel web → Google redirect | A (EM) | INFRA-002, VOICE-005 |
+| **INFRA-002b** ✅ DEPLOYED + SMOKE PASS Sun ~10:48pm (owner: EM executor; see docs/deploy/DEPLOY-STATE.md) | Execute the runbook (`--apply`) — Supabase → Fly agent → Vercel web → Google redirect | A (EM) | INFRA-002, VOICE-005 |
 | INFRA-003 | Vercel project + preview URLs (folded into INFRA-002b; gate automation cut) | B-low | FE-002 |
 | INFRA-004 (reduced) | Existing rate limits + vendor spend caps (Darran) + min 1 machine; alerts cut | A (EM) + Darran | INFRA-002b |
 
@@ -99,10 +99,15 @@ Full edge-case sweep (all 31 green across tiers), red-team session (A-class scri
 Grok adversarial), latency tuning, reviewer README + Loom-style walkthrough script,
 READY FOR PRODUCT TEST to Darran.
 
+| ID | Title | Class/role | Depends | Acceptance |
+|---|---|---|---|---|
+| **DOCS-001** 🟡 launched | Reviewer README + submission walkthrough script | B-high / impl | INFRA-002b | `docs/REVIEWER.md` + walkthrough; no secrets |
+| **HOSTED-001** 🟡 launched | Hosted Playwright probe vs live web+agent (text session, ICE, OAuth start) | B-high / frontend | INFRA-002b | `qa:e2e` green; hosted spec gated on env |
+| **PROMPT-001** 🟡 launched | Agent-name suggestion chips + tone polish from design copy (DQ-04 residual) | B-high / impl | FE-005 | chips on agent_name ask; qa:fast/flow/e2e |
+
 ## Parallelism
-Now (Sun ~9:51pm PT): Opus queue empty — M2/M3 complete; next is INFRA-002b deploy (A-class EM)
-once Darran supplies Session pooler DB URL (real password) + `fly auth login`. Then hosted
-smoke + M6 hardening (packets not written yet; write on demand Mon morning).
+Now (Sun ~10:48pm PT): INFRA-002b ✅; launching DOCS-001 + HOSTED-001 + PROMPT-001.
+Keep 2–3 Opus workers active overnight. Darran still needed for Google Console test users.
 
 ## Decisions (resolved by Darran, 2026-09-26)
 1. **Gmail scopes: read + write** (half the product is automation): `openid email profile`
@@ -121,11 +126,10 @@ smoke + M6 hardening (packets not written yet; write on demand Mon morning).
 6. **Deadline**: Mon Sep 28, 2026, 5pm PT (8pm ET); hosted URL by Mon noon PT.
 
 ## Still open (D — Darran)
-- **Deploy blockers (see docs/deploy/DEPLOY-STATE.md):** paste Supabase **Session pooler**
-  `PERSONA_DATABASE_URL` (IPv4 — current value still uses direct `db.<ref>.supabase.co:5432`
-  IPv6-only host and a classic bracketed password placeholder) into `services/agent/.env`;
-  run `fly auth login` on the Mac. Anthropic/Deepgram/Cartesia/Cloudflare TURN + Vercel CLI
-  already PASS.
-- OAuth Testing: add reviewer test-user emails; after deploy set Branding homepage/privacy
-  + redirect URI + authorized domain, then Publish if needed.
+- **Google Console (blocks Gmail demo for reviewers):** add reviewer test-user emails;
+  Branding homepage `https://persona-onboarding-darran.vercel.app/about`, privacy
+  `.../privacy`, authorized domain `persona-onboarding-darran.vercel.app`, redirect
+  `.../api/oauth/google/callback` (see `docs/deploy/DEPLOY-STATE.md`). Stay in Testing
+  unless Publish is required.
+- Fly trial billing: add a card if the Fly trial account will pause the agent mid-review.
 - product-facts.md: Settings→Disconnect vs no Settings surface (DESIGN-002 DQ-03); voice retention wording.

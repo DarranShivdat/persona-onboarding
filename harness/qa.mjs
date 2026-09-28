@@ -10,7 +10,6 @@ import { fileURLToPath } from "node:url";
 import os from "node:os";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const PY = process.env.PERSONA_PYTHON || "python3";
 const args = process.argv.slice(2);
 const tier = args[args.indexOf("--tier") + 1] || "fast";
 
@@ -18,6 +17,24 @@ function run(cmd, argv, opts = {}) {
   const r = spawnSync(cmd, argv, { cwd: ROOT, encoding: "utf8", env: { ...process.env, ...(opts.env || {}) } });
   return { code: r.status ?? 1, out: (r.stdout || "") + (r.stderr || "") };
 }
+
+function resolvePython() {
+  if (process.env.PERSONA_PYTHON) return process.env.PERSONA_PYTHON;
+  // Prefer an interpreter that already has pytest (Homebrew python3.14 often does not).
+  const candidates = [
+    "/opt/anaconda3/bin/python3",
+    "/Users/darranshivdat/anaconda3/bin/python3",
+    "python3.12",
+    "python3.11",
+    "python3",
+  ];
+  for (const c of candidates) {
+    const r = spawnSync(c, ["-c", "import pytest"], { encoding: "utf8" });
+    if ((r.status ?? 1) === 0) return c;
+  }
+  return "python3";
+}
+const PY = resolvePython();
 
 function pytest(name, paths, extra = []) {
   const r = run(PY, ["-m", "pytest", "-q", "-rs", ...paths, ...extra]);
