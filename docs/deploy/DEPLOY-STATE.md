@@ -5,7 +5,7 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **LIVE — deployed + hosted smoke PASS** |
+| STATE | **LIVE — web redeploy in progress (privacy copy; owner EM executor, web only)** |
 | OWNER | EM executor — deploy finished 10:55pm PT. Later `--apply` runs = redeploys only; log them below |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
@@ -63,3 +63,4 @@ Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a
 - Sun 10:51PM PT — smoke.sh 7/7 PASS; hosted browser call connects+captions but hangup DELETE hung → teardown timeouts fix, redeploying agent
 - Sun 10:55PM PT — agent hotfix (hangup wait 1s) deployed; smoke.sh 7/7, pages 200, hosted browser call desktop+mobile PASS
 - Sun 10:55PM PT — DEPLOY-STATE finalized (Live section, Google values confirmed); removed auto-generated vercel.json
+- Sun 10:56PM PT — claim: Vercel web-only redeploy for /privacy contact + 30-day retention (Darran approved 10:56pm); agent untouched
