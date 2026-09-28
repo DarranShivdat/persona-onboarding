@@ -8,10 +8,9 @@ Ready packets live in `docs/orchestration/packets/`.
 **Submission due Mon Sep 28, 2026, 8:00pm ET = 5:00pm PT.** Target: hosted URL live and
 working end to end by **Mon 12:00pm PT** — **ahead: hosted + smoke PASS Sun ~10:48pm**.
 
-Status Mon ~2:19am: **M1 ✅ M2 ✅ M3 ✅ M5 ✅**; **M6 DOCS/HOSTED/PROMPT ✅**; **M7** NAME/GRAD/AUDIT/GUARD/LAT-001/LAT-002/REQ-001 ✅ LIVE;
-LAT tip **LIVE** (agent `d4de37d`, web `e2fc98f`). Smoke 7/7 PASS Mon 2:19am. voice-polish (LAT-003…) OWNER EM in flight — not merged.
+Status Mon ~2:52am: **M1 ✅ M2 ✅ M3 ✅ M5 ✅**; **M6 DOCS/HOSTED/PROMPT ✅**; **M7** NAME/GRAD/AUDIT/GUARD/LAT-001/LAT-002/REQ-001 + voice-polish (LAT-003/VQA/NAME-002/ICE-002/VIS-001/WRK-001) ✅ **LIVE**.
+Agent+web tip **`b7f24f8`** (voice polish redeploy ~2:28am). Smoke 7/7 + LIVE audit 215 PASS; pages 200. Latency after polish: p50 **2.27s** / p90 **2.43s** (was 2.29–2.36s); connect ~1.81s. `PERSONA_VOICE_QUICK_ACK` built, flag **OFF** in prod. Target <1.5s still open.
 Live: web `https://persona-onboarding-darran.vercel.app`, agent `https://persona-onboarding-agent.fly.dev`.
-Latency probe after tip: user-stop→first-audio p50 2.29s / p90 2.48s (pre-LAT with the 1:00am hotfix: p50 4.32s / p90 7.02s; ~8s was the broken 12:06–1:00am window). Target <1.5s → LAT-003.
 Remaining Darran: Google Console test users + Branding homepage/privacy/authorized domain
 (see `docs/deploy/DEPLOY-STATE.md`). OAuth stays Testing until then.
 
@@ -106,10 +105,9 @@ READY FOR PRODUCT TEST to Darran.
 | **PROMPT-001** ✅ merged | Agent-name suggestion chips + tone polish from design copy (DQ-04 residual) | B-high / impl | FE-005 | chips on agent_name ask; qa:fast/flow/e2e |
 
 ## Parallelism
-Now (Mon ~2:17am PT): M7 LAT tip **LIVE** (agent `d4de37d` / web `e2fc98f`); smoke 7/7 PASS.
-**voice-polish** OWNER EM in flight on `em/voice-polish` (LAT-003/VQA-001/NAME-002/ICE-002/VIS-001/WRK-001) — reconcile left worktree alone.
-No ready Opus packets. Hosted latency probes under `.persona-qa/latency/` (p50 2.29s after tip).
-Next: finish/merge voice-polish (QA then local merge; deploy only if OWNER claims); Mon morning hosted human smoke; Darran Google Console test users.
+Now (Mon ~2:52am PT): voice-polish **merged + LIVE** (`b7f24f8`); smoke 7/7 + LIVE audit PASS; latency p50 2.27s.
+No ready Opus packets (no branches ahead of main; no unfinished worker packets). Do not invent inventory work.
+Next: Mon morning hosted human smoke (text/voice/Gmail/hangup); keep latency notes in `docs/penciled-comparison.md`; Darran Google Console test users.
 
 Keep 2–3 Opus workers active when packets are ready. Darran still needed for Google Console test users.
 
