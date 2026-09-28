@@ -190,6 +190,13 @@ def _extract(spec, st, turn, intents, plan, ev):
             # e.g. agent_name is collected in text only: a value heard on a call is ignored.
             _rejected(ev, st.node, turn.channel, "slot_not_on_channel", slot=name)
             continue
+        if name == "need" and raw.rstrip().endswith("?") and (
+                x.answer or {"off_topic", "privacy_question"} & set(intents)):
+            # VQA-002 (live 2026-09-28): "what's the weather in Paris?" at the need step was
+            # saved as the need. A question the extractor also flagged as a question is answered
+            # (approved answer or the fixed deflection), not recorded as what they want help with.
+            _rejected(ev, st.node, turn.channel, "question_not_a_need", slot=name)
+            continue
         vid = sdef["validator"]
         kw = {"channel": turn.channel, "confidence": x.confidences.get(name)}
         if vid == "gmail_oauth":
