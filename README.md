@@ -1,5 +1,15 @@
 # persona-onboarding
 
+**▶ Live demo: https://persona-onboarding-darran.vercel.app**
+
+**Reviewers, start here: [`docs/REVIEWER.md`](docs/REVIEWER.md)** (5-minute happy path, Gmail
+test-user note, what's cut, caveats). Walkthrough script: [`docs/WALKTHROUGH.md`](docs/WALKTHROUGH.md).
+
+> Gmail connect uses Google OAuth in **testing mode**: only invited Google accounts can connect;
+> choose *Continue* on the "unverified app" notice and tick the Gmail boxes (or *Select all*).
+
+---
+
 Hosted, conversational onboarding for an AI assistant (Persona CTO trial): adaptive text
 chat + a browser "phone call" that collect the agent's name, the user's name, a connected
 Gmail, and what they need help with — resilient to hangups and stress testing.
