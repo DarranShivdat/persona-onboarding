@@ -2,8 +2,8 @@
 // the agent (server-to-server, shared secret). The brain fills `gmail`; the popup page only
 // reports what happened so the card can render it.
 //
-// Tokens: the refresh token is NOT persisted yet — GMAIL-001 owns the encrypted token store
-// and Gmail API client. Until then it is dropped here (never logged, never sent to the browser).
+// Tokens: the refresh token is forwarded server-to-server to the agent, which encrypts it
+// (AES-GCM, GMAIL-001) before storing. Never logged, never sent to the browser.
 import type { NextRequest } from "next/server";
 import {
   OAUTH_COOKIE,
@@ -53,7 +53,7 @@ async function handle(req: NextRequest): Promise<OAuthResult> {
     const r = await agentFetch(sessionPath(s, "/gmail"), {
       method: "POST",
       headers: { "content-type": "application/json", "x-persona-internal-secret": secret },
-      body: JSON.stringify({ email: who.email, google_sub: who.sub, scopes: granted }),
+      body: JSON.stringify({ email: who.email, google_sub: who.sub, scopes: granted, refresh_token: tok.refresh_token ?? null }),
     });
     if (!r.ok) return { status: "error", reason: "agent_error" };
   } catch {
