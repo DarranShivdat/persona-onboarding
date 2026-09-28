@@ -2,42 +2,6 @@
  {
   "target": "local",
   "viewport": "desktop",
-  "screen": "home",
-  "control": "textbox:Message Juno @composer",
-  "expected": "message -> user bubble + agent reply visible on home",
-  "result": "FIXME",
-  "note": "owned by GRAD-001 (home composer rebuild): typed message must get a visible reply on home — action: expect(locator).toBeVisible() failed Locator: locator('[data-from=\"user\"]').filter({ hasText: 'what can you do first?' }).last() Expected: visible Timeout: 10000ms Error: element(s) not found Call log: - Expect \"toBeVisi"
- },
- {
-  "target": "local",
-  "viewport": "desktop",
-  "screen": "home",
-  "control": "button:Send @composer",
-  "expected": "Send -> user bubble + agent reply visible on home",
-  "result": "FIXME",
-  "note": "owned by GRAD-001 (home composer rebuild): typed message must get a visible reply on home — action: expect(locator).toBeVisible() failed Locator: locator('[data-from=\"user\"]').filter({ hasText: 'thanks!' }).last() Expected: visible Timeout: 10000ms Error: element(s) not found Call log: - Expect \"toBeVisible\" locator('["
- },
- {
-  "target": "local",
-  "viewport": "mobile",
-  "screen": "home",
-  "control": "textbox:Message Juno @composer",
-  "expected": "message -> user bubble + agent reply visible on home",
-  "result": "FIXME",
-  "note": "owned by GRAD-001 (home composer rebuild): typed message must get a visible reply on home — action: expect(locator).toBeVisible() failed Locator: locator('[data-from=\"user\"]').filter({ hasText: 'what can you do first?' }).last() Expected: visible Timeout: 10000ms Error: element(s) not found Call log: - Expect \"toBeVisi"
- },
- {
-  "target": "local",
-  "viewport": "mobile",
-  "screen": "home",
-  "control": "button:Send @composer",
-  "expected": "Send -> user bubble + agent reply visible on home",
-  "result": "FIXME",
-  "note": "owned by GRAD-001 (home composer rebuild): typed message must get a visible reply on home — action: expect(locator).toBeVisible() failed Locator: locator('[data-from=\"user\"]').filter({ hasText: 'thanks!' }).last() Expected: visible Timeout: 10000ms Error: element(s) not found Call log: - Expect \"toBeVisible\" locator('["
- },
- {
-  "target": "local",
-  "viewport": "desktop",
   "screen": "about",
   "control": "link:Persona @main",
   "expected": "brand -> /",
@@ -598,7 +562,7 @@
   "viewport": "desktop",
   "screen": "gmail-idle",
   "control": "button:Not now @gmail-card",
-  "expected": "sends 'Not now' (brain defers Gmail)",
+  "expected": "sends 'Not now': brain defers Gmail (bubble, or graduation home once need is filled)",
   "result": "PASS",
   "note": ""
  },
@@ -723,6 +687,33 @@
   "target": "local",
   "viewport": "desktop",
   "screen": "home",
+  "control": "button:Edit what you’d like help with: Inbox triage @main",
+  "expected": "tap-to-edit: opens an editable field for that item (GRAD-001)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "home",
+  "control": "button:Edit your assistant’s name: Juno @main",
+  "expected": "tap-to-edit: opens an editable field for that item (GRAD-001)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "home",
+  "control": "button:Edit your name: Maya @main",
+  "expected": "tap-to-edit: opens an editable field for that item (GRAD-001)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "home",
   "control": "button:Connect @deferred-prompt",
   "expected": "deferred prompt opens Google OAuth",
   "result": "PASS",
@@ -734,6 +725,24 @@
   "screen": "home",
   "control": "button:Dismiss @deferred-prompt",
   "expected": "hides the deferred prompt for this visit",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "home",
+  "control": "textbox:Message Juno @composer",
+  "expected": "message -> user bubble + agent reply visible on home",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "desktop",
+  "screen": "home",
+  "control": "button:Send @composer",
+  "expected": "Send -> user bubble + agent reply visible on home",
   "result": "PASS",
   "note": ""
  },
@@ -1516,7 +1525,7 @@
   "viewport": "mobile",
   "screen": "gmail-idle",
   "control": "button:Not now @gmail-card",
-  "expected": "sends 'Not now' (brain defers Gmail)",
+  "expected": "sends 'Not now': brain defers Gmail (bubble, or graduation home once need is filled)",
   "result": "PASS",
   "note": ""
  },
@@ -1641,6 +1650,33 @@
   "target": "local",
   "viewport": "mobile",
   "screen": "home",
+  "control": "button:Edit what you’d like help with: Inbox triage @main",
+  "expected": "tap-to-edit: opens an editable field for that item (GRAD-001)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "home",
+  "control": "button:Edit your assistant’s name: Juno @main",
+  "expected": "tap-to-edit: opens an editable field for that item (GRAD-001)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "home",
+  "control": "button:Edit your name: Maya @main",
+  "expected": "tap-to-edit: opens an editable field for that item (GRAD-001)",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "home",
   "control": "button:Connect @deferred-prompt",
   "expected": "deferred prompt opens Google OAuth",
   "result": "PASS",
@@ -1652,6 +1688,24 @@
   "screen": "home",
   "control": "button:Dismiss @deferred-prompt",
   "expected": "hides the deferred prompt for this visit",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "home",
+  "control": "textbox:Message Juno @composer",
+  "expected": "message -> user bubble + agent reply visible on home",
+  "result": "PASS",
+  "note": ""
+ },
+ {
+  "target": "local",
+  "viewport": "mobile",
+  "screen": "home",
+  "control": "button:Send @composer",
+  "expected": "Send -> user bubble + agent reply visible on home",
   "result": "PASS",
   "note": ""
  },

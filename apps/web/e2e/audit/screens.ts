@@ -465,6 +465,7 @@ export const SCREENS: Screen[] = [
         },
       },
       ...composerControls({ email: true }).map((e) => ({ ...e, skipLive: e.skipLive ?? undefined })),
+      ...gmailCallPanel, // the LIVE fixture shows the card during a (mock) call
     ],
   },
   {
