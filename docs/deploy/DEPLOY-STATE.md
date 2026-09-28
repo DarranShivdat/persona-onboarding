@@ -6,7 +6,7 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 | Field | Value |
 |---|---|
 | STATE | **REDEPLOYING — agent + web from main 904c0da (HONEST-001 fixed need ack / permissions-only Gmail pitch, NAME-003 name read-back until explicit yes). Previous LIVE: agent 49d8010, web 64b0652** |
-| OWNER | EM executor (honest-need/name fix) — started 1:33pm PT Mon |
+| OWNER | EM executor (honest-need/name fix) — started 1:15pm PT Mon |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
 ## Env files (gitignored, mode 600, values never committed/printed)
