@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { AGENT_URL, seed, useSession } from "./live";
 
-// RESET-001: "Start over" (header, with confirm) and `/?reset=1` both drop the cookie session and
-// land on a fresh agent_name step; a stray tap + Cancel changes nothing.
+// RESET-001/002: "Start over" (header, with confirm) and `/?reset=1` both drop the cookie session and
+// land on the landing step (< 1 s; the new session starts on the first message); a stray tap + Cancel changes nothing.
 const GRAD = {
   node: "graduated",
   graduated: true,
@@ -22,11 +22,19 @@ async function cookieOf(page: import("@playwright/test").Page) {
 }
 
 async function expectFresh(page: import("@playwright/test").Page) {
-  const thread = page.getByTestId("thread");
-  await expect(thread.locator('[data-from="agent"]').first()).toBeVisible({ timeout: 20_000 });
-  await expect(thread.locator('[data-from="user"]')).toHaveCount(0);
+  // RESET-002: the reset only expires the cookie; "/" renders the landing step and the next
+  // session is created lazily on the first message.
+  await expect(page.locator('[data-surface="landing"]')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('[data-from="user"]')).toHaveCount(0);
   await expect(page.locator("main.home")).toHaveCount(0);
-  await expect(page.locator('[data-testid^="checklist-"]:visible [data-slot="agent_name"]')).toHaveAttribute("aria-label", "Assistant name: Not yet");
+  expect(await cookieOf(page)).toBeFalsy();
+}
+
+async function confirmStartOver(page: import("@playwright/test").Page): Promise<number> {
+  const t0 = Date.now();
+  await page.getByTestId("start-over-confirm").getByRole("button", { name: "Yes, start over" }).click();
+  await expect(page.locator('[data-surface="landing"]')).toBeVisible({ timeout: 20_000 });
+  return Date.now() - t0;
 }
 
 test("Start over from the graduation screen: Cancel keeps it, confirm starts fresh", async ({ page, context, baseURL }) => {
@@ -46,11 +54,17 @@ test("Start over from the graduation screen: Cancel keeps it, confirm starts fre
   await expect(page.locator("main.home")).toBeVisible();          // nothing was wiped
 
   await page.getByRole("button", { name: "Start over" }).click();
-  await page.getByTestId("start-over-confirm").getByRole("button", { name: "Yes, start over" }).click();
+  const ms = await confirmStartOver(page);
+  expect(ms, `Start over took ${ms} ms`).toBeLessThan(1000);       // RESET-002: under a second
   await expectFresh(page);
-  expect(await cookieOf(page)).not.toBe(before);
   await page.reload();
   await expectFresh(page);                                          // the reset sticks across reloads
+  // The first message creates the new session (lazily) with a new cookie.
+  await page.getByRole("textbox").first().fill("Juno");
+  await page.keyboard.press("Enter");
+  await expect(page.locator('[data-from="user"]').first()).toBeVisible({ timeout: 20_000 });
+  await expect.poll(() => cookieOf(page), { timeout: 20_000 }).toBeTruthy();
+  expect(await cookieOf(page)).not.toBe(before);
 });
 
 test("Start over mid-flow (chat) works too", async ({ page, context, baseURL }) => {
@@ -58,7 +72,7 @@ test("Start over mid-flow (chat) works too", async ({ page, context, baseURL }) 
   await useSession(context, baseURL!, ref);
   await page.goto("/");
   await page.getByRole("button", { name: "Start over" }).click();
-  await page.getByTestId("start-over-confirm").getByRole("button", { name: "Yes, start over" }).click();
+  await confirmStartOver(page);
   await expectFresh(page);
 });
 

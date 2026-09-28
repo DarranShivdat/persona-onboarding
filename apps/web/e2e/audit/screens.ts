@@ -224,21 +224,20 @@ export const START_OVER_CANCEL: Expectation = {
 };
 const START_OVER_FULL: Expectation = {
   match: "button:Start over @header",
-  expected: "Cancel keeps the session; confirm -> POST /api/session/reset clears the cookie, page reloads into a fresh session at the agent_name step",
+  expected: "Cancel keeps the session; confirm -> GET /api/session/reset expires the cookie and 303s to the landing step in < 1 s (the new session starts on the first message)",
   run: async (ctl, ctx) => {
-    const before = (await ctx.context.cookies()).find((c) => c.name === "persona_session")?.value;
     const first = await openStartOver(ctl, ctx);
     await first.getByRole("button", { name: "Cancel" }).click();
     await expect(first).toHaveCount(0);
     const dlg = await openStartOver(ctl, ctx);
-    const reset = ctx.page.waitForResponse((r) => r.request().method() === "POST" && new URL(r.url()).pathname === "/api/session/reset");
+    const t0 = Date.now();
     await dlg.getByRole("button", { name: "Yes, start over" }).click();
-    expect((await reset).status()).toBe(200);
-    await expect(thread(ctx.page).locator('[data-from="agent"]').first()).toBeVisible({ timeout: 30_000 });
-    await expect(thread(ctx.page).locator('[data-from="user"]')).toHaveCount(0);
-    await expect(ctx.page.locator('[data-testid^="checklist-"]:visible [data-slot="agent_name"]')).toHaveAttribute("aria-label", "Assistant name: Not yet");
+    await expect(ctx.page.locator('[data-surface="landing"]')).toBeVisible({ timeout: 30_000 });
+    const ms = Date.now() - t0;
+    expect(ms, `Start over took ${ms} ms`).toBeLessThan(1000);
+    await expect(ctx.page.locator('[data-from="user"]')).toHaveCount(0);
     const after = (await ctx.context.cookies()).find((c) => c.name === "persona_session")?.value;
-    expect(after && after !== before).toBeTruthy();
+    expect(after).toBeFalsy();
   },
 };
 

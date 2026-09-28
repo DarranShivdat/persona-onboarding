@@ -641,8 +641,18 @@ export class ApiSessionDriver implements SessionDriver {
       if (!id) return;
       void fetch(`${this.base}/call/${encodeURIComponent(id)}`, { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ reason: "page_closed" }), keepalive: true }).catch(() => null);
     };
+    // RESET-002: "Start over" ends a live call right away (same keepalive hand-back) and drops the media.
+    const onStartOver = () => {
+      onHide();
+      this.callId = null;
+      this.teardown();
+    };
     window.addEventListener("pagehide", onHide);
-    this.offPageHide = () => window.removeEventListener("pagehide", onHide);
+    window.addEventListener("persona:start-over", onStartOver);
+    this.offPageHide = () => {
+      window.removeEventListener("pagehide", onHide);
+      window.removeEventListener("persona:start-over", onStartOver);
+    };
   }
 
   // --- Google OAuth popup (FE-003) ------------------------------------------------------

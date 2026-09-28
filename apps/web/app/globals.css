@@ -50,7 +50,7 @@ button:disabled { cursor: default; }
 .msg { max-width: 76%; padding: 10px 14px; border-radius: var(--r-bubble); font: var(--t-body); white-space: pre-wrap; overflow-wrap: anywhere; }
 .msg.agent { align-self: flex-start; background: var(--bubble-agent); border-bottom-left-radius: var(--r-bubble-tail); }
 .msg.user { align-self: flex-end; background: var(--bubble-user); color: var(--bubble-user-ink); border-bottom-right-radius: var(--r-bubble-tail); }
-.msg.voice { font: var(--t-callout); }
+/* FONT-001: every bubble variant (agent, user, voice transcript, resume, read-back) is one token: --t-body. */
 .typing { align-self: flex-start; background: var(--bubble-agent); border-radius: var(--r-bubble); padding: 14px 16px; display: flex; gap: 4px; }
 .typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); opacity: .6; }
 .divider { align-self: stretch; display: flex; align-items: center; gap: var(--s3); font: var(--t-caption); color: var(--ink-3); margin: var(--s3) 0; }
@@ -96,13 +96,14 @@ button:disabled { cursor: default; }
 /* ---------- phone simulator ---------- */
 .rail { border-left: 1px solid var(--line); background: var(--mist); display: grid; place-items: center; padding: var(--s5); overflow: hidden; position: relative; }
 .device { width: 360px; height: 740px; max-height: calc(100vh - 64px - 48px); border-radius: var(--r-device); background: linear-gradient(180deg, var(--call-top), var(--call-bottom)); color: var(--call-ink); box-shadow: var(--shadow-device); display: grid; grid-template-rows: auto 1fr auto auto; padding: var(--s6) var(--s5) var(--s5); position: relative; }
-.device .who { text-align: center; }
+.device .who { text-align: center; position: relative; }
 .device .who .name { font: var(--t-call-name); letter-spacing: var(--tr-call-name); }
 .device .who .status { font: var(--t-callout); color: var(--call-ink-2); margin-top: 6px; font-variant-numeric: tabular-nums; }
 .device .who .status.warn { color: var(--amber); }
 .device .stage { display: grid; place-items: center; }
-.device .stage .ring { width: 150px; height: 150px; }
-.device .badge { display: inline-block; margin-top: var(--s3); font: var(--t-caption); padding: 4px 10px; border-radius: var(--r-pill); background: rgba(255,255,255,.1); color: var(--call-ink); white-space: nowrap; }
+.device .stage .ring { width: 124px; height: 124px; }   /* RING-002: ~17% smaller than 150 */
+/* MUTE-002: the badge overlays (absolute) so it never shifts the ring or captions. */
+.device .badge { position: absolute; top: calc(100% + var(--s2)); left: 50%; transform: translateX(-50%); z-index: 2; display: inline-block; font: var(--t-caption); padding: 4px 10px; border-radius: var(--r-pill); background: rgba(255,255,255,.1); color: var(--call-ink); white-space: nowrap; }
 .captions { background: rgba(255,255,255,.07); border-radius: 16px; padding: var(--s3) var(--s4); min-height: 118px; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; margin-bottom: var(--s5); }
 .captions .cap { font: var(--t-callout); color: var(--call-ink-2); }
 .captions .cap b { font-weight: 600; color: var(--call-ink); margin-right: 6px; }
@@ -225,7 +226,7 @@ button:disabled { cursor: default; }
   .device .who .status { margin: 0; }
   .device .stage { position: absolute; right: var(--s4); top: var(--s4); }
   .device .stage .ring { width: 44px; height: 44px; border-width: 3px; }
-  .device .badge { justify-self: start; margin-top: 6px; grid-column: 1 / -1; }
+  .device .badge { top: calc(100% + 4px); left: 0; transform: none; }
   .captions { min-height: 84px; margin: var(--s3) 0; }
   .ctl .b { width: 52px; height: 52px; }
   .thread { padding: var(--s4) var(--s4) var(--s2); }

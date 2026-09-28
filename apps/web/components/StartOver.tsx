@@ -1,8 +1,11 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
+/** Fired on confirm so a live call is ended cleanly before the page navigates away. */
+export const START_OVER_EVENT = "persona:start-over";
+
 /** RESET-001: header "Start over". A confirm step guards against a stray tap; confirming clears
- * the session cookie server-side and reloads into a fresh session (agent_name step). */
+ * the session cookie server-side and lands on the landing step; the new session starts lazily. */
 export function StartOver() {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -23,14 +26,13 @@ export function StartOver() {
     setOpen(false);
     triggerRef.current?.focus();
   };
-  const confirm = async () => {
+  const confirm = () => {
+    // RESET-002: < 1 s. Hang up any live call now (the driver hands the lease back with a
+    // keepalive request), then navigate straight to the reset route: it only expires the
+    // cookie and 303s to "/", where the next session is created lazily on the first message.
     setBusy(true);
-    try {
-      await fetch("/api/session/reset", { method: "POST", cache: "no-store" });
-    } catch {
-      /* the reload below still lands somewhere sensible (landing) */
-    }
-    window.location.assign("/");
+    window.dispatchEvent(new Event(START_OVER_EVENT));
+    window.location.assign("/api/session/reset");
   };
 
   return (
@@ -46,7 +48,7 @@ export function StartOver() {
             <button ref={cancelRef} type="button" className="btn secondary" onClick={close} disabled={busy}>
               Cancel
             </button>
-            <button type="button" className="btn primary" onClick={() => void confirm()} disabled={busy}>
+            <button type="button" className="btn primary" onClick={confirm} disabled={busy}>
               {busy ? "Starting over…" : "Yes, start over"}
             </button>
           </div>

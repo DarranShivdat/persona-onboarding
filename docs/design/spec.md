@@ -187,8 +187,9 @@ Tokens are in `tokens.json → motion`.
 
 - **Agent bubble**: `bubble-agent`, left. **User bubble**: `bubble-user`, right. Max width is
   76% (84% on mobile).
-- **Voice turns** are mirrored into the thread (same bubbles, `callout` size) so the chat
-  stays the single transcript.
+- **Voice turns** are mirrored into the thread (same bubbles, same `body` size) so the chat
+  stays the single transcript. Every bubble variant (agent, user, voice transcript, resume,
+  name read-back) uses the one `body` token (17/1.45); e2e asserts equal computed font-size.
 - Stamps ("Today 9:41 AM") show at session start and after gaps of 30 minutes or more.
 - Dividers ("Call started · 9:43 AM", "Call ended · 1:36") mark the call boundaries.
 - Quick-reply chips are optional suggestions under an agent message (e.g. Juno, Atlas,
@@ -219,7 +220,7 @@ This is an in-thread card from the agent.
 - the name (Juno)
 - status: "Calling…", the timer "0:42", "Reconnecting…" or "Call ended · 1:36"
 - an optional badge pill
-- the ring (150px desktop, 44px mobile)
+- the ring (124px desktop, 44px mobile); the "You're muted" badge overlays it without moving the ring or captions
 - the **Live captions** panel
 - the controls row
 
