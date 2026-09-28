@@ -34,3 +34,5 @@ harness/convo/fixtures/recordings/*.raw
 
 # Vercel CLI link state
 .vercel/
+.vercel
+.env*

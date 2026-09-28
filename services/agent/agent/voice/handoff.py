@@ -36,7 +36,7 @@ GRACE_REASONS = frozenset({"client_disconnected", "network_drop", "ice_failed"})
 LOST_REASONS = frozenset({"taken_over", "lease_lost"})
 
 
-HANGUP_WAIT_S = 3.0  # max time DELETE /call waits for pipeline teardown
+HANGUP_WAIT_S = 1.0  # max time DELETE /call waits for pipeline teardown (lease is already released)
 
 
 @dataclass(frozen=True)
