@@ -4,7 +4,8 @@
 #   bash scripts/deploy/fly-agent.sh                 # DRY RUN: print every command (default)
 #   bash scripts/deploy/fly-agent.sh --apply         # run them (EM, after Darran's go-ahead)
 # Options: --env-file PATH (default .persona-deploy/agent.env), --app NAME, --org SLUG,
-#          --skip-create (app already exists), --secrets-only, --deploy-only
+#          --skip-create (app already exists), --secrets-only, --deploy-only,
+#          --skip-audit (deploy without the qa:audit gate; prints a loud warning)
 #
 # Needs: flyctl (`brew install flyctl`), a Fly login (`fly auth login` — interactive, done by
 # Darran/EM), and a filled agent env file (template: services/agent/.env.example).
@@ -16,7 +17,7 @@ parse_apply "$@"
 ENV_FILE="$ROOT/.persona-deploy/agent.env"
 APP="persona-onboarding-agent"
 ORG="personal"
-DO_CREATE=1; DO_SECRETS=1; DO_DEPLOY=1
+DO_CREATE=1; DO_SECRETS=1; DO_DEPLOY=1; SKIP_AUDIT=0
 set -- $REST
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -26,7 +27,8 @@ while [ $# -gt 0 ]; do
     --skip-create) DO_CREATE=0 ;;
     --secrets-only) DO_CREATE=0; DO_DEPLOY=0 ;;
     --deploy-only) DO_CREATE=0; DO_SECRETS=0 ;;
-    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    --skip-audit) SKIP_AUDIT=1 ;;
+    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
   shift
@@ -35,6 +37,9 @@ FLY_TOML="$ROOT/infra/fly.toml"
 TOML_APP="$(sed -n 's/^app = "\(.*\)"/\1/p' "$FLY_TOML")"
 
 banner "fly-agent ($APP)"
+
+step "Gate: button audit (npm run qa:audit, LOCAL stub, offline)"
+audit_gate "$SKIP_AUDIT"
 need_tool fly "brew install flyctl"
 cd "$ROOT"
 

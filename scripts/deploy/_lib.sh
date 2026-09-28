@@ -69,3 +69,22 @@ env_value() {
 }
 
 git_sha() { git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown; }
+
+# AUDIT-001: --apply is gated on the LOCAL button audit (npm run qa:audit). --skip-audit overrides.
+audit_gate() {  # audit_gate <skip:0|1>
+  [ "$APPLY" = 1 ] || { echo "  (dry run: --apply would run 'npm run qa:audit' first and abort on failure)"; return 0; }
+  if [ "$1" = 1 ]; then
+    echo
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    echo "!!  WARNING: --skip-audit — deploying WITHOUT the button audit (qa:audit).  !!"
+    echo "!!  Dead controls may ship. Run 'npm run qa:audit' before the next deploy.  !!"
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    echo
+    return 0
+  fi
+  echo "  \$ npm run qa:audit"
+  if ! (cd "$ROOT" && npm run qa:audit); then
+    echo "ABORT: qa:audit failed — fix the dead controls (or pass --skip-audit, loudly)." >&2
+    exit 1
+  fi
+}

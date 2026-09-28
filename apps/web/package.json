@@ -10,7 +10,8 @@
     "tokens": "node scripts/tokens-css.mjs",
     "prebuild": "node scripts/tokens-css.mjs --check",
     "typecheck": "tsc --noEmit",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "audit": "playwright test -c playwright.audit.config.ts"
   },
   "dependencies": {
     "next": "^15.5.26",

@@ -210,6 +210,7 @@ button:disabled { cursor: default; }
 
 /* ---------- mobile (≤767px) ---------- */
 @media (max-width: 767px) {
+  .chip { min-height: var(--hit-min); } /* AUDIT-001: 44px tap target on touch */
   .app { grid-template-rows: 56px auto 1fr; }
   .topbar { padding: 0 var(--s4); gap: var(--s3); }
   .topbar .help { display: none; }
@@ -255,3 +256,8 @@ button:disabled { cursor: default; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .check.just { background: var(--signal-wash); }
 }
+
+/* AUDIT-001: agent-unreachable banner (floats under the top bar; no layout shift). */
+.notice { position: fixed; top: 72px; left: 50%; transform: translateX(-50%); z-index: 20; width: min(560px, calc(100vw - 32px)); display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s3) var(--s3) var(--s4); background: var(--amber-wash); color: var(--amber-ink); border: 1px solid var(--amber); border-radius: 16px; font: 500 15px/1.35 var(--font); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+.notice span { flex: 1; }
+.notice .btn { flex: none; }

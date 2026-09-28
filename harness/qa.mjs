@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // QA tier runner. Zero npm dependencies so it runs on a fresh clone.
-//   node harness/qa.mjs --tier fast|flow|convo|voice|e2e|visual|live|harness|all
+//   node harness/qa.mjs --tier fast|flow|convo|voice|e2e|audit|visual|live|harness|all
 // Writes .persona-qa/last-report.json. Unimplemented tiers report PENDING (exit 0);
 // a tier FAILS only if something implemented fails.
 import { spawnSync } from "node:child_process";
@@ -77,6 +77,19 @@ const TIERS = {
     if (r.code !== 0) process.stdout.write(r.out);
     return [{ check: "Playwright flow tests (mock driver)", status: r.code === 0 ? "pass" : "fail", summary }];
   },
+  // AUDIT-001: every control on every screen (desktop + mobile), LOCAL stub target, offline.
+  // LIVE: PERSONA_AUDIT_URL=<web url> (scripts/deploy/smoke.sh --audit). PERSONA_AUDIT_DOCS=1
+  // also writes docs/qa/button-audit{.md,/}.
+  audit: () => {
+    if (!existsSync(join(ROOT, "node_modules/@playwright/test"))) {
+      return [{ check: "Playwright button audit", status: "fail", summary: "deps not installed: run npm install" }];
+    }
+    const r = run("npm", ["-w", "apps/web", "run", "audit"]);
+    const summary = r.out.split("\n").filter((l) => /\d+ (passed|failed|flaky|skipped)|\[audit\] \d+ rows/.test(l)).map((l) => l.trim()).join(", ");
+    if (r.code !== 0) process.stdout.write(r.out);
+    const target = process.env.PERSONA_AUDIT_URL ? `LIVE ${process.env.PERSONA_AUDIT_URL}` : "LOCAL stub";
+    return [{ check: `Playwright button audit (${target})`, status: r.code === 0 ? "pass" : "fail", summary }];
+  },
   visual: () => {
     const passthru = args.filter((a, i) => a !== "--tier" && args[i - 1] !== "--tier");
     const r = run("node", ["harness/visual/capture.mjs", ...passthru]);
@@ -95,7 +108,7 @@ const TIERS = {
     return [{ check: "supervisor mock harness (no Claude)", status: r.code === 0 ? "pass" : "fail", summary: line }];
   },
 };
-TIERS.all = () => ["fast", "flow", "convo", "voice", "e2e", "visual", "live"].flatMap((t) => TIERS[t]().map((c) => ({ tier: t, ...c })));
+TIERS.all = () => ["fast", "flow", "convo", "voice", "e2e", "audit", "visual", "live"].flatMap((t) => TIERS[t]().map((c) => ({ tier: t, ...c })));
 
 if (!TIERS[tier]) {
   console.error(`unknown tier ${tier}; one of ${Object.keys(TIERS).join(", ")}`);

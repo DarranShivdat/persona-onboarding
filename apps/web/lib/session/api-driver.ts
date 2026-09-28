@@ -116,6 +116,9 @@ export class ApiSessionDriver implements SessionDriver {
   private homeFrom: number | null = null;
   private lastEventId = 0;
   private pending = 0;
+  private notice: SessionSnapshot["notice"] = null;
+  /** The last turn that failed to send, re-sent by the banner's retry. */
+  private failedText: string | null = null;
   private es: EventSource | null = null;
   private listeners = new Set<(p: UIPush) => void>();
   private timers = new Set<ReturnType<typeof setTimeout>>();
@@ -160,7 +163,8 @@ export class ApiSessionDriver implements SessionDriver {
   }
 
   async act(action: UIAction): Promise<void> {
-    if (action === "begin") return this.begin();
+    if (action === "begin") return void (await this.tryBegin());
+    if (action === "retry") return this.retry();
     // OAuth actions open the popup synchronously (inside the click) so it isn't blocked.
     if (action === "gmail_connect" || action === "gmail_retry") return this.startOAuth(false);
     if (action === "gmail_disconnect") return this.startOAuth(true); // EC-22: re-run OAuth with the account chooser
@@ -195,7 +199,7 @@ export class ApiSessionDriver implements SessionDriver {
   async sendText(text: string): Promise<void> {
     const t = text.trim();
     if (!t) return;
-    if (!this.state) await this.begin();
+    if (!this.state && !(await this.tryBegin())) return;
     // Optimistic echo until the brain's own `transcript` push arrives over SSE.
     const id = `pending-${++this.pending}`;
     this.items.push({ id, kind: "msg", from: "user", text: t });
@@ -217,9 +221,14 @@ export class ApiSessionDriver implements SessionDriver {
         break;
       }
     }
+    if (ok && this.notice) {
+      this.notice = null;
+      this.render();
+    }
     if (!ok) {
       this.items = this.items.filter((i) => i.id !== id);
-      this.items.push({ id: `err-${id}`, kind: "stamp", text: "Couldn’t send that. Check your connection and try again." });
+      this.failedText = t;
+      this.notice = { text: "Couldn’t send that. Check your connection and try again.", label: "Try again", action: "retry" };
       this.render();
     }
   }
@@ -323,6 +332,28 @@ export class ApiSessionDriver implements SessionDriver {
   }
 
   // --- session + stream ---------------------------------------------------------------
+
+  /** Start the session; on failure show a retry banner instead of a dead button (AUDIT-001). */
+  private async tryBegin(): Promise<boolean> {
+    try {
+      await this.begin();
+      this.notice = null;
+      return true;
+    } catch {
+      this.notice = { text: "Couldn’t reach your assistant just now. Check your connection and try again.", label: "Try again", action: "retry" };
+      this.render();
+      return false;
+    }
+  }
+
+  private async retry(): Promise<void> {
+    const text = this.failedText;
+    this.notice = null;
+    this.failedText = null;
+    this.render();
+    if (!this.state) await this.tryBegin();
+    if (this.state && text) await this.sendText(text);
+  }
 
   private begin(): Promise<void> {
     this.starting ??= (async () => {
@@ -676,7 +707,7 @@ export class ApiSessionDriver implements SessionDriver {
 
   private compose(): SessionSnapshot {
     const s = this.state;
-    if (!s) return landingSnapshot();
+    if (!s) return { ...landingSnapshot(), notice: this.notice };
     const agent = agentNameOf(s);
     // Suggestions only apply while the brain is still asking for the agent name.
     const thread = this.items.filter((x) => x.kind !== "chips" || s.node === "agent_name");
@@ -698,6 +729,7 @@ export class ApiSessionDriver implements SessionDriver {
       composer: liveCall ? { placeholder: gmailStep ? "Or type your email here…" : "Type instead of talking…", callButton: false } : composerFor(s),
       call,
       home: s.graduated ? toHome(s, { gmail: this.gmailCard()?.state, thread: this.homeThread() }) : null,
+      notice: this.notice,
     };
   }
 

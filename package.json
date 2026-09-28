@@ -11,6 +11,7 @@
     "qa:convo": "node harness/qa.mjs --tier convo",
     "qa:voice": "node harness/qa.mjs --tier voice",
     "qa:e2e": "node harness/qa.mjs --tier e2e",
+    "qa:audit": "node harness/qa.mjs --tier audit",
     "qa:visual": "node harness/qa.mjs --tier visual",
     "qa:live": "node harness/qa.mjs --tier live",
     "qa:harness": "node harness/qa.mjs --tier harness",

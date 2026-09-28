@@ -27,3 +27,12 @@ Every one of the 31 cases in `edge-cases.yaml` is owned by ≥1 tier (enforced b
   exact trace in Langfuse.
 
 Reports: `.persona-qa/last-report.json` (host + cwd recorded for authority).
+
+## qa:audit — button audit (AUDIT-001)
+
+`npm run qa:audit` runs `apps/web/playwright.audit.config.ts`: every control on every screen,
+desktop + mobile, against the LOCAL stub (offline, ~1 min; web :3420, stub :3219). Unknown
+controls fail. Set `PERSONA_AUDIT_URL=<web url>` for the LIVE target and `PERSONA_AUDIT_DOCS=1` to
+write `docs/qa/button-audit.md` + screenshots. It is part of `npm run qa` and gates
+`scripts/deploy/{vercel-web,fly-agent}.sh --apply` (`--skip-audit` overrides loudly);
+`scripts/deploy/smoke.sh <web> <agent> --audit` runs it LIVE after a deploy. See docs/qa/button-audit.md.

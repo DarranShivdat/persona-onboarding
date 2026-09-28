@@ -79,6 +79,8 @@ export interface SessionSnapshot {
   composer: { placeholder: string; callButton: boolean };
   call: CallView | null;
   home: HomeView | null;
+  /** Agent unreachable (session start / a turn failed): a banner with a retry (AUDIT-001). */
+  notice?: { text: string; label: string; action: UIAction } | null;
 }
 
 /** UI pushes from the brain (ARCHITECTURE §6), plus a full `snapshot` for restores. */
@@ -101,7 +103,8 @@ export type UIAction =
   | "gmail_skip"
   | "gmail_disconnect"
   | "gmail_keep"
-  | "call_take_over";
+  | "call_take_over"
+  | "retry";
 
 export interface SessionDriver {
   snapshot(): SessionSnapshot;

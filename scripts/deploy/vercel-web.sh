@@ -4,7 +4,8 @@
 #   bash scripts/deploy/vercel-web.sh                # DRY RUN: print every command (default)
 #   bash scripts/deploy/vercel-web.sh --apply        # run them (EM, after Darran's go-ahead)
 # Options: --env-file PATH (default .persona-deploy/web.env), --project NAME, --scope TEAM,
-#          --no-preview (production env only), --env-only, --deploy-only
+#          --no-preview (production env only), --env-only, --deploy-only,
+#          --skip-audit (deploy without the qa:audit gate; prints a loud warning)
 #
 # Why repo root: apps/web's prebuild reads docs/design/tokens.json and the npm workspace
 # lockfile lives at the root, so the upload must include the whole repo (Vercel builds only
@@ -17,7 +18,7 @@ ENV_FILE="$ROOT/.persona-deploy/web.env"
 PROJECT="persona-onboarding-darran"  # persona-onboarding.vercel.app is taken by a third party (checked 2026-09-27)
 SCOPE=""
 ENVS="production preview"
-DO_LINK=1; DO_ENV=1; DO_DEPLOY=1
+DO_LINK=1; DO_ENV=1; DO_DEPLOY=1; SKIP_AUDIT=0
 set -- $REST
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -27,7 +28,8 @@ while [ $# -gt 0 ]; do
     --no-preview) ENVS="production" ;;
     --env-only) DO_LINK=0; DO_DEPLOY=0 ;;
     --deploy-only) DO_LINK=0; DO_ENV=0 ;;
-    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    --skip-audit) SKIP_AUDIT=1 ;;
+    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
   shift
@@ -37,6 +39,9 @@ SCOPE_ARGS=""
 [ -n "$SCOPE" ] && SCOPE_ARGS="--scope $SCOPE"
 
 banner "vercel-web ($PROJECT)"
+
+step "Gate: button audit (npm run qa:audit, LOCAL stub, offline)"
+audit_gate "$SKIP_AUDIT"
 need_tool npx "Node 22+"
 cd "$ROOT"
 
