@@ -50,6 +50,7 @@ Check a target by name only (never prints values):
 | `PERSONA_VOICE_FORCE_EXTRACTION` | agent (Fly) | optional | no | `1` | — | force the record_slots tool call + lean schema on voice (LAT-003; 0 = kill switch) |
 | `PERSONA_VOICE_QUICK_ACK` | agent (Fly) | optional | no | `0` | — | speak a short ack while extraction runs (LAT-003; behaviour change, keep OFF in prod until approved) |
 | `PERSONA_VOICE_QUICK_ACK_MS` | agent (Fly) | optional | no | `600` | — | quick ack fires when expected extraction exceeds this (ms) |
+| `PERSONA_VOICE_LEADIN_MS` | agent (Fly) | optional | no | `120` | — | silence before each spoken line so its first syllable is not clipped (CLIP-001); 0 = off |
 | `PERSONA_SERVER_ICE` | agent (Fly) | optional | no | — | — | server ICE leg: unset = relay-only when TURN is set (ICE-002); 'all' = full list |
 | `PERSONA_VOICE_STUB_LLM` | agent (Fly) | optional | no | — | — | test-only: canned LLM on the call **Forbidden on agent.** |
 | `PERSONA_VOICE_FAKE_VENDORS` | agent (Fly) | optional | no | — | — | test-only: offline tone TTS, no STT **Forbidden on agent.** |

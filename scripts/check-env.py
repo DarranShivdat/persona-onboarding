@@ -102,6 +102,7 @@ REGISTRY: tuple[Var, ...] = (
     Var("PERSONA_VOICE_FORCE_EXTRACTION", (AGENT,), default="1", section="voice", note="force the record_slots tool call + lean schema on voice (LAT-003; 0 = kill switch)"),
     Var("PERSONA_VOICE_QUICK_ACK", (AGENT,), default="0", section="voice", note="speak a short ack while extraction runs (LAT-003; behaviour change, keep OFF in prod until approved)"),
     Var("PERSONA_VOICE_QUICK_ACK_MS", (AGENT,), default="600", section="voice", note="quick ack fires when expected extraction exceeds this (ms)"),
+    Var("PERSONA_VOICE_LEADIN_MS", (AGENT,), default="120", section="voice", note="silence before each spoken line so its first syllable is not clipped (CLIP-001); 0 = off"),
     Var("PERSONA_SERVER_ICE", (AGENT,), section="voice", note="server ICE leg: unset = relay-only when TURN is set (ICE-002); 'all' = full list"),
     Var("PERSONA_VOICE_STUB_LLM", (AGENT,), section="voice", forbidden=(AGENT,), note="test-only: canned LLM on the call"),
     Var("PERSONA_VOICE_FAKE_VENDORS", (AGENT,), section="voice", forbidden=(AGENT,), note="test-only: offline tone TTS, no STT"),
