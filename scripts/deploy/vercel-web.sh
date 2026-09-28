@@ -50,6 +50,9 @@ run $VC whoami $SCOPE_ARGS
 if [ "$DO_LINK" = 1 ]; then
   step "Link the repo root to the project (creates it on first link)"
   run $VC link --yes --project "$PROJECT" $SCOPE_ARGS
+  # vercel link may auto-write a multi-service vercel.json at the repo root (web + agent); we deploy
+  # web only (agent is on Fly) and .vercelignore keeps it out of the upload — remove it.
+  [ "$APPLY" = 1 ] && git -C "$ROOT" ls-files --error-unmatch vercel.json >/dev/null 2>&1 || rm -f "$ROOT/vercel.json"
   step "Project settings: Root Directory = apps/web, Next.js, Node 22 (upload = repo root, see .vercelignore)"
   run $VC project update "$PROJECT" --root-directory apps/web --framework nextjs --node-version 22.x --yes $SCOPE_ARGS
 fi
