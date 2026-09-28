@@ -131,6 +131,8 @@ def home_tail(plan: ResponsePlan, state: Optional[SessionState] = None) -> list[
     for k in plan.respond_to:
         if k == "home_math" and plan.note:
             out += [plan.note, T.HOME_REPLY["home_math_tail"]]
+        elif k == "home_kept" and state is not None and plan.note in state.slots:
+            out.append(T.ack_for(plan.note, state.slots[plan.note].value, changed=True))
         elif k == "home_confirm_spelling" and state is not None:
             from ..brain.home import pending
             w = pending(state) or []
