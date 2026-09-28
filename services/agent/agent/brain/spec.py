@@ -54,6 +54,23 @@ class FlowSpec:
         rb = self.raw["retry_budget"]
         return int(rb.get(node, rb["default"]))
 
+    # --- GUARD-001: code-side acceptance of record_slots extractions ---------------
+
+    def accepts_slot(self, slot: str, channel: str) -> bool:
+        """An extracted value for `slot` is considered only on the slot's channels."""
+        return channel in self.slots[slot]["channels"]
+
+    def candidate_only(self, slot: str) -> bool:
+        """Extraction can at most make this slot a candidate (gmail: OAuth fills it)."""
+        return self.slots[slot].get("extraction") == "candidate_only"
+
+    def accepts_intent(self, intent: str, node: str, channel: str) -> bool:
+        """Intents with an acceptance rule count only on its nodes or channels; others anywhere."""
+        rule = ((self.raw.get("acceptance") or {}).get("intents") or {}).get(intent)
+        if rule is None:
+            return True
+        return node in (rule.get("nodes") or []) or channel in (rule.get("channels") or [])
+
     def successors(self, node_id: str) -> set[str]:
         n = self.nodes[node_id]
         out: set[str] = set()
@@ -115,6 +132,18 @@ def validate(spec: FlowSpec) -> None:
                 raise SpecError(f"ask_order.{ch} names unknown slot {s!r}")
             if ch not in slots[s]["channels"]:
                 raise SpecError(f"slot {s!r} is not collectable on {ch} but is in ask_order.{ch}")
+    for intent, rule in ((raw.get("acceptance") or {}).get("intents") or {}).items():
+        if intent not in spec.intents:
+            raise SpecError(f"acceptance names unknown intent {intent!r}")
+        for nid in rule.get("nodes") or []:
+            if nid not in nodes:
+                raise SpecError(f"acceptance.intents.{intent} names unknown node {nid!r}")
+        for ch in rule.get("channels") or []:
+            if ch not in ("text", "voice"):
+                raise SpecError(f"acceptance.intents.{intent} names unknown channel {ch!r}")
+    for s, d in slots.items():
+        if d.get("extraction", "fill") not in ("fill", "candidate_only"):
+            raise SpecError(f"slot {s!r} has unknown extraction mode {d['extraction']!r}")
     # reachability
     seen, stack = set(), [START_NODE]
     while stack:

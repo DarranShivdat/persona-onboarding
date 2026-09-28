@@ -65,7 +65,8 @@ class ScriptedFlowsLLM(LLMService):
                 arguments=_args(_content(last)), context=frame.context)])
             return
         task = next((_content(m) for m in reversed(msgs) if m.get("role") in ("developer", "system")), "")
-        line = task.split('keeping every fact: "', 1)[1].rsplit('"', 1)[0] if "keeping every fact" in task else ""
+        marker = 'questions or offers: "'
+        line = task.split(marker, 1)[1].rsplit('"', 1)[0] if marker in task else ""
         if line:
             self.spoken.append(line)
             await self.push_frame(LLMFullResponseStartFrame())

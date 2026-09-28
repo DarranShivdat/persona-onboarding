@@ -26,17 +26,21 @@ Status key: PASS · PARTIAL · FAIL. "Before" = Darran's live test 10:56pm; "Now
 ## LLM-constraint audit (where could the model steer?)
 | Surface | Finding | Status |
 |---|---|---|
-| Node transitions | Brain (`brain/engine.py` over `flow.yaml`) picks every next node; the Pipecat Flows handler returns the brain's node, never an LLM choice | PASS |
-| Tools per node | Voice nodes expose only the tools declared in flow.yaml (test_voice_flows asserts ⊆ declared); no global functions | PASS (GUARD-001 adds rejection tests for out-of-node calls) |
-| Extraction schema | One `record_slots` schema for all slots — deliberate (invariant 2: out-of-order answers); validators gate every fill | PASS by design; GUARD-001 adds per-node *acceptance* (e.g. gmail value only from OAuth, agent_name never on voice) |
+| Node transitions | Brain (`brain/engine.py` over `flow.yaml`) picks every next node; the Pipecat Flows handler returns the brain's node, never an LLM choice. Tool args that "ask" for a node/graduation/unknown intent are ignored | PASS — `test_guard.py::test_llm_asking_for_another_node_is_ignored`, `::test_voice_task_never_offers_a_node_choice`, `test_voice_flows.py::test_llm_args_cannot_move_node_or_fill_gmail` |
+| Tools per node | Voice nodes expose only the tools declared in flow.yaml; every Flows handler is wrapped (`VoiceFlow.guarded`): a function not exposed on the brain's current node, or unknown (Pipecat catch-all `handle_unknown_function`), is rejected — no brain turn, state unchanged, `rejected_tool_call` logged, node line re-spoken. Text path forces the tool | PASS — `test_guard.py::test_out_of_node_tool_call_is_rejected_and_state_unchanged`, `::test_stale_record_slots_after_graduation_is_rejected`, `::test_unknown_function_is_rejected_via_the_catch_all`, `::test_call_session_registers_the_catch_all` |
+| Extraction schema | One `record_slots` schema for all slots — deliberate (invariant 2). Code-side per-node acceptance from flow.yaml (`acceptance.intents`, slot `channels`, gmail `extraction: candidate_only`): agent_name never taken on a call, gmail never filled from extraction (only OAuth), intents not meaningful on a node dropped; each drop is a `rejected_extraction` event | PASS — `test_guard.py::test_agent_name_extraction_on_voice_is_ignored_and_logged`, `::test_agent_name_on_voice_ignored_through_the_voice_handler`, `::test_gmail_never_filled_from_extraction_even_if_a_validator_says_ok`, `::test_intents_not_meaningful_here_are_dropped_with_an_event`, `::test_acceptance_table_is_spec_data_and_validated` |
 | Text phrasing | Was: model wrote the whole reply (asked "what's your name?" at the call offer). Now: model writes ≤ 1 reaction sentence; code appends the ask; questions/self-intros/pitches filtered; policy answers templated | FIXED 11:14pm |
-| Temperature / tokens | Was: none set. Now: extraction temperature 0; text reaction 80 tokens, temperature 0.4. Voice LLM: 300 tokens, default temperature | Voice → GUARD-001 |
-| Voice speech guard | Voice LLM may paraphrase the templated line freely; no output guard on speech | GUARD-001 |
+| Temperature / tokens | Extraction temperature 0; text reaction 80 tokens, temperature 0.4. Voice LLM: 120 tokens, temperature 0.3 | PASS — `test_guard.py::test_voice_llm_settings` |
+| Voice speech guard | Task instruction is now "say this line; you may shorten it, never add facts, questions or offers". `voice/speech_guard.py` sits between LLM and TTS on Flows calls and runs `llm/guard.check` per sentence against the brain's line + approved facts; violations are dropped + logged; if nothing survives the templated line is spoken (no dead air) | PASS — `test_guard.py::test_voice_task_says_the_line_without_adding`, `::test_speech_filter_drops_violations_and_never_leaves_silence`, `::test_speech_context_comes_from_the_brain_line`, `::test_speech_guard_processor_in_a_pipeline` |
 
 ## Modularity
 Nodes are data (flow.yaml) executed by one pure engine; per-node behaviour lives in validators
 and templates keyed by slot, not in per-node modules. Leaks found: none that let one node
 act for another; the voice task prompt embeds the brief for the current node only.
-GUARD-001 adds tests proving (a) a tool call not declared on the current node is rejected,
-(b) transitions only come from the brain, (c) a new node/slot added to flow.yaml needs no
-engine change.
+GUARD-001 proves it (`services/agent/tests/test_guard.py`): (a) a tool call not declared on
+the current node is rejected with state unchanged; (b) transitions only come from the brain;
+(c) a new optional slot + node added to a copy of flow.yaml runs through the engine and the
+call with no code change (`test_new_optional_slot_and_node_run_without_engine_change`,
+`test_new_node_builds_on_the_call_without_voice_change`). Leak found and fixed while writing
+(c): ask lines were keyed by slot in `llm/templates.py` (KeyError for a new slot); a slot with
+no hand-written line now asks with its spec `ask` (or description).

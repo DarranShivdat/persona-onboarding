@@ -12,6 +12,10 @@ the LLM adapter (all-slot candidates + intents), or a UI/call `event`. The engin
   2. applies intents (change_answer overwrites; refuse_slot escalates the retry
      ladder; insist_graduate graduates; prompt_injection changes nothing;
      noise_or_fragment is absorbed),
+     Before any of that, the per-node acceptance table (flow.yaml `acceptance`, slot
+     `channels` / `extraction`) drops what is not meaningful here — e.g. agent_name on a
+     call, decline_call away from the offer — and logs each drop as `rejected_extraction`
+     (GUARD-001). The LLM's extraction can never do more than this table allows.
   3. picks the next node = first unresolved slot in the channel's ask order
      (text: agent_name, then call_offer, first), honoring retry budgets
      (reask -> explain_why -> skip/defer),
@@ -29,7 +33,7 @@ from typing import Optional
 
 from .spec import START_NODE, TERMINAL_NODE, FlowSpec
 from .state import Channel, SessionState, SlotValue
-from .validators import VALIDATORS, assemble_spelling
+from .validators import VALIDATORS, Validation, assemble_spelling
 
 # Turn-level events (no utterance): open = session start / return visit.
 EVENTS = ("open", "call_started", "call_ended")
@@ -101,6 +105,7 @@ def apply(spec: FlowSpec, state: SessionState, turn: Turn) -> TurnResult:
         return _apply_event(spec, st, turn, plan, ev)
 
     intents = [i for i in turn.extraction.intents if i in spec.intents]
+    intents = _accept_intents(spec, st.node, turn.channel, intents, ev)
     ev.extend({"type": "intent", "intent": i} for i in intents)
     if "prompt_injection" in intents:
         # Structural defense: nothing in an injection turn can move state.
@@ -142,6 +147,21 @@ def apply(spec: FlowSpec, state: SessionState, turn: Turn) -> TurnResult:
 # --- steps -------------------------------------------------------------------
 
 
+def _rejected(ev, node, channel, reason, **what):
+    ev.append({"type": "rejected_extraction", "node": node, "channel": channel, "reason": reason, **what})
+
+
+def _accept_intents(spec, node, channel, intents, ev) -> list[str]:
+    """GUARD-001: drop intents that are not meaningful on this node/channel (logged)."""
+    kept = []
+    for i in intents:
+        if spec.accepts_intent(i, node, channel):
+            kept.append(i)
+        else:
+            _rejected(ev, node, channel, "intent_not_accepted_here", intent=i)
+    return kept
+
+
 def _extract(spec, st, turn, intents, plan, ev):
     """Validate every extracted slot. Returns (touched, rejected, unsure)."""
     x = turn.extraction
@@ -152,7 +172,11 @@ def _extract(spec, st, turn, intents, plan, ev):
     unsure = False
     for name, sdef in spec.slots.items():
         raw = spelled if name == NAME_SLOT and spelled else x.slots.get(name)
-        if not raw or turn.channel not in sdef["channels"]:
+        if not raw:
+            continue
+        if not spec.accepts_slot(name, turn.channel):
+            # e.g. agent_name is collected in text only: a value heard on a call is ignored.
+            _rejected(ev, st.node, turn.channel, "slot_not_on_channel", slot=name)
             continue
         vid = sdef["validator"]
         kw = {"channel": turn.channel, "confidence": x.confidences.get(name)}
@@ -161,6 +185,10 @@ def _extract(spec, st, turn, intents, plan, ev):
         if vid == "person_name":
             kw.update(utterance=turn.utterance, confirm_policy=sdef.get("confirm_policy"))
         res = VALIDATORS[vid](raw, **kw)
+        if res.outcome == "ok" and spec.candidate_only(name) and not turn.oauth_verified:
+            # Belt and braces over the validator: extraction never fills this slot.
+            _rejected(ev, st.node, turn.channel, "extraction_cannot_fill", slot=name)
+            res = Validation("candidate", res.value, reason="needs_oauth")
         sv = st.slot(name)
         if res.outcome == "unsure":
             unsure = True

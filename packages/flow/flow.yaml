@@ -56,6 +56,7 @@ slots:
     why: "Your assistant works out of your inbox; connecting Gmail lets it read, sort, draft and send for you (always with your OK)."
     confirm: never
     explain_on_first_ask: true  # the value line rides on the first ask, so one refusal = respected
+    extraction: candidate_only  # GUARD-001: an extracted email is at most a candidate, never filled
 
 # Order in which the machine asks for missing slots, per channel.
 ask_order:
@@ -72,6 +73,17 @@ graduation:
     - slot_filled: need
     - intent: insist_graduate
   deferred_prompts_for_missing: true   # missing slots become gentle prompts in the main experience
+
+# GUARD-001: code-side acceptance of record_slots extractions. There is ONE extraction schema
+# (every slot + intent, every utterance: invariant 2), but the brain only accepts what is
+# meaningful where the session is. A slot is accepted only on its `channels` (agent_name is
+# never taken on a call); an intent listed here is accepted only on the given nodes OR
+# channels (either matches). Anything dropped is logged as a `rejected_extraction` event.
+acceptance:
+  intents:
+    accept_call:   {channels: [text]}                   # already on the call
+    decline_call:  {nodes: [call_offer]}                 # only answers the offer
+    unsure_need:   {nodes: [need]}                       # "not sure" only means something at need
 
 intents:
   # Classified on every utterance alongside slot extraction.

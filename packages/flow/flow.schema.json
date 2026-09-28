@@ -19,7 +19,9 @@
           "validator": {"type": "string"},
           "why": {"type": "string"},
           "confirm": {"enum": ["never", "on_suspicious", "voice_low_confidence", "always"]},
-          "explain_on_first_ask": {"type": "boolean"}
+          "explain_on_first_ask": {"type": "boolean"},
+          "extraction": {"enum": ["fill", "candidate_only"]},
+          "ask": {"type": "string"}
         }
       }
     },
@@ -38,6 +40,22 @@
     },
     "graduation": {"type": "object", "required": ["when_any"]},
     "intents": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "acceptance": {
+      "type": "object",
+      "properties": {
+        "intents": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nodes": {"type": "array", "items": {"type": "string"}},
+              "channels": {"type": "array", "items": {"enum": ["text", "voice"]}}
+            }
+          }
+        }
+      }
+    },
     "nodes": {
       "type": "object",
       "additionalProperties": {

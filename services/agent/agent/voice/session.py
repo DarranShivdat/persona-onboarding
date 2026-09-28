@@ -49,6 +49,7 @@ from .flows import BrainPort, LocalBrain, VoiceFlow
 from .lifecycle import CallTeardown, end_after_playout
 from .playout import PlayoutObserver
 from .services import build_llm, build_stt, build_tts
+from .speech_guard import build_speech_guard
 from .silence import SilenceFloor, SilenceObserver, SilencePolicy, run_silence_floor, silence_line
 
 OnEnded = Callable[[str], Awaitable[None]]
@@ -213,8 +214,11 @@ class CallSession:
         context = LLMContext()
         aggregators = LLMContextAggregatorPair(context, user_params=build_user_params(self.cfg))
         self._playout = PlayoutObserver()
-        stages = [transport.input(), _AudioInCounter(self.stats), stt, aggregators.user(), llm, tts,
-                  transport.output(), aggregators.assistant()]
+        # GUARD-001: on a Flows call, every sentence the LLM says passes the output guard.
+        speech_guard = (build_speech_guard(lambda: self.flow.speech_context() if self.flow else None)
+                        if self.cfg.llm_mode == "flows" else None)
+        stages = [transport.input(), _AudioInCounter(self.stats), stt, aggregators.user(), llm, speech_guard,
+                  tts, transport.output(), aggregators.assistant()]
         pipeline = Pipeline([p for p in stages if p is not None])
         self._worker = PipelineWorker(
             pipeline,
@@ -280,6 +284,8 @@ class CallSession:
             await self.say_goodbye(line, "graduated")
 
         self.flow = VoiceFlow(spec, brain, context=context, on_graduated=graduated)
+        # GUARD-001: any function call with no handler is rejected by the flow (logged, line re-spoken).
+        llm.register_function(None, self.flow.handle_unknown_function)
         self._flow_manager = FlowManager(llm=llm, context_aggregator=aggregators, worker=self._worker)
         watch = getattr(brain, "watch_text", None)
         if watch is not None:

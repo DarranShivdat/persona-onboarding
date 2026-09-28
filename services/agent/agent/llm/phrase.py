@@ -116,7 +116,7 @@ def _ask_parts(spec: FlowSpec, plan: ResponsePlan, channel: Channel, state: Sess
     elif _hesitated_on_agent_name(plan, state) and not plan.explain_why:
         parts.append(T.agent_name_nudge())
     elif plan.ask:
-        parts.append(T.ask_line(plan.ask, channel))
+        parts.append(T.ask_line(plan.ask, channel, spec))
     elif plan.offer_call:
         parts.append(T.OFFER_CALL)
     return parts
