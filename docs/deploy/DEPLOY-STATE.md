@@ -5,8 +5,8 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **REDEPLOYING — agent then web (GMAIL-NOTNOW: card "Not now" defers Gmail and graduates; TYPED-001: no typing meta-comment on calls). Agent 8224b77 (RESUME-003) smoke 7/7 PASS; web 1293997** |
-| OWNER | EM executor (RESUME-003 + GMAIL-NOTNOW) — started 2:47pm PT Mon |
+| STATE | **LIVE — agent+web c574b9c (GMAIL-NOTNOW card 'Not now' defers Gmail + graduates, call says the short line then ends; TYPED-001 no typing meta-comment; RESUME-003 'Hi, it's Atlas! So, <ask>'; NAME-GREET; CUTOFF/CLIP/RESET/UI); quick ack ON via Fly secret** |
+| OWNER | EM executor (RESUME-003 + GMAIL-NOTNOW + TYPED-001) — deploy finished 2:57pm PT Mon |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
 ## Env files (gitignored, mode 600, values never committed/printed)
@@ -86,3 +86,4 @@ Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a
 - Mon 1:50PM PT — EM executor (yes-loop/VQA): agent ac6a1dd + web fc79338 (no web changes after fc79338); smoke 7/7 + LIVE audit 246 PASS (an earlier run had 1 call-live timeout while an API replay ran concurrently; clean on rerun); live replay: 'what can you actually do?' / 'how long will this take?' get approved answers.
 - Mon 2:18PM PT — EM executor (cutoff/clip/UI): agent+web 1293997 (code 679a6e7); smoke 8/8 + LIVE audit 246 rows PASS (Start over reset < 1s asserted on LIVE); agent pytest 882 passed; qa:fast/flow/e2e(102)/visual(baselines refreshed for 3 call states)/audit local PASS. Note: fly-agent.sh and vercel-web.sh each run the local audit — run them serially (parallel runs collide on ports).
 - Mon 2:27PM PT — EM executor (NAME-GREET): agent 65c8201 (code 25fa315), web unchanged 1293997; smoke 8/8 + LIVE audit 246 rows PASS; agent pytest 887 passed; qa:fast PASS; local audit gate PASS in fly-agent.sh.
+- Mon 2:57PM PT — EM executor: agent 8224b77 (RESUME-003) smoke 7/7 PASS; then agent+web c574b9c (GMAIL-NOTNOW, TYPED-001): smoke 8/8 + LIVE audit 246 rows PASS; live API replay: 'Not now' at gmail -> graduated, deferred [gmail]; agent pytest 901 passed.
