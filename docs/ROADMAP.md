@@ -107,8 +107,7 @@ READY FOR PRODUCT TEST to Darran.
 | **PROMPT-001** ✅ merged | Agent-name suggestion chips + tone polish from design copy (DQ-04 residual) | B-high / impl | FE-005 | chips on agent_name ask; qa:fast/flow/e2e |
 
 ## Parallelism
-Now (Mon ~1:16am PT): M7 NAME/GRAD/AUDIT/GUARD/LAT-001 ✅ merged (dda04e8). LAT-002 launching
-(continuation stashed on lat-001 worktree). Redeploy agent with LAT tip still pending (EM;
+Now (Mon ~1:16am PT): M7 NAME/GRAD/AUDIT/GUARD/LAT-001 ✅ merged (dda04e8). LAT-002 + REQ-001 running (lat-002-20260928-011751, req-001-20260928-011751). Redeploy agent with LAT tip still pending (EM;
 go-ahead already given — do not double-deploy if another owner holds DEPLOY-STATE).
 
 Next: LAT-002 → agent redeploy → hosted latency probe → Mon morning hosted human smoke.
@@ -151,4 +150,5 @@ See docs/qa/live-test-2026-09-27.md and docs/qa/requirements-audit.md.
 | **AUDIT-001** ✅ merged 6cf9b17 | Playwright button audit local + LIVE, desktop + mobile → docs/qa/button-audit.md; `qa:audit` gates deploys | B-high / frontend | — | qa:audit green |
 | **GUARD-001** ✅ merged fe9c8cc | Per-node tool/extraction schema, reject out-of-node tool calls, modularity tests | B-high / impl | NAME-001 | qa:flow + new isolation tests |
 | **LAT-001** ✅ merged dda04e8 (~1:16am PT) | Voice latency: 2 DB RTs/turn, direct brain speech (skip LLM #2), timing + bench (handler p50 143ms @65ms RTT); region rec: Fly→iad | B-high / impl | GUARD-001 | qa:fast/flow; bench handler <200ms |
-| **LAT-002** 🟡 ready | Compact record_slots (voice), ICE mint cache, VAD/turn tune, hosted latency probe; measure live after redeploy | B-high / impl | LAT-001 | qa:fast/flow; probe writes .persona-qa/latency JSON |
+| **LAT-002** 🟡 running lat-002-20260928-011751 | Compact record_slots (voice), ICE mint cache, VAD/turn tune, hosted latency probe; measure live after redeploy | B-high / impl | LAT-001 | qa:fast/flow; probe writes .persona-qa/latency JSON |
+| **REQ-001** 🟡 running req-001-20260928-011751 | Refresh requirements-audit after M7 merges | B-high / impl | LAT-001 | docs only; qa:fast |
