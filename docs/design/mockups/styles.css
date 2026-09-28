@@ -80,7 +80,7 @@ button { font: inherit; cursor: pointer; }
 .msg { max-width: 76%; padding: 10px 14px; border-radius: var(--r-bubble); font: var(--t-body); }
 .msg.agent { align-self: flex-start; background: var(--bubble-agent); border-bottom-left-radius: 6px; }
 .msg.user { align-self: flex-end; background: var(--bubble-user); color: var(--bubble-user-ink); border-bottom-right-radius: 6px; }
-.msg.voice { font: var(--t-callout); }
+/* FONT-001: voice bubbles use the same body token as every other bubble. */
 .msg + .msg.agent, .msg + .msg.user { margin-top: 0; }
 .from { font: var(--t-caption); color: var(--ink-3); margin: var(--s2) 0 -2px 6px; }
 .typing { align-self: flex-start; background: var(--bubble-agent); border-radius: var(--r-bubble); padding: 14px 16px; display: flex; gap: 4px; }
@@ -133,7 +133,7 @@ button { font: inherit; cursor: pointer; }
 .device .who .status { font: var(--t-callout); color: var(--call-ink-2); margin-top: 6px; font-variant-numeric: tabular-nums; }
 .device .who .status.warn { color: var(--amber); }
 .device .stage { display: grid; place-items: center; }
-.device .stage .ring { width: 150px; height: 150px; }
+.device .stage .ring { width: 124px; height: 124px; }
 .device .badge { display: inline-block; margin-top: var(--s3); font: var(--t-caption); padding: 4px 10px; border-radius: var(--r-pill); background: rgba(255,255,255,.1); color: var(--call-ink); white-space: nowrap; }
 .captions { background: rgba(255,255,255,.07); border-radius: 16px; padding: var(--s3) var(--s4); min-height: 118px; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; margin-bottom: var(--s5); }
 .captions .cap { font: var(--t-callout); color: var(--call-ink-2); }
