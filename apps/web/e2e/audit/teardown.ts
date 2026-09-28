@@ -7,7 +7,7 @@ import { DOCS, OUT, REPO, TARGET, type Row } from "./audit";
 // of docs/qa/button-audit.md (between the audit:generated markers; hand-written text is kept).
 const START = "<!-- audit:generated:start -->";
 const END = "<!-- audit:generated:end -->";
-const ORDER = ["FAIL", "FIXME", "SKIP", "PASS"];
+const ORDER = ["FAIL", "BLOCKED", "FIXME", "SKIP", "PASS"];
 
 function load(dir: string): Row[] {
   if (!existsSync(dir)) return [];
@@ -23,10 +23,10 @@ function section(target: string, rows: Row[]): string {
   const lines = [
     `### ${target.toUpperCase()}`,
     "",
-    `**${rows.length} checks: ${count("PASS")} PASS, ${count("FAIL")} FAIL, ${count("FIXME")} FIXME (owned elsewhere), ${count("SKIP")} SKIP.** Screens: ${new Set(rows.map((r) => r.screen)).size}.`,
+    `**${rows.length} checks: ${count("PASS")} PASS, ${count("FAIL")} FAIL, ${count("FIXME")} FIXME (owned elsewhere), ${count("SKIP")} SKIP, ${count("BLOCKED")} BLOCKED (bot checkpoint).** Screens: ${new Set(rows.map((r) => r.screen)).size}.`,
     "",
   ];
-  const bad = sorted.filter((r) => r.result === "FAIL" || r.result === "FIXME");
+  const bad = sorted.filter((r) => r.result !== "PASS" && r.result !== "SKIP");
   if (bad.length) {
     lines.push("Failures:", "");
     for (const r of bad) lines.push(`- **${r.result}** ${r.screen} / ${r.viewport} / \`${esc(r.control)}\` — ${esc(r.note)}`);

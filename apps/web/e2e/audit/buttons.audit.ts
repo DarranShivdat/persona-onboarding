@@ -1,5 +1,5 @@
 import { test } from "@playwright/test";
-import { TARGET, byIdx, enumerate, expect, find, generic, shot, writeRows, type Ctx, type Expectation, type Row } from "./audit";
+import { CHECKPOINT, TARGET, byIdx, checkpoint, enumerate, expect, find, generic, shot, writeRows, type Ctx, type Expectation, type Row } from "./audit";
 import { SCREENS } from "./screens";
 
 // AUDIT-001: for every screen x viewport, every visible control must have an expectation and
@@ -29,9 +29,21 @@ for (const screen of SCREENS) {
     try {
       await screen.setup(ctx);
     } catch (e) {
+      if (await checkpoint(page)) {
+        await shot(page, info, screen.name);
+        row("(screen setup)", screen.title, "BLOCKED", `${CHECKPOINT} (bot challenge) served instead of the app; not verifiable from this client`);
+        writeRows(info, screen.name, rows);
+        test.skip(true, CHECKPOINT);
+      }
       row("(screen setup)", screen.title, "FAIL", String((e as Error).message).replace(/\x1b\[[0-9;]*m/g, "").split("\n")[0]);
       writeRows(info, screen.name, rows);
       throw e;
+    }
+    if (await checkpoint(page)) {
+      await shot(page, info, screen.name);
+      row("(screen setup)", screen.title, "BLOCKED", `${CHECKPOINT} (bot challenge) served instead of the app; not verifiable from this client`);
+      writeRows(info, screen.name, rows);
+      test.skip(true, CHECKPOINT);
     }
     await page.keyboard.press("Tab").catch(() => null); // keyboard modality -> :focus-visible applies to .focus()
     await page.mouse.move(0, 0);

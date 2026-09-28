@@ -18,7 +18,13 @@ export const OUT = join(REPO, ".persona-qa/audit");
 export const DOCS = process.env.PERSONA_AUDIT_DOCS === "1";
 export const SHOTS = DOCS ? join(REPO, "docs/qa/button-audit") : join(OUT, "shots");
 
-export type Result = "PASS" | "FAIL" | "FIXME" | "SKIP";
+export type Result = "PASS" | "FAIL" | "FIXME" | "SKIP" | "BLOCKED";
+
+/** Vercel's bot protection ("We're verifying your browser") served instead of the app (LIVE). */
+export const CHECKPOINT = "Vercel Security Checkpoint";
+export async function checkpoint(page: Page): Promise<boolean> {
+  return (await page.getByText(CHECKPOINT).count().catch(() => 0)) > 0;
+}
 export interface Row {
   target: Target;
   viewport: string;

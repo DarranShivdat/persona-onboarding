@@ -168,6 +168,17 @@ const composerControls = (opts: { fixme?: string; call?: boolean; email?: boolea
     : [{ match: /^button:Call .+ @composer$/, optional: true, expected: "composer call button dials (rail opens)", skipLive: "real calls only on the call-live screen (<= 2 per LIVE run)", run: dials } as Expectation]),
 ];
 
+const DUP = "LIVE: same control/behaviour exercised on call-offer (keeps LIVE session count low)";
+const liveLight = (xs: Expectation[]) => xs.map((e) => (e.run ? { ...e, skipLive: e.skipLive ?? DUP } : e));
+
+// Gmail fixtures on LIVE show the card during a call (mock driver); LOCAL has no call here.
+const MOCKCALL = "fixture (mock driver) on LIVE; real call controls verified on call-live";
+const gmailCallPanel: Expectation[] = [
+  { match: "button:Mute @call-panel", optional: true, skipLive: MOCKCALL, expected: "mutes (aria-pressed)", run: async (ctl, ctx) => { await ctl.click(); await expect(panel(ctx.page).getByRole("button", { name: "Unmute" })).toHaveAttribute("aria-pressed", "true"); } },
+  { match: "button:Type instead @call-panel", optional: true, skipLive: MOCKCALL, expected: "focuses the composer", run: focusesComposer },
+  { match: "button:End @call-panel", optional: true, skipLive: MOCKCALL, expected: "hangs up: status 'Call ended'", run: async (ctl, ctx) => { await ctl.click(); await expect(panel(ctx.page)).toHaveAttribute("data-status", "ended"); } },
+];
+
 const offerControls: Expectation[] = [
   { match: "button:Call Juno @call-offer", expected: "dials: rail opens ringing -> connected", skipLive: "real calls only on the call-live screen (<= 2 per LIVE run)", run: dials },
   { match: "button:Keep texting @call-offer", expected: "sends 'Keep texting' as a turn", run: sends("Keep texting") },
@@ -232,7 +243,7 @@ export const SCREENS: Screen[] = [
       await expect(userBubble(ctx.page, "Juno").first()).toBeVisible();
       await expect(ctx.page.locator('[data-testid^="checklist-"]:visible [data-slot="agent_name"]')).toHaveAttribute("aria-label", "Assistant name: Juno");
     },
-    controls: offerControls,
+    controls: liveLight(offerControls),
   },
   {
     name: "mic-denied",
@@ -258,8 +269,7 @@ export const SCREENS: Screen[] = [
           await expect(panel(ctx.page)).toHaveCount(0);
         },
       },
-      { match: "button:Keep texting @call-offer", expected: "sends 'Keep texting' as a turn", run: sends("Keep texting") },
-      ...composerControls({ call: false }),
+      ...liveLight([{ match: "button:Keep texting @call-offer", expected: "sends 'Keep texting' as a turn", run: sends("Keep texting") }, ...composerControls({ call: false })]),
       {
         match: /^button:Call .+ @composer$/,
         optional: true,
@@ -454,6 +464,7 @@ export const SCREENS: Screen[] = [
     controls: [
       { match: "button:Not you? Use a different account @gmail-card", expected: "re-runs OAuth with the account chooser", skipLive: "needs a completed Google sign-in", run: (c, ctx) => opensGoogle(c, ctx, /Choose an account/) },
       ...composerControls({ email: true }),
+      ...gmailCallPanel,
     ],
   },
   {
@@ -475,6 +486,7 @@ export const SCREENS: Screen[] = [
       { match: "button:Try again @gmail-card", expected: "re-opens Google OAuth", skipLive: "fixture (mock driver) on LIVE", run: (c, ctx) => opensGoogle(c, ctx) },
       { match: "button:Skip for now @gmail-card", expected: "sends 'Skip for now' (brain defers Gmail)", skipLive: "fixture (mock driver) on LIVE", run: sends("Skip for now") },
       ...composerControls({ email: true }),
+      ...gmailCallPanel,
     ],
   },
   {
@@ -493,6 +505,7 @@ export const SCREENS: Screen[] = [
         },
       },
       ...composerControls({ email: true }),
+      ...gmailCallPanel,
     ],
   },
   {
@@ -593,6 +606,7 @@ export const SCREENS: Screen[] = [
         match: /^chip:.+ @thread$/,
         optional: true,
         expected: "still down: chip send re-shows the banner",
+        skipLive: DUP,
         run: async (ctl, ctx) => {
           await ctl.click();
           await expect(ctx.page.getByTestId("notice")).toBeVisible();
@@ -601,6 +615,7 @@ export const SCREENS: Screen[] = [
       {
         match: /^textbox:.+ @composer$/,
         expected: "still down: typed send keeps the banner up",
+        skipLive: DUP,
         run: async (ctl, ctx) => {
           await ctl.fill("Atlas");
           await ctl.press("Enter");
@@ -610,6 +625,7 @@ export const SCREENS: Screen[] = [
       {
         match: "button:Send @composer",
         expected: "still down: Send keeps the banner up",
+        skipLive: DUP,
         run: async (ctl, ctx) => {
           await composerField(ctx.page).fill("Atlas");
           await ctl.click();

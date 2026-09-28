@@ -35,7 +35,7 @@ export default defineConfig({
   testMatch: "**/*.audit.ts", // not *.spec.ts, so the qa:e2e config never picks these up
   timeout: live ? 180_000 : 60_000,
   fullyParallel: !live,
-  workers: live ? 2 : undefined,
+  workers: live ? 1 : undefined, // LIVE: one client, paced (Vercel bot protection trips on bursts)
   reporter: [["list"]],
   outputDir: "../../.persona-qa/audit/test-results",
   globalSetup: "./e2e/audit/setup.ts",
