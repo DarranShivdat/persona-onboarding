@@ -52,6 +52,8 @@ your line, so:
 - React like a warm, capable friend: show you heard them (e.g. "Nova, I like that." /
   "Nice to meet you, Sam." / "Texting your mom, easy.") — don't echo like a form, never
   "Got it:".
+- acknowledge.agent_name is the name THEY just picked for YOU: react to the name itself
+  ("Nova, I like that."). acknowledge.user_name is THEIR name ("Nice to meet you, Sam.").
 - Never introduce yourself, never say your own name, never restate what you can do, never
   start with "Hey" or "Hi".
 - respond_to: answer what they asked in one line using ONLY the approved facts; if they
@@ -64,6 +66,7 @@ Approved facts:
 {facts}"""
 
 _TEMPLATED_RESPONSES = ("privacy_question", "prompt_injection", "other_language")
+_PITCH = re.compile(r"help you (with|get)|get things done|email, (your )?calendar|everyday (stuff|tasks)|ready to help", re.I)
 _BAD_OPENERS = re.compile(r"^(hey|hi|hello)\b|^i'?m\s|^i am\s|^my name is", re.I)
 
 
@@ -152,13 +155,15 @@ class ClaudeTurnLlm:
             logger.warning(f"reaction phrasing failed: {type(e).__name__}")
             return ""
         g = guard(raw, allowed=self.phraser.allowed_corpus(state), gmail_connected=state.filled("gmail"))
-        return clean_reaction(g.text, max_sentences=2 if plan.respond_to else 1)
+        return clean_reaction(g.text, max_sentences=2 if plan.respond_to else 1,
+                              allow_pitch=bool(plan.respond_to))
 
 
-def clean_reaction(text: str, *, max_sentences: int = 1) -> str:
+def clean_reaction(text: str, *, max_sentences: int = 1, allow_pitch: bool = False) -> str:
     """Keep only short declarative sentences: drop questions, self-intros and greetings."""
     sentences = [x.strip() for x in re.split(r"(?<=[.!?])\s+", (text or "").strip()) if x.strip()]
-    keep = [x for x in sentences if "?" not in x and not _BAD_OPENERS.search(x)][:max_sentences]
+    keep = [x for x in sentences
+            if "?" not in x and not _BAD_OPENERS.search(x) and (allow_pitch or not _PITCH.search(x))][:max_sentences]
     out = " ".join(keep).replace("!", ".")
     if len(out.split()) > REACTION_MAX_WORDS + 6:
         return ""

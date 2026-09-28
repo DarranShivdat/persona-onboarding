@@ -79,3 +79,7 @@ def test_docker_image_ships_the_product_facts_the_phraser_reads():
     root = Path(__file__).resolve().parents[3]
     assert "!docs/product-facts.md" in (root / ".dockerignore").read_text().splitlines()
     assert "COPY docs/product-facts.md /app/docs/product-facts.md" in (root / "infra/agent.Dockerfile").read_text()
+
+
+def test_capability_pitch_is_filtered_mid_conversation():
+    assert clean_reaction("Nice to meet you — I'm ready to help you get things done with your email, calendar, and everyday tasks.") == ""
