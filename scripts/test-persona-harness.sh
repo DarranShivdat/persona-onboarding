@@ -691,6 +691,35 @@ except OSError:
   unset PERSONA_CAFFEINATE_MODE
 }
 
+test_N() {
+  log "TEST N: pid reuse — unrelated live pid in old/terminal records is never classified or killed"
+  local dir spid
+  dir=$(new_status_dir N)
+  sleep 300 &
+  spid=$!
+  python3 - "$dir" "$spid" <<'PYN'
+import json, sys, time
+d, pid = sys.argv[1], int(sys.argv[2])
+old = time.time() - 86400
+for wid, state in (("n-terminal", "EXITED_SUCCESS"), ("n-running", "HEALTHY")):
+    json.dump({"id": wid, "worker_id": wid, "pid": pid, "state": state, "started_at": old,
+               "max_turns": 10, "observed_turns": 9, "observed_turns_source": "result_num_turns",
+               "cwd": d}, open(f"{d}/{wid}.json", "w"))
+PYN
+  export PERSONA_SUPERVISOR_POLL_SECONDS=0.5 PERSONA_FINISH_PCT=50
+  start_supervisor "$dir" || { log "  FAIL: supervisor start"; FAIL=$((FAIL+1)); kill $spid 2>/dev/null; return; }
+  sleep 4
+  assert_true "N unrelated process still alive" kill -0 "$spid"
+  assert_true "N terminal record unchanged" python3 -c "import json,sys; sys.exit(0 if json.load(open('$dir/n-terminal.json'))['state']=='EXITED_SUCCESS' else 1)"
+  assert_true "N reused-pid running record not treated as live" python3 -c "import json,sys; sys.exit(0 if json.load(open('$dir/n-running.json'))['state'] not in ('HEALTHY','NEAR_FINISH','RUNNING') else 1)"
+  assert_true "N no finish/terminate events" python3 -c "
+import sys
+t=open('$dir/events.jsonl').read() if __import__('os').path.exists('$dir/events.jsonl') else ''
+sys.exit(1 if ('FINISH_TRANSITION' in t or 'WORKER_TERMINATED' in t) else 0)"
+  stop_supervisor "$dir"
+  kill "$spid" 2>/dev/null; wait "$spid" 2>/dev/null
+}
+
 test_A
 test_B
 test_C
@@ -704,6 +733,7 @@ test_J
 test_K
 test_L
 test_M
+test_N
 
 log "=== SUMMARY: PASS=$PASS FAIL=$FAIL ==="
 if [ "$FAIL" -gt 0 ]; then

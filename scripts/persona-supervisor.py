@@ -118,6 +118,44 @@ def pid_alive(pid: Optional[int]) -> bool:
         return True
 
 
+WORKER_CMD_MARKERS = ("claude", "persona-mock-worker", "claude-worker")
+TERMINAL_STATES = ("EXITED_SUCCESS", "EXITED_FAILURE", "HARD_CAP", "RATE_LIMITED", "INTERRUPTED")
+
+
+def _proc_info(pid: int) -> tuple[str, float]:
+    """(command, start_epoch) for a live pid via ps; ("", 0.0) if unknown."""
+    try:
+        out = subprocess.check_output(["ps", "-o", "lstart=,command=", "-p", str(int(pid))],
+                                      text=True, stderr=subprocess.DEVNULL).strip()
+    except Exception:
+        return "", 0.0
+    if not out:
+        return "", 0.0
+    parts = out.split(None, 5)  # e.g. "Sun Sep 27 19:58:36 2026 <command...>"
+    try:
+        start = time.mktime(time.strptime(" ".join(parts[:5]), "%a %b %d %H:%M:%S %Y"))
+    except Exception:
+        start = 0.0
+    return (parts[5] if len(parts) > 5 else ""), start
+
+
+def worker_alive(doc: dict) -> bool:
+    """pid alive AND it is still this worker's process (guards against pid reuse after
+    sleep/reboot: a reused pid must never be classified, checkpointed, or killed)."""
+    pid = doc.get("pid")
+    if not pid_alive(pid):
+        return False
+    cmd, start = _proc_info(int(pid))
+    if not cmd:
+        return True  # ps unavailable: fall back to plain liveness
+    if not any(m in cmd for m in WORKER_CMD_MARKERS):
+        return False
+    started = float(doc.get("started_at") or 0)
+    if started and start and not (started - 180 <= start <= started + 900):
+        return False
+    return True
+
+
 def git_status_hash(cwd: str) -> tuple[str, str]:
     try:
         out = subprocess.check_output(
@@ -367,14 +405,14 @@ class Supervisor:
                 "OVERSIZED",
                 "STALE",
                 "INTERRUPTED",
-            ) and pid_alive(doc.get("pid")):
+            ) and worker_alive(doc):
                 ids.append(wid)
-            elif state in ("RUNNING", "HEALTHY", "NEAR_FINISH") and pid_alive(pid):
+            elif state in ("RUNNING", "HEALTHY", "NEAR_FINISH") and worker_alive(doc):
                 ids.append(wid)
         # Prefer process-alive definition
         ids = []
         for wid, doc in self.load_workers().items():
-            if pid_alive(doc.get("pid")) and (doc.get("state") or "").upper() not in (
+            if worker_alive(doc) and (doc.get("state") or "").upper() not in (
                 "EXITED_SUCCESS",
                 "EXITED_FAILURE",
                 "HARD_CAP",
@@ -386,7 +424,7 @@ class Supervisor:
     def managed_alive(self) -> list[dict]:
         out = []
         for wid, doc in self.load_workers().items():
-            if pid_alive(doc.get("pid")):
+            if worker_alive(doc):
                 st = (doc.get("state") or "").upper()
                 if st not in ("EXITED_SUCCESS", "EXITED_FAILURE", "HARD_CAP", "RATE_LIMITED"):
                     out.append(doc)
@@ -481,8 +519,10 @@ class Supervisor:
             if mt:
                 doc["last_meaningful_activity_at"] = mt
 
-        alive = pid_alive(doc.get("pid"))
         state = (doc.get("state") or "RUNNING").upper()
+        if state in TERMINAL_STATES:
+            return doc  # terminal is final: never re-classify, checkpoint, or kill (pid may be reused)
+        alive = worker_alive(doc)
 
         if not alive:
             if state in ("HARD_CAP", "EXITED_SUCCESS", "EXITED_FAILURE", "RATE_LIMITED", "INTERRUPTED"):
@@ -569,7 +609,7 @@ class Supervisor:
     def terminate_worker(self, doc: dict, reason: str) -> None:
         pid = doc.get("pid")
         wid = doc["id"]
-        if pid and pid_alive(pid):
+        if pid and worker_alive(doc):
             try:
                 os.kill(int(pid), signal.SIGTERM)
             except OSError:
@@ -772,12 +812,12 @@ Git dirty summary:
             state = (doc.get("state") or "").upper()
             if (
                 state == "NEAR_FINISH"
-                and pid_alive(doc.get("pid"))
+                and worker_alive(doc)
                 and not doc.get("finish_transitioned")
                 and not worker_is_finish_mode(doc)
             ):
                 self.handle_near_finish(doc)
-            elif state == "STALE" and pid_alive(doc.get("pid")):
+            elif state == "STALE" and worker_alive(doc):
                 self.handle_stale(doc)
             elif state == "HARD_CAP":
                 self.handle_hard_cap(doc)
@@ -796,7 +836,7 @@ Git dirty summary:
         for wid, doc in workers.items():
             pid = doc.get("pid")
             state = (doc.get("state") or "").upper()
-            alive = pid_alive(pid)
+            alive = worker_alive(doc) and state not in TERMINAL_STATES
             if alive:
                 report["active"].append(wid)
                 continue
