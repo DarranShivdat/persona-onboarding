@@ -5,8 +5,8 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **REDEPLOYING — agent + web from main (NAME-004 explicit yes settles the read-back, VQA-002 approved answers on text). Previous LIVE: agent/web c029e5d** |
-| OWNER | EM executor (yes-loop/VQA fix) — started 1:34pm PT Mon |
+| STATE | **LIVE — agent ac6a1dd, web fc79338 (NAME-004 explicit yes settles the name read-back + chat shows the spoken voice line; VQA-002 approved answers on text at every node; plus HONEST-001/NAME-003; quick ack ON via Fly secret)** |
+| OWNER | EM executor (yes-loop/VQA fix) — deploy finished 1:50pm PT Mon; next batch (resume line/clipping/UI) starting |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
 ## Env files (gitignored, mode 600, values never committed/printed)
@@ -83,3 +83,4 @@ Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a
 - Mon 12:47PM PT — EM executor (reset/home fix) holds deploy: merged em/reset-fix; qa fast/flow/e2e/audit (LOCAL 246 rows) green; agent+web redeploy, then live smoke + audit. Fly secrets untouched (PERSONA_VOICE_QUICK_ACK=1 stays on).
 - Mon 12:58PM PT — EM executor (reset/home fix): agent+web 64b0652 deployed; smoke.sh 7/7 + LIVE button audit 246 rows PASS (Start over full flow on resume + home). Follow-up agent redeploy 49d8010 (spelling-check "yes" confirms unchanged name), /health sha 49d8010, live replay of the 12:30pm transcript OK. Web unchanged since 64b0652. Fly secrets untouched (quick ack still set). STATE → LIVE.
 - Mon 1:25PM PT — EM executor (honest-need/name fix): agent+web c029e5d (code 904c0da) deployed; smoke.sh 7/7 + LIVE button audit 246 rows PASS; live API replay: 'Text messages.' / 'book reservations for me' / 'clean up my inbox' all get the identical 'Noted: … To get started, let's connect your Gmail. …' line.
+- Mon 1:50PM PT — EM executor (yes-loop/VQA): agent ac6a1dd + web fc79338 (no web changes after fc79338); smoke 7/7 + LIVE audit 246 PASS (an earlier run had 1 call-live timeout while an API replay ran concurrently; clean on rerun); live replay: 'what can you actually do?' / 'how long will this take?' get approved answers.
