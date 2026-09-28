@@ -105,8 +105,12 @@ def remaining_slots(spec: FlowSpec, state: SessionState) -> list[str]:
     return [s for s, d in spec.slots.items() if d.get("required") and not state.filled(s)]
 
 
-def resume_copy(remaining: list[str]) -> str:
+def resume_copy(remaining: list[str], graduated: bool = False) -> str:
     """Chat copy after a call ends (templated, never LLM output)."""
+    if graduated:
+        # The graduation summary already lists what's optional; don't contradict it with
+        # a "Still left" list (live test 2026-09-27).
+        return "The call ended. Everything's saved."
     if not remaining:
         return "The call ended, but everything's saved and you're all set."
     labels = [SLOT_LABELS.get(s, s.replace("_", " ")) for s in remaining]
@@ -336,7 +340,7 @@ class SessionService:
         if state.active_channel != "voice":
             return None  # the call never connected (or already handed back): nothing to resume
         left = remaining_slots(self.spec, state)
-        data = {"call_id": call_id, "reason": reason, "remaining": left, "message": resume_copy(left),
+        data = {"call_id": call_id, "reason": reason, "remaining": left, "message": resume_copy(left, state.graduated),
                 "graduated": state.graduated, "can_call_back": not state.graduated}
         return self._run_locked(session_id, "call_ended", "text", lambda s: Turn(channel="text", event="call_ended"),
                                 extra_pushes=[("call_resume", data)])

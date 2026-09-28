@@ -53,7 +53,9 @@ def record_slots_tool(spec: FlowSpec) -> dict[str, Any]:
                 "intents": {
                     "type": "array",
                     "items": {"type": "string", "enum": list(spec.intents)},
-                    "description": "All intents that apply; empty if it is a plain answer.",
+                    "description": ("All intents that apply; empty if it is a plain answer. refuse_slot only "
+                                    "for an explicit no to the slot being asked; wanting more or other "
+                                    "help is a need, not a refusal."),
                 },
             },
         },
