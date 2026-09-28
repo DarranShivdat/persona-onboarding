@@ -6,7 +6,7 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 | Field | Value |
 |---|---|
 | STATE | **REDEPLOYING — agent + web from main (NAME-004 explicit yes settles the read-back, VQA-002 approved answers on text). Previous LIVE: agent/web c029e5d** |
-| OWNER | EM executor (yes-loop/VQA fix) — started 1:45pm PT Mon |
+| OWNER | EM executor (yes-loop/VQA fix) — started 1:34pm PT Mon |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
 ## Env files (gitignored, mode 600, values never committed/printed)
