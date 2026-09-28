@@ -99,5 +99,34 @@ Transcript check: turn 2 gave the need at the name read-back → "Perfect, thank
 Gmail ask (NAME-002 implicit yes); turn 3 asked "what is Persona?" → the model picked
 `answer=what_is_persona`, the approved line was spoken, then the Gmail ask (VQA-001).
 
-## Measured after deploy
-(filled in after the redeploy)
+## Measured after deploy (hosted, agent+web b7f24f8, Mon 2:29–2:32am PT)
+
+Same probe as the baseline (`e2e/hosted/latency-call.spec.ts`, Chromium fake mic via Vercel →
+Fly sjc over Cloudflare TURN), 3 calls × 4 turns, quick ack OFF (prod default):
+
+| | before (d4de37d, 1:45am) | after (b7f24f8) |
+|---|---|---|
+| caller-stop → first audio p50 | 2.29–2.36 s | **2.27 s** (12 turns: 2054–2665 ms) |
+| p90 | ~2.48–2.52 s | **2.43 s** |
+| connect | 1.8–2.3 s (one 5 s outlier seen earlier) | **1.81 s** (1806 / 1806 / 1814 ms) |
+| greeting | 2.66–2.81 s | 2.39–2.66 s |
+| server llm_tool | 1.10–1.16 s | 0.98–1.14 s |
+| server total (stop → first audio, server side) | ~1.87 s | 1.73–1.89 s |
+
+**Honest read:** the forced lean extraction cut about 60–100 ms in production, not the 350–450 ms the
+isolated bench suggested. In the pipeline the same call still takes ~1.0–1.1 s (TTFB 0.53–0.75 s,
+then 0.25–0.5 s to stream the tool JSON). Pipecat also adds two verbose `async_tool`
+messages per turn to the context. Connect is now steady at ~1.8 s with no outliers. The remaining
+~2.3 s is: turn detection ~0.45 s + extraction ~1.05 s + DB handler ~0.15 s + TTS ~0.15 s +
+~0.45 s WebRTC/TURN transport and client playout.
+
+**What would still move the p50** (updated ranking):
+1. **Quick ack (built, flag OFF):** the caller hears audio at ≈ 0.6 s server-side, ≈ 1.05–1.2 s
+   end-to-end (local probe: 1066 / 1065 ms on ack turns). Set `PERSONA_VOICE_QUICK_ACK=1` on Fly
+   to enable. This is a behaviour change, so it's Darran's call.
+2. **Speculative extraction** on the final transcript while Smart Turn decides: −200 to −400 ms,
+   medium-high risk (split turns).
+3. **Take the DB off the critical path:** speak the planned line while the commit runs, or move Fly to
+   iad next to the DB. About −150 ms, medium risk (a commit could fail after the line is spoken).
+4. **Trim the context:** a per-node context reset that carries the last spoken line (Penciled resets per
+   node), or collapse Pipecat's async_tool boilerplate. Small gain (tens of ms), low-medium risk.
