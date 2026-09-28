@@ -13,6 +13,9 @@ __pycache__/
 .env
 .env.*
 !.env.example
+# deploy kit (INFRA-002): filled env files + local-stack generated secrets/logs
+.persona-deploy/
+.persona-local/
 
 # local orchestration + QA state
 .persona-worker/
