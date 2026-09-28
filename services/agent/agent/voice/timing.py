@@ -12,7 +12,8 @@ The budget is "user stops -> first bot audio" (< 1.5 s). Spans, all in ms:
     llm_speech_ttfb  handler done -> first LLM text (only when the LLM phrases the line;
                      `-` when the brain's line is spoken directly)
     tts_ttfb         line ready (handler done / first LLM text) -> first bot audio
-    total            user stopped -> first bot audio
+    total            user stopped -> first bot audio (on a quick-ack turn: the brain's line;
+                     `ack_ms` is user stopped -> the ack's audio)
 
 `TurnTimer` is pure (explicit timestamps, testable offline); `TimingObserver` feeds it
 from pipeline frames and `VoiceFlow` reports the handler span.
@@ -42,6 +43,7 @@ class _Turn:
     llm_text: Optional[float] = None
     node: Optional[str] = None
     ack: bool = False
+    ack_audio: Optional[float] = None   # LAT-003: when the quick ack's audio started
 
 
 def _ms(a: Optional[float], b: Optional[float]) -> Optional[float]:
@@ -64,6 +66,8 @@ class TurnTimer:
         return self.clock() if at is None else at
 
     def user_stopped(self, at: Optional[float] = None) -> None:
+        if self._t.ack_audio is not None:
+            self._close(None)   # an ack turn whose line never started: log what we have
         self._t = _Turn(user_stopped=self._now(at))   # a new utterance starts a new turn
 
     def stt_final(self, at: Optional[float] = None) -> None:
@@ -96,11 +100,25 @@ class TurnTimer:
             t.llm_text = self._now(at)
 
     def first_audio(self, at: Optional[float] = None) -> Optional[dict]:
-        """Bot audio started: close the turn (once) if a caller turn is open."""
+        """Bot audio started: close the turn (once) if a caller turn is open.
+
+        On a quick-ack turn (LAT-003) the ack's audio is noted as `ack_ms` and the turn stays
+        open until the brain's line starts, so the extraction spans are still measured."""
         t = self._t
         if t.user_stopped is None:
             return None   # opening line / nudge / typed ack: not a caller turn
         at = self._now(at)
+        if t.ack and t.handler_done is None:
+            # The brain's line can't start before its handler ran, so any audio before that
+            # is the ack (the transport pushes BotStartedSpeaking up- and downstream as two
+            # frames, hence "first one wins").
+            if t.ack_audio is None:
+                t.ack_audio = at
+            return None
+        return self._close(at)
+
+    def _close(self, at: Optional[float]) -> dict:
+        t = self._t
         line_ready = t.llm_text if t.llm_text is not None else t.handler_done
         rec = {
             "node": t.node,
@@ -117,6 +135,7 @@ class TurnTimer:
         }
         if t.ack:
             rec["ack"] = True
+            rec["ack_ms"] = _ms(t.user_stopped, t.ack_audio if t.ack_audio is not None else at)
         self._t = _Turn()
         self.records.append(rec)
         self._emit(rec)
@@ -136,7 +155,7 @@ def format_line(rec: dict) -> str:
     parts += [f"{k}_ms={f(rec.get(k))}" for k in SPANS]
     parts.insert(-1, f"db_calls={f(rec.get('db_calls'))}")
     if rec.get("ack"):
-        parts.append("ack=1")
+        parts += ["ack=1", f"ack_ms={f(rec.get('ack_ms'))}"]
     return "voice_turn_timing " + " ".join(parts)
 
 

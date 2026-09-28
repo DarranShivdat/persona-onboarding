@@ -79,6 +79,8 @@ Launch: `./scripts/claude-worker.sh opus --role <role> --packet docs/orchestrati
 (or `PERSONA_WORKER_PACKET=...`). The wrapper warns on missing fields per role.
 Model: `claude-opus-5-5` by default (`PERSONA_OPUS_MODEL` overrides). Before the
 first real worker, run `./scripts/claude-worker.sh opus --probe-model` once.
+From an agent/tool shell the launch auto-detaches (new session) and survives the launching run;
+see LOCAL-SUPERVISOR.md "Detach". Never background it with `&`.
 
 Every packet's DO NOT READ includes: `.env*`, secrets, and **Penciled sensitive paths**
 (`transcripts/`, `data/`, demo patient info, credentials, anything with PHI) plus other

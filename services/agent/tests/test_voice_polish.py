@@ -190,9 +190,18 @@ def test_timer_marks_ack_turns_and_feeds_listeners():
     seen = []
     t = TurnTimer(emit=lambda r: None, clock=lambda: 0.0)
     t.listeners.append(seen.append)
-    t.user_stopped(at=0.0); t.llm_started(at=0.4); t.ack_spoken(); t.tool_call(at=1.4)
-    rec = t.first_audio(at=0.6)
+    t.user_stopped(at=0.0); t.llm_started(at=0.4); t.ack_spoken()
+    assert t.first_audio(at=0.6) is None          # the ack's audio keeps the turn open
+    assert t.first_audio(at=0.6) is None          # (its duplicate upstream frame too)
+    t.tool_call(at=1.4)
+    t.handler_done(handler_ms=5, node="gmail", direct=True, at=1.41)
+    rec = t.first_audio(at=1.6)                   # the brain's line closes it with full spans
     assert rec["ack"] is True and seen == [rec] and "ack=1" in format_line(rec)
+    assert round(rec["ack_ms"]) == 600 and round(rec["llm_tool"]) == 1000 and round(rec["total"]) == 1600
+    # an ack turn whose line never started is still logged when the next utterance begins
+    t.user_stopped(at=5.0); t.llm_started(at=5.4); t.ack_spoken(); t.first_audio(at=5.6)
+    t.user_stopped(at=7.0)
+    assert seen[-1]["ack"] is True and round(seen[-1]["ack_ms"]) == 600 and seen[-1]["total"] is None
 
 
 # --- VQA-001: approved answers -----------------------------------------------------
