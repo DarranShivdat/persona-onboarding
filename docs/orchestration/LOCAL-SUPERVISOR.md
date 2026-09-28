@@ -24,6 +24,13 @@ Launch a worker (the supervisor picks it up from state files):
 ./scripts/claude-worker.sh opus --probe-model   # one tiny real call: confirms the model id is served
 ```
 
+**Detach (WRK-001).** When stdin is not a TTY (an agent/tool shell) a real launch detaches by
+default: the wrapper re-execs itself in a new session (double fork, `setsid`, SIGHUP ignored),
+waits up to 20 s for the `WORKER_STATUS` line, prints it and returns 0. The worker survives the
+launching run ending; its launcher output is in `.persona-worker/launch-*.log`. Force with
+`--detach` / `--foreground` or `PERSONA_WORKER_DETACH=1|0`. Mock, dry-run and `--probe-model`
+runs stay in the foreground. Don't launch workers with a bare `&`: they die with the tool shell.
+
 State directory (default `$REPO_ROOT/.persona-worker`, override `PERSONA_WORKER_STATUS_DIR`; gitignored):
 
 ```

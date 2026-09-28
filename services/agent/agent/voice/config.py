@@ -11,6 +11,9 @@
     PERSONA_VOICE_STUB_LLM   1 = force the stub turn even with an Anthropic key
     PERSONA_VOICE_FAKE_VENDORS 1 = offline pipeline (tone TTS, no STT) for local transport proofs
     PERSONA_VOICE_MAX_CALL_SECS  hard cap per call, default 900
+    PERSONA_VOICE_FORCE_EXTRACTION  default 1: force the record_slots tool call on extraction nodes
+    PERSONA_VOICE_QUICK_ACK  1 = speak a short ack ("Got it.") while extraction runs (default OFF)
+    PERSONA_VOICE_QUICK_ACK_MS  expected-extraction threshold for the ack, default 600
     PERSONA_TRACING          langfuse = export Pipecat OTel spans to Langfuse OTLP (agent/obs)
 
 LLM slot (`llm_mode`): `flows` (Claude under Pipecat Flows over the shared brain) when
@@ -49,6 +52,9 @@ class VoiceConfig:
     max_call_secs: float = 900.0
     otel_langfuse: bool = False
     direct_speech: bool = True     # LAT-001: speak the brain's line via TTS (no phrasing LLM run)
+    force_extraction: bool = True  # LAT-003: tool_choice=record_slots on extraction nodes
+    quick_ack: bool = False        # LAT-003: short spoken ack while extraction runs (default OFF)
+    quick_ack_ms: float = 600.0    # ...only when extraction is expected to take longer than this
 
     @classmethod
     def from_env(cls, env: Optional[Mapping[str, str]] = None) -> "VoiceConfig":
@@ -67,6 +73,9 @@ class VoiceConfig:
             max_call_secs=float(env.get("PERSONA_VOICE_MAX_CALL_SECS") or cls.max_call_secs),
             otel_langfuse=(env.get("PERSONA_TRACING") or "").strip().lower() == "langfuse",
             direct_speech=(env.get("PERSONA_VOICE_DIRECT_SPEECH") or "1").strip().lower() not in ("0", "false", "no", "off"),
+            force_extraction=(env.get("PERSONA_VOICE_FORCE_EXTRACTION") or "1").strip().lower() not in ("0", "false", "no", "off"),
+            quick_ack=_flag(env, "PERSONA_VOICE_QUICK_ACK"),
+            quick_ack_ms=float(env.get("PERSONA_VOICE_QUICK_ACK_MS") or cls.quick_ack_ms),
         )
 
     @property

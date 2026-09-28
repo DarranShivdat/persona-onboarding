@@ -106,17 +106,23 @@ def test_every_spec_node_builds_and_tools_are_scoped():
 
 
 def test_record_slots_schema_matches_text_adapter_contract():
+    from agent.llm import templates as T
+
     fs = VoiceFlow(SPEC, LocalBrain(SPEC, SessionState("s"))).record_slots_schema()
-    tool = record_slots_tool(SPEC, compact=True)   # LAT-001: voice omits absent slots
+    # LAT-001/003: voice omits absent slots and per-slot confidence; VQA-001 adds `answer`.
+    tool = record_slots_tool(SPEC, compact=True, answers={k: v[0] for k, v in T.VOICE_ANSWERS.items()})
     text = record_slots_tool(SPEC)
     assert fs.name == tool["name"] == text["name"] == TOOL_NAME
     assert fs.properties == tool["input_schema"]["properties"]
-    assert fs.required == tool["input_schema"]["required"] == text["input_schema"]["required"]
-    # Same contract as the text adapter: the same slot names, confidences and intent enum.
-    for key in ("slots", "confidence"):
-        assert set(fs.properties[key]["properties"]) == set(text["input_schema"]["properties"][key]["properties"])
-        assert fs.properties[key]["required"] == []          # absent slots are omitted, not null
+    assert fs.required == tool["input_schema"]["required"] == ["slots", "intents"]
+    # Same contract as the text adapter: the same slot names and intent enum.
+    assert set(fs.properties["slots"]["properties"]) == set(text["input_schema"]["properties"]["slots"]["properties"])
+    assert fs.properties["slots"]["required"] == []          # absent slots are omitted, not null
+    assert "confidence" not in fs.properties                 # STT confidence + read-back on a call
     assert fs.properties["intents"] == text["input_schema"]["properties"]["intents"]
+    assert fs.properties["answer"]["enum"] == list(T.VOICE_ANSWERS)
+    assert "answer" not in text["input_schema"]["properties"]   # text path unchanged
+    assert list(text["input_schema"]["properties"]) == ["slots", "confidence", "intents"]
 
 
 def test_compact_extraction_parses_like_the_full_one():

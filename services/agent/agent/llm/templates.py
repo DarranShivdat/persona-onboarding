@@ -70,6 +70,51 @@ RESPOND = {
 }
 REASK = "Sorry, I missed that."
 
+# VQA-001: a caller's question on the call is answered from THIS table only. The voice
+# extraction call picks an id (enum, like a Penciled categorize bucket); code speaks the
+# line and then the node's ask. Every line restates docs/product-facts.md (the approved
+# facts the text chat's answers are limited to) and passes the output guard
+# (tests/test_voice_questions.py). No id -> RESPOND["off_topic"]. Never model-written.
+VOICE_ANSWERS: dict[str, tuple[str, str]] = {  # id: (what it answers, spoken line)
+    "what_is_persona": (
+        "what Persona is or what it can help with",
+        "Persona's a personal AI assistant: you text it, and it helps with your email, calendar, "
+        "and everyday tasks."),
+    "asks_before_acting": (
+        "whether it acts on its own or asks first",
+        "Persona asks for your OK before it acts on your behalf."),
+    "persona_band": (
+        "the Persona Band or any hardware",
+        "Persona Band is Persona's screenless wearable for talking to your assistant by voice."),
+    "gmail_password": (
+        "whether it sees their password, or how Gmail connects",
+        "Gmail connects through Google sign-in, so your assistant never sees your password."),
+    "gmail_access": (
+        "why it wants read and write Gmail access, or what it does with email",
+        "It asks for read and write access so it can read your email, organize it, and send "
+        "email for you, only after you say OK."),
+    "nothing_without_ok": (
+        "whether it will send or change email without asking",
+        "Nothing is sent or changed in your inbox without your explicit OK."),
+    "gmail_testing": (
+        "the unverified app notice, testing mode, or who can connect",
+        "This trial's Google app is in testing mode, so only invited test accounts can connect, "
+        "and Google shows an unverified app notice you can continue past."),
+    "gmail_disconnect": (
+        "disconnecting Gmail or removing access",
+        "You can disconnect Gmail anytime in Settings, which revokes access and deletes the "
+        "stored tokens."),
+    "call_audio": (
+        "whether the call is recorded or what happens to their voice",
+        "Speech providers process the call to run the conversation, and call audio is not saved."),
+    "data_retention": (
+        "how long their data is kept",
+        "Setup conversations are kept no longer than 30 days after your last activity."),
+    "contact": (
+        "who to contact with questions or deletion requests",
+        "For questions or deletion requests, email darranshivdat1 at gmail dot com."),
+}
+
 NATO = {
     "a": "Alpha", "b": "Bravo", "c": "Charlie", "d": "Delta", "e": "Echo", "f": "Foxtrot",
     "g": "Golf", "h": "Hotel", "i": "India", "j": "Juliett", "k": "Kilo", "l": "Lima",

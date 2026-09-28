@@ -48,12 +48,41 @@ def build_stt(cfg: VoiceConfig) -> Optional[FrameProcessor]:
     )
 
 
+EXTRACTION_TOOL = "record_slots"
+
+
+def force_extraction(params: dict, tool: str = EXTRACTION_TOOL) -> dict:
+    """LAT-003 (Penciled comparison): on a node whose only job for the LLM is extraction
+    (direct speech: the brain's line is spoken by TTS, never by the model), force the tool
+    call. The model then skips its "speak or call?" decision and any preamble: ~150-250 ms
+    less time to the complete tool call (bench: docs/penciled-comparison.md). Nodes with no
+    extraction tool (terminal) are left alone: forcing a missing tool is an API error."""
+    tools = params.get("tools") or []
+    names = [t.get("name") for t in tools if isinstance(t, dict)]
+    if tool in names:
+        params["tool_choice"] = {"type": "tool", "name": tool}
+    return params
+
+
 def build_llm(cfg: VoiceConfig) -> FrameProcessor:
     if not cfg.use_claude:
         return StubTurnLLM()
+    from pipecat.adapters.services.anthropic_adapter import AnthropicLLMAdapter
     from pipecat.services.anthropic.llm import AnthropicLLMService
 
-    return AnthropicLLMService(
+    cls = AnthropicLLMService
+    if cfg.direct_speech and cfg.force_extraction:
+        class _ForcedExtractionAdapter(AnthropicLLMAdapter):
+            def get_llm_invocation_params(self, context, enable_prompt_caching, system_instruction=None):
+                params = super().get_llm_invocation_params(context, enable_prompt_caching, system_instruction)
+                return force_extraction(params)  # type: ignore[arg-type]
+
+        class _ForcedExtractionLLM(AnthropicLLMService):
+            adapter_class = _ForcedExtractionAdapter
+
+        cls = _ForcedExtractionLLM
+
+    return cls(
         api_key=cfg.anthropic_key,
         settings=AnthropicLLMService.Settings(
             model=cfg.llm_model, max_tokens=VOICE_LLM_MAX_TOKENS, temperature=VOICE_LLM_TEMPERATURE,

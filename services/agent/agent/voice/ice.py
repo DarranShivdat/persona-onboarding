@@ -113,6 +113,42 @@ def ice_mode(env: dict[str, str] | None = None) -> str:
     return "static_turn" if _split(env.get("PERSONA_TURN_URLS")) else "stun_only"
 
 
+# ICE-002: the server leg's gather. aiortc gathers every candidate before it can answer
+# (no trickle), and aioice waits for ALL of its STUN/TURN queries up to 5 s: one lost STUN
+# reply to a Fly host address was the rare `sdp_ms=5007` connect outlier. On Fly the server
+# has no inbound UDP, so its host/srflx candidates never carry media anyway: only the TURN
+# relay does (ADR 0001). So when a TURN server is configured the server leg gathers relay
+# only (no STUN query to wait on), with a shorter cap on the TURN allocation (~100 ms
+# normally). PERSONA_SERVER_ICE=all restores the old list (local debugging).
+SERVER_GATHER_TIMEOUT_S = 2.5
+
+
+def server_ice_servers(servers: list[dict], env: dict[str, str] | None = None) -> list[dict]:
+    """The server leg's ICE list: relay-first (TURN only) whenever a TURN URL is present."""
+    env = os.environ if env is None else env
+    if (env.get("PERSONA_SERVER_ICE") or "").strip().lower() == "all":
+        return servers
+    out: list[dict] = []
+    for s in servers:
+        urls = s["urls"] if isinstance(s["urls"], list) else [s["urls"]]
+        turn = [u for u in urls if u.split(":", 1)[0] in ("turn", "turns")]
+        if turn:
+            out.append({**s, "urls": turn})
+    return out or servers
+
+
+def limit_gather_timeout(seconds: float = SERVER_GATHER_TIMEOUT_S) -> None:
+    """Cap aioice's per-component candidate gather (library default 5 s)."""
+    try:
+        from aioice.ice import Connection
+
+        fn = Connection.get_component_candidates
+        if fn.__defaults__ and fn.__defaults__[-1] != seconds:
+            fn.__defaults__ = fn.__defaults__[:-1] + (seconds,)
+    except Exception as e:  # noqa: BLE001 - an older/newer aioice: keep its default
+        logger.warning(f"could not cap the ICE gather timeout: {type(e).__name__}")
+
+
 def to_aiortc(servers: list[dict]) -> list:
     """Browser-shaped ICE JSON -> aiortc RTCIceServer.
 

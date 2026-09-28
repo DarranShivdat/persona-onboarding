@@ -61,6 +61,7 @@ from ..brain.spec import TERMINAL_NODE, TOOL_REGISTRY, FlowSpec
 from ..brain.state import SessionState
 from ..llm import templates as T
 from ..llm.extract import parse
+from ..llm.guard import check as guard_check
 from ..llm.phrase import build_brief, critical_lines, template_reply
 from ..llm.prompts import approved_facts
 from ..llm.schema import TOOL_NAME, record_slots_tool
@@ -327,7 +328,9 @@ class VoiceFlow:
         self.direct_speech = direct_speech            # speak the brain's line via TTS, skip LLM #2
         self.timer = timer
         self.last: Optional[VoiceTurn] = None
-        self._tool = record_slots_tool(spec, compact=True)   # LAT-001: ~1/3 the output tokens
+        # LAT-001/003: compact (~1/3 the output tokens); VQA-001: + the approved-answer enum.
+        self._tool = record_slots_tool(spec, compact=True,
+                                       answers={k: v[0] for k, v in T.VOICE_ANSWERS.items()})
         self._graduated_said = False
         self._ctx_seen = 0                             # context messages already handled as turns
         self.stt_confidence: Optional[float] = None   # last final transcript's STT confidence
@@ -385,6 +388,14 @@ class VoiceFlow:
             return result, self.node_config(self.node, self.last, speak=False, pre_say=line)
         return result, self.node_config(self.node, self.last, speak=True)
 
+    def _nothing_new(self) -> bool:
+        """True when a turn was already handled on this call and the context holds no caller
+        message after it (only possible with a live context)."""
+        if self.context is None or self._ctx_seen == 0:
+            return False
+        msgs = self.context.get_messages()
+        return self._ctx_seen <= len(msgs) and not any(_is_spoken(m) for m in msgs[self._ctx_seen:])
+
     def _mark_seen(self) -> None:
         self._ctx_seen = len(self.context.get_messages()) if self.context is not None else 0
 
@@ -410,14 +421,60 @@ class VoiceFlow:
         return {"allowed": "\n".join([self._facts, values, self.last.line, brief]),
                 "gmail_connected": st.filled("gmail"), "fallback": self.last.line}
 
+    def ack_allowed(self) -> bool:
+        """LAT-003: may a quick ack ("Got it.") be spoken while this turn's extraction runs?
+        Never before the call has opened or after graduation, and never around the name
+        read-back (the caller is saying or spelling their name: the ack would land in their
+        pauses and the next line is the read-back itself)."""
+        if self.last is None or self.node in (None, TERMINAL_NODE):
+            return False
+        plan = self.last.plan
+        return not (plan.ask == NAME or plan.confirm == NAME or NAME in plan.denied or plan.spell)
+
+    def answer_line(self, answer_id: Any) -> Optional[str]:
+        """VQA-001: the approved spoken answer for an extraction's `answer` id, screened by the
+        same output guard as every spoken sentence; None for no/unknown id or a guard miss."""
+        entry = T.VOICE_ANSWERS.get(answer_id) if isinstance(answer_id, str) else None
+        if entry is None:
+            return None
+        if self._facts is None:
+            self._facts = approved_facts() + "\n" + "\n".join(d["why"] for d in self.spec.slots.values())
+        if guard_check(entry[1], allowed=self._facts) is not None:
+            logger.warning(f"voice answer {answer_id!r} failed the output guard; using the default")
+            return None
+        return entry[1]
+
+    def _with_answer(self, vt: VoiceTurn, answer_id: Any) -> VoiceTurn:
+        """Put the approved answer where the brain's generic question reply sits (or first):
+        the node's ask the brain planned still follows it, so setup keeps moving."""
+        line = self.answer_line(answer_id)
+        plan = vt.plan
+        if not line or not vt.line or plan.absorbed or plan.graduate or "prompt_injection" in plan.respond_to:
+            return vt
+        for generic in (T.RESPOND["off_topic"], T.RESPOND["privacy_question"]):
+            if generic in vt.line:
+                vt.line = vt.line.replace(generic, line, 1)
+                return vt
+        vt.line = f"{line} {vt.line}"
+        return vt
+
     async def handle_record_slots(self, args: dict, flow_manager: Any = None) -> tuple[dict, "NodeConfig"]:
         """Flows handler: extraction in, brain-decided (result, next node) out."""
         if self.timer is not None:
             self.timer.tool_call()
         started = time.perf_counter()
+        if self._nothing_new():
+            # A second extraction call with no new caller words (a retried or repeated LLM
+            # run): applying it would run the same turn twice. Stay on the node, say nothing.
+            logger.warning(f"record_slots with no new caller message on node {self.node!r}: ignored")
+            result = {"ignored": True, "reason": "no_new_utterance", "node": self.node}
+            if self.node is None or self.node == TERMINAL_NODE or self.last is None:
+                return result, None  # type: ignore[return-value]
+            return result, self.node_config(self.node, self.last, speak=False)
         utterance = _utterance_since(self.context, self._ctx_seen) or _utterance(self.context)
         self._mark_seen()
-        x = parse(self.spec, args if isinstance(args, dict) else {})
+        raw = args if isinstance(args, dict) else {}
+        x = parse(self.spec, raw)
         if self.stt_confidence is not None and NAME in x.slots:
             # The brain sees the weaker of the STT and extraction confidence for the name.
             x.confidences[NAME] = min(self.stt_confidence, x.confidences.get(NAME, 1.0))
@@ -427,7 +484,7 @@ class VoiceFlow:
             self.timer.handler_done(handler_ms=(time.perf_counter() - started) * 1000, node=vt.plan.node,
                                     direct=self.direct_speech and bool(vt.line) and not vt.plan.absorbed,
                                     db_ms=db.ms if db else None, db_calls=db.calls if db else None)
-        return await self._after(vt)
+        return await self._after(self._with_answer(vt, raw.get("answer")))
 
     async def opening(self, *, reconnect: bool = False) -> "NodeConfig":
         """Call connected: `call_started` moves the session onto voice; speak the brain's
