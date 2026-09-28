@@ -1,4 +1,4 @@
-import type { Checklist as ChecklistT } from "@/lib/session/types";
+import type { Checklist as ChecklistT, SessionSnapshot, UIAction } from "@/lib/session/types";
 import type { SlotName } from "@/lib/flow-types";
 
 const ITEMS: { slot: SlotName; long: string; short: string }[] = [
@@ -44,5 +44,17 @@ export function TopBar({ checklist, just, right }: { checklist?: ChecklistT; jus
       {checklist && <span className="spacer desk-only" />}
       {right && <span className="help">{right}</span>}
     </header>
+  );
+}
+
+/** Agent unreachable: say so plainly and offer a retry (never a dead button). */
+export function Notice({ notice, onAct }: { notice: NonNullable<SessionSnapshot["notice"]>; onAct: (a: UIAction) => void }) {
+  return (
+    <div className="notice" role="alert" data-testid="notice">
+      <span>{notice.text}</span>
+      <button type="button" className="btn secondary" onClick={() => onAct(notice.action)}>
+        {notice.label}
+      </button>
+    </div>
   );
 }

@@ -10,7 +10,7 @@ import { Composer } from "./Composer";
 import { Home } from "./Home";
 import { Ring } from "./Ring";
 import { Thread } from "./Thread";
-import { Checklist, TopBar } from "./TopBar";
+import { Checklist, Notice, TopBar } from "./TopBar";
 
 /** Live mode: the real agent session resolved server-side from the httpOnly cookie. */
 export interface LiveBoot {
@@ -59,6 +59,7 @@ export function App({ initialState, capture, live }: { initialState: StateName; 
     return (
       <div className="app" data-surface="landing">
         <TopBar />
+        {snap.notice && <Notice notice={snap.notice} onAct={act} />}
         <main className="landing">
           <div className="copy">
             <h1>Meet the assistant that gets things done.</h1>
@@ -96,6 +97,7 @@ export function App({ initialState, capture, live }: { initialState: StateName; 
     <div className="app" data-surface="chat">
       <TopBar checklist={snap.checklist} just={snap.justFilled} right="Setting up" />
       <Checklist items={snap.checklist} just={snap.justFilled} variant="mob" />
+      {snap.notice && <Notice notice={snap.notice} onAct={act} />}
       <main className={`main ${showRail ? "with-call" : ""}`}>
         <section className="chat" aria-label="Chat">
           <Thread items={snap.thread} agent={agent} inCall={liveCall} onChip={send} onCall={call} onAct={act} />
