@@ -48,6 +48,7 @@ class VoiceConfig:
     fake_vendors: bool = False
     max_call_secs: float = 900.0
     otel_langfuse: bool = False
+    direct_speech: bool = True     # LAT-001: speak the brain's line via TTS (no phrasing LLM run)
 
     @classmethod
     def from_env(cls, env: Optional[Mapping[str, str]] = None) -> "VoiceConfig":
@@ -65,6 +66,7 @@ class VoiceConfig:
             fake_vendors=_flag(env, "PERSONA_VOICE_FAKE_VENDORS"),
             max_call_secs=float(env.get("PERSONA_VOICE_MAX_CALL_SECS") or cls.max_call_secs),
             otel_langfuse=(env.get("PERSONA_TRACING") or "").strip().lower() == "langfuse",
+            direct_speech=(env.get("PERSONA_VOICE_DIRECT_SPEECH") or "1").strip().lower() not in ("0", "false", "no", "off"),
         )
 
     @property

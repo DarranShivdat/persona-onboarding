@@ -98,6 +98,7 @@ REGISTRY: tuple[Var, ...] = (
     Var("CARTESIA_VOICE_ID", (AGENT,), default="71a7ad14-091c-4e8e-a314-022ece01c121", section="voice"),
     Var("CARTESIA_MODEL", (AGENT,), default="sonic-2", section="voice"),
     Var("PERSONA_VOICE_MAX_CALL_SECS", (AGENT,), default="900", section="voice", note="hard cap per call (spend guard)"),
+    Var("PERSONA_VOICE_DIRECT_SPEECH", (AGENT,), default="1", section="voice", note="speak the brain's line via TTS, skip the phrasing LLM run (LAT-001)"),
     Var("PERSONA_VOICE_STUB_LLM", (AGENT,), section="voice", forbidden=(AGENT,), note="test-only: canned LLM on the call"),
     Var("PERSONA_VOICE_FAKE_VENDORS", (AGENT,), section="voice", forbidden=(AGENT,), note="test-only: offline tone TTS, no STT"),
     Var("PERSONA_SILENCE_NUDGE_S", (AGENT,), section="voice", default="7", note="silence floor: first nudge"),
