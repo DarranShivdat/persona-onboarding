@@ -13,6 +13,7 @@ from typing import Callable, Iterable, Optional, Protocol, Union
 from ..brain.engine import Extraction, ResponsePlan
 from ..brain.spec import FlowSpec
 from ..brain.state import Channel, SessionState
+from ..llm import templates as T
 
 
 class TurnLlm(Protocol):
@@ -23,7 +24,7 @@ class TurnLlm(Protocol):
 Script = Union[Extraction, Callable[[SessionState, str], Extraction]]
 
 _ASK = {
-    "agent_name": "What would you like to call your assistant?",
+    "agent_name": T.ask_line("agent_name", "text"),
     "user_name": "And what should I call you?",
     "need": "What's one thing you'd love a hand with this week?",
     "gmail": "Last step: connect your Gmail with the button below.",
@@ -73,7 +74,7 @@ def template_phrase(spec: FlowSpec, state: SessionState, plan: ResponsePlan) -> 
     if plan.resume:
         out.append("Welcome back!")
     if "greet" in plan.say:
-        out.append("Hi! I'm your new Persona assistant.")
+        out.append(T.GREET)  # copy.md A-01
     if plan.respond_to:
         out.append("Good question — happy to get into that once we're set up.")
     for s in plan.acknowledge + plan.changed:
@@ -86,9 +87,14 @@ def template_phrase(spec: FlowSpec, state: SessionState, plan: ResponsePlan) -> 
     if plan.confirm:
         out.append(f"Just to confirm, {state.slots[plan.confirm].value}? (yes/no)")
     elif plan.offer_call:
-        out.append("Want to hop on a quick call for the rest, or keep typing?")
+        out.append(T.OFFER_CALL)
     elif plan.ask:
         if plan.explain_why:
             out.append(spec.slots[plan.ask].get("why", ""))
-        out.append(_ASK.get(plan.ask, f"What's your {plan.ask}?"))
+        if plan.ask == "agent_name" and "greet" in plan.say:
+            out.append(T.FIRST_ASK_AGENT_NAME)
+        elif plan.ask == "agent_name" and state.node_attempts.get("agent_name", 0) and not plan.explain_why:
+            out.append(T.agent_name_nudge())  # copy.md A-03: hesitated, so offer names lightly
+        else:
+            out.append(_ASK.get(plan.ask, f"What's your {plan.ask}?"))
     return " ".join(p for p in out if p)

@@ -34,7 +34,7 @@ test("real agent: call connects, opening is captioned, hangup resumes in chat", 
   await page.goto("/");
   await page.getByRole("button", { name: "Get started" }).click();
   const thread = page.getByTestId("thread");
-  await expect(thread).toContainText("What would you like to call your assistant?");
+  await expect(thread).toContainText("what would you like to call me?");
   const composer = page.getByRole("textbox");
   await composer.fill("Juno");
   await composer.press("Enter");

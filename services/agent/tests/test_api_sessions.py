@@ -91,6 +91,42 @@ def test_agent_name_ask_carries_suggestions_only_until_named(client, store):
     assert "suggestions" not in assistant_transcripts()[-1]
 
 
+def _assistant_transcripts(store, sid):
+    return [e.payload["data"] for e in store.events_after(sid, kinds=["ui_push"], limit=1000)
+            if e.payload["type"] == "transcript" and e.payload["data"]["role"] == "assistant"]
+
+
+def test_live_greeting_matches_copy_and_carries_chips(client, store):
+    # create_app() without an llm is the hosted config (create_app_from_env): this is the live path.
+    sid, _, body = new_session(client)
+    first = _assistant_transcripts(store, sid)[0]
+    assert first["text"] == body["reply"] == (
+        "Hi! I'm your new assistant. I'll help with email, your calendar, and the everyday stuff. "
+        "First things first: what would you like to call me?")  # copy.md A-01
+    assert first["suggestions"] == ["Juno", "Atlas", "Surprise me"] and first["channel"] == "text"
+
+
+def test_agent_name_steer_back_keeps_chips_and_nudges_gently(client, store, llm):
+    sid, auth, _ = new_session(client)
+    llm.push(Extraction())  # nothing usable: one failed attempt at agent_name
+    r = turn(client, sid, auth, "hmm")
+    assert r.json()["state"]["node"] == "agent_name"
+    last = _assistant_transcripts(store, sid)[-1]
+    assert "No pressure. How about Juno, or Atlas? Anything you like works." in last["text"]  # copy.md A-03
+    assert last["suggestions"] == ["Juno", "Atlas", "Surprise me"]
+
+
+def test_surprise_me_chip_picks_a_name_instead_of_naming_it_surprise_me(client, store):
+    sid, auth, _ = new_session(client)
+    r = turn(client, sid, auth, "Surprise me")  # the chip sends its text as an ordinary turn
+    body = r.json()
+    assert body["state"]["slots"]["agent_name"] == {**body["state"]["slots"]["agent_name"],
+                                                    "status": "filled", "value": "Juno"}
+    assert body["state"]["node"] == "call_offer"
+    last = _assistant_transcripts(store, sid)[-1]
+    assert "suggestions" not in last and "Surprise me" not in last["text"]
+
+
 def test_session_routes_require_the_session_token(client):
     sid, auth, _ = new_session(client)
     assert client.get(f"/v1/sessions/{sid}").status_code == 401

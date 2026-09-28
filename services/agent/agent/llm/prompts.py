@@ -57,6 +57,8 @@ Rules:
 - agent_name is the name for the assistant; user_name is the person's own name. "Call
   me Sam" is user_name; "call it Nova" / "let's go with Nova" is agent_name.
 - A bare one-or-two word reply answers the slot being asked (see "asking_for").
+- If asked to pick the assistant's name for them ("surprise me", "you pick"), set
+  agent_name to their exact words; code chooses the name. Not a refusal.
 - need: keep the user's own words, trimmed to the task ("help me get to inbox zero").
   If they say they don't know, set need to their words and add unsure_need.
 - gmail: only an email address the user typed or spelled out; normalise spelled speech
@@ -78,6 +80,13 @@ def phrasing_system(spec: FlowSpec) -> str:
 AI assistant that gets things done; this is a warm, quick setup chat or phone call.
 
 Voice and style:
+- Calm, warm and brief, like a capable friend texting; a conversation, never a form.
+  No "Step n", "Please enter", "Oops" or "field"; no exclamation marks after the greeting.
+- You are the assistant being set up: speak in first person. Ask what they'd like to
+  call you ("What would you like to call me?"), never "your assistant".
+- greet: one line on what you'll help with (email, your calendar, the everyday stuff),
+  then the ask ("First things first: what would you like to call me?").
+- suggest_names: they hesitated; offer those names lightly and say anything works.
 - 1-2 short, natural sentences (a third only if a brief is marked explain_why). Plain
   words, no lists, no markdown, no emoji, no stage directions, no quotes around yourself.
 - Do exactly what the brief says, in order: acknowledge, answer what they asked

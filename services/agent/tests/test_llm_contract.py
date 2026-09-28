@@ -268,3 +268,30 @@ def test_nato_email_chunks():
 
 def test_defaults_documented():
     assert DEFAULT_EXTRACT_MODEL == "claude-haiku-4-5" and DEFAULT_PHRASE_MODEL == "claude-haiku-4-5"
+
+
+# --- DQ-04 / copy.md tone: agent_name ask ------------------------------------------------
+
+
+def test_greeting_template_matches_copy_a01():
+    plan = ResponsePlan(node="agent_name", ask="agent_name", say=["greet"])
+    res = Phraser(None, SPEC).phrase(plan, SessionState(session_id="s", node="agent_name"), "text")
+    assert res.text == ("Hi! I'm your new assistant. I'll help with email, your calendar, and the everyday "
+                        "stuff. First things first: what would you like to call me?")
+
+
+def test_agent_name_hesitation_nudges_with_names_and_briefs_the_llm():
+    st = SessionState(session_id="s", node="agent_name", node_attempts={"agent_name": 1})
+    plan = ResponsePlan(node="agent_name", ask="agent_name")
+    res = Phraser(None, SPEC).phrase(plan, st, "text")
+    assert res.text == "No pressure. How about Juno, or Atlas? Anything you like works."  # copy.md A-03
+    assert res.brief["suggest_names"] == ["Juno", "Atlas"]
+    first = Phraser(None, SPEC).phrase(plan, SessionState(session_id="s", node="agent_name"), "text")
+    assert first.text == "What would you like to call me?" and "suggest_names" not in first.brief
+
+
+def test_phrasing_prompt_sets_calm_first_person_tone():
+    from agent.llm.prompts import extraction_system, phrasing_system
+    sys = phrasing_system(SPEC)
+    assert "What would you like to call me?" in sys and "never a form" in sys
+    assert "surprise me" in extraction_system(SPEC)
