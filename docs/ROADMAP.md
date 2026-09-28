@@ -4,16 +4,17 @@ Worker-sized packets (≤ ~40 Opus turns each). Class: A (Grok), B-low (Grok Bui
 B-high (Opus 5.5 worker), C (Fable). Role: impl / design / frontend.
 Ready packets live in `docs/orchestration/packets/`.
 
-## Deadline and timeline (all times PT) — revised Sun Sep 27, 9:18pm
+## Deadline and timeline (all times PT) — revised Sun Sep 27, 9:51pm
 **Submission due Mon Sep 28, 2026, 8:00pm ET = 5:00pm PT.** Target: hosted URL live and
 working end to end by **Mon 12:00pm PT**.
 
-Status Sun ~9:18pm: **M1 ✅ M2 ✅ M3 ✅**. No new worker finishes this reconcile; main still
+Status Sun ~9:51pm: **M1 ✅ M2 ✅ M3 ✅**. No new worker finishes this reconcile; main still
 at FE-005 ✅ + VOICE-004-lite ✅ + INFRA-002c ✅ + PUBLIC-001 ✅. Deploy (INFRA-002b) still
 ⛔BLOCKED on (1) Session pooler `PERSONA_DATABASE_URL` (env still has direct
-`db.<ref>.supabase.co:5432` IPv6 host; password non-placeholder) and (2) `fly auth login`.
-Vendor keys + TURN + OAuth client + Vercel CLI PASS. OAuth app stays in Testing until live
-`/about`+/privacy` after deploy. Opus queue empty (M6 unpacketed; INFRA-002b is A-class EM).
+`db.<ref>.supabase.co:5432` IPv6 host **and** a classic bracketed password placeholder)
+and (2) `fly auth login`. Vendor keys + TURN + OAuth client + Vercel CLI PASS. OAuth app
+stays in Testing until live `/about`+/privacy` after deploy. Opus queue empty (M6
+unpacketed; INFRA-002b is A-class EM).
 
 | When (PT) | Milestone | Owner |
 |---|---|---|
@@ -99,9 +100,9 @@ Grok adversarial), latency tuning, reviewer README + Loom-style walkthrough scri
 READY FOR PRODUCT TEST to Darran.
 
 ## Parallelism
-Now (Sun ~9:18pm PT): Opus queue empty — M2/M3 complete; next is INFRA-002b deploy (A-class EM)
-once Darran supplies Session pooler DB URL + `fly auth login`. Then hosted smoke + M6
-hardening (packets not written yet; write on demand Mon morning).
+Now (Sun ~9:51pm PT): Opus queue empty — M2/M3 complete; next is INFRA-002b deploy (A-class EM)
+once Darran supplies Session pooler DB URL (real password) + `fly auth login`. Then hosted
+smoke + M6 hardening (packets not written yet; write on demand Mon morning).
 
 ## Decisions (resolved by Darran, 2026-09-26)
 1. **Gmail scopes: read + write** (half the product is automation): `openid email profile`
@@ -122,8 +123,9 @@ hardening (packets not written yet; write on demand Mon morning).
 ## Still open (D — Darran)
 - **Deploy blockers (see docs/deploy/DEPLOY-STATE.md):** paste Supabase **Session pooler**
   `PERSONA_DATABASE_URL` (IPv4 — current value still uses direct `db.<ref>.supabase.co:5432`
-  IPv6-only host; password is set) into `services/agent/.env`; run `fly auth login`
-  on the Mac. Anthropic/Deepgram/Cartesia/Cloudflare TURN + Vercel CLI already PASS.
+  IPv6-only host and a classic bracketed password placeholder) into `services/agent/.env`;
+  run `fly auth login` on the Mac. Anthropic/Deepgram/Cartesia/Cloudflare TURN + Vercel CLI
+  already PASS.
 - OAuth Testing: add reviewer test-user emails; after deploy set Branding homepage/privacy
   + redirect URI + authorized domain, then Publish if needed.
 - product-facts.md: Settings→Disconnect vs no Settings surface (DESIGN-002 DQ-03); voice retention wording.
