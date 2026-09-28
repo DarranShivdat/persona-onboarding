@@ -5,8 +5,8 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **REDEPLOYING — agent+web 679a6e7 (CUTOFF-001 fresh call never says 'we got cut off'; CLIP-001 lead-in silence; RESET-002 Start over < 1s; RING-002/MUTE-002/FONT-001 UI). Last LIVE: agent ac6a1dd, web fc79338** |
-| OWNER | EM executor (cutoff/clip/UI batch) — started 2:10pm PT Mon |
+| STATE | **LIVE — agent+web 1293997 (CUTOFF-001 fresh call never says 'we got cut off'; CLIP-001 120ms lead-in silence before each spoken line; RESET-002 Start over < 1s; RING-002 ring 124px; MUTE-002 overlay badge; FONT-001 one bubble font token; plus NAME-004/VQA-002; quick ack ON via Fly secret)** |
+| OWNER | EM executor (cutoff/clip/UI batch) — deploy finished 2:18pm PT Mon |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
 ## Env files (gitignored, mode 600, values never committed/printed)
@@ -84,3 +84,4 @@ Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a
 - Mon 12:58PM PT — EM executor (reset/home fix): agent+web 64b0652 deployed; smoke.sh 7/7 + LIVE button audit 246 rows PASS (Start over full flow on resume + home). Follow-up agent redeploy 49d8010 (spelling-check "yes" confirms unchanged name), /health sha 49d8010, live replay of the 12:30pm transcript OK. Web unchanged since 64b0652. Fly secrets untouched (quick ack still set). STATE → LIVE.
 - Mon 1:25PM PT — EM executor (honest-need/name fix): agent+web c029e5d (code 904c0da) deployed; smoke.sh 7/7 + LIVE button audit 246 rows PASS; live API replay: 'Text messages.' / 'book reservations for me' / 'clean up my inbox' all get the identical 'Noted: … To get started, let's connect your Gmail. …' line.
 - Mon 1:50PM PT — EM executor (yes-loop/VQA): agent ac6a1dd + web fc79338 (no web changes after fc79338); smoke 7/7 + LIVE audit 246 PASS (an earlier run had 1 call-live timeout while an API replay ran concurrently; clean on rerun); live replay: 'what can you actually do?' / 'how long will this take?' get approved answers.
+- Mon 2:18PM PT — EM executor (cutoff/clip/UI): agent+web 1293997 (code 679a6e7); smoke 8/8 + LIVE audit 246 rows PASS (Start over reset < 1s asserted on LIVE); agent pytest 882 passed; qa:fast/flow/e2e(102)/visual(baselines refreshed for 3 call states)/audit local PASS. Note: fly-agent.sh and vercel-web.sh each run the local audit — run them serially (parallel runs collide on ports).
