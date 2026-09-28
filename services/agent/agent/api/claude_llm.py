@@ -55,6 +55,8 @@ your line, so:
   "Got it:".
 - acknowledge.agent_name is the name THEY just picked for YOU: react to the name itself
   ("Nova, I like that."). acknowledge.user_name is THEIR name ("Nice to meet you, Sam.").
+- changed: they CORRECTED an earlier answer: confirm the new value plainly ("Thanks, Darran
+  it is." / "Okay, Nova it is."); never "nice to meet you" again.
 - Never introduce yourself, never say your own name, never restate what you can do, never
   start with "Hey" or "Hi".
 - respond_to: answer what they asked in one line using ONLY the approved facts; if they
@@ -133,11 +135,13 @@ class ClaudeTurnLlm:
     def _home(self, plan: ResponsePlan, state: SessionState) -> str:
         """Home turn: a model reaction only for a name/need edit ("Nova, I like that."); the
         rest (rejections, honesty about tasks, privacy, Gmail) is templated policy text."""
-        edits = [s for s in (*plan.acknowledge, *plan.changed) if s in ("agent_name", "user_name", "need")]
+        # Corrections ("my name is Darran not Darren") get the deterministic "Thanks, Darran it
+        # is." — only brand-new fills get a model reaction.
+        edits = [s for s in plan.acknowledge if s in ("agent_name", "user_name", "need")]
         reaction = ""
         if edits and not plan.rejected and "home_need_added" not in plan.respond_to:
             p = copy.copy(plan)
-            p.respond_to, p.say = [], []
+            p.respond_to, p.say, p.changed = [], [], []
             reaction = self._reaction(p, state)
         ack = home_ack(state, plan, skip=edits if reaction else ())
         return " ".join(x for x in [reaction, *ack, *home_tail(plan)] if x).strip()

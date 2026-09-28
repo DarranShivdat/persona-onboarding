@@ -83,3 +83,22 @@ def test_docker_image_ships_the_product_facts_the_phraser_reads():
 
 def test_capability_pitch_is_filtered_mid_conversation():
     assert clean_reaction("Nice to meet you — I'm ready to help you get things done with your email, calendar, and everyday tasks.") == ""
+
+
+def test_home_name_correction_is_deterministic_not_nice_to_meet_you():
+    client = _Client("Nice to meet you, Darran.")
+    llm = ClaudeTurnLlm(SPEC, client)
+    st = SessionState(session_id="h")
+    for turn in [Turn(channel="text", event="open"),
+                 Turn(channel="text", utterance="Juno", extraction=Extraction(slots={"agent_name": "Juno"})),
+                 Turn(channel="text", utterance="type", extraction=Extraction(intents=["decline_call"])),
+                 Turn(channel="text", utterance="Darren", extraction=Extraction(slots={"user_name": "Darren"})),
+                 Turn(channel="text", utterance="inbox", extraction=Extraction(slots={"need": "inbox zero"})),
+                 Turn(channel="text", utterance="I'm done", extraction=Extraction(intents=["insist_graduate"]))]:
+        st = engine.apply(SPEC, st, turn).state
+    assert st.graduated
+    r = engine.apply(SPEC, st, Turn(channel="text", utterance="my name is Darran not Darren",
+                                    extraction=Extraction(slots={"user_name": "Darran"}, intents=["change_answer"])))
+    text = llm.phrase(spec=SPEC, state=r.state, plan=r.plan, channel="text")
+    assert r.state.slot("user_name").value == "Darran"
+    assert "Darran it is" in text and "Nice to meet you" not in text

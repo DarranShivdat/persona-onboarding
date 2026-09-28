@@ -15,10 +15,12 @@ def phrase(llm, text):
     return r, llm.phrase(spec=SPEC, state=r.state, plan=r.plan, channel="text")
 
 
-def test_edit_uses_model_reaction_without_template_duplicate():
-    llm = ClaudeTurnLlm(SPEC, _Client("Nova, I like that."))
+def test_correction_edit_is_templated_without_calling_the_model():
+    client = _Client("Nice to meet you, Nova.")
+    llm = ClaudeTurnLlm(SPEC, client)
     _, text = phrase(llm, "rename yourself Nova")
-    assert text == "Nova, I like that."
+    assert text == "Okay, Nova it is."
+    assert client.messages.calls == []
 
 
 def test_policy_answers_never_call_the_model():
