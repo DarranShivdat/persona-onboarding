@@ -60,6 +60,7 @@ button:disabled { cursor: default; }
 
 .composer { width: 100%; max-width: var(--chat-max); margin: 0 auto; padding: var(--s3) var(--s5) calc(var(--s5) + env(safe-area-inset-bottom)); display: flex; gap: var(--s2); align-items: center; }
 .composer .field { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 11px 18px; color: var(--ink); font: var(--t-body); background: var(--paper); resize: none; height: calc(17px * 1.45 + 24px); max-height: 160px; overflow-y: auto; display: block; margin: 0; }
+.composer .field:focus-visible { outline: none; border-color: var(--ink); }
 .composer .field::placeholder { color: var(--ink-3); opacity: 1; }
 .iconbtn { width: var(--hit-min); height: var(--hit-min); border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--mist); color: var(--ink); flex: none; padding: 0; }
 .iconbtn.send { background: var(--bubble-user); color: #fff; }
@@ -129,7 +130,7 @@ button:disabled { cursor: default; }
 .gcard p { margin: var(--s3) 0 0; font: var(--t-callout); }
 .gcard .compact { display: none; }
 .gcard ul { list-style: none; margin: var(--s4) 0 0; padding: 0; display: grid; gap: var(--s2); }
-.gcard li { display: grid; grid-template-columns: 72px 1fr; font: var(--t-callout); }
+.gcard li { display: grid; grid-template-columns: 5.5em 1fr; column-gap: 8px; font: var(--t-callout); }
 .gcard li b { font-weight: 600; }
 .gcard li span { color: var(--ink-2); }
 .gcard .note { margin-top: var(--s4); background: var(--mist); border-radius: var(--r-tile); padding: var(--s3) var(--s4); font: var(--t-callout); color: var(--ink-2); }
@@ -148,8 +149,8 @@ button:disabled { cursor: default; }
 
 /* ---------- landing ---------- */
 .landing { display: grid; grid-template-columns: 1fr 1fr; align-items: center; min-height: calc(100vh - 64px); max-width: 1200px; margin: 0 auto; padding: 0 var(--s7); gap: var(--s7); }
-.landing h1 { font: var(--t-display); letter-spacing: var(--tr-display); margin: 0; }
-.landing .lede { font: 400 21px/1.45 var(--font); color: var(--ink-2); margin: var(--s5) 0 var(--s6); max-width: 30ch; }
+.landing h1 { font: var(--t-display); letter-spacing: var(--tr-display); margin: 0; text-wrap: balance; }
+.landing .lede { font: 400 21px/1.45 var(--font); color: var(--ink-2); margin: var(--s5) 0 var(--s6); max-width: 32ch; text-wrap: pretty; }
 .landing .fine { font: var(--t-callout); color: var(--ink-3); margin-top: var(--s4); }
 .landing .art { display: grid; place-items: center; }
 .landing .art .plate { width: 440px; height: 440px; border-radius: 50%; background: radial-gradient(circle at 50% 45%, #FFFFFF 0%, var(--mist) 62%, #ECECEF 100%); display: grid; place-items: center; }
@@ -222,7 +223,6 @@ button:disabled { cursor: default; }
   .defer .btn { grid-column: 2 / 3; justify-self: start; }
   .defer .x { grid-row: 1; grid-column: 3; }
   .gcard { padding: var(--s4); }
-  .gcard li { grid-template-columns: 64px 1fr; }
   .gcard.in-call .full { display: none; }
   .gcard.in-call .compact { display: block; }
 }
