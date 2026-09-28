@@ -1,0 +1,13 @@
+# Build context = repo root (infra/agent.Dockerfile). Allowlist: only what the image copies.
+*
+!services/agent/pyproject.toml
+!services/agent/agent/
+!packages/flow/
+!infra/agent-constraints.txt
+!infra/supabase/migrations/
+# never ship secrets / caches even inside allowlisted dirs
+**/.env
+**/.env.*
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
