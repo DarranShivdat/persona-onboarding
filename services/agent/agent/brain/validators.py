@@ -22,6 +22,14 @@ AGENT_NAME_CONFIRM_LEN = 24
 AGENT_NAME_MAX_LEN = 40
 PERSON_NAME_MAX_LEN = 50
 PERSON_NAME_MAX_WORDS = 5
+# Offered with the text agent_name ask (DQ-04 chips; copy.md A-01). The last one asks us to pick.
+AGENT_NAME_SUGGESTIONS = ("Juno", "Atlas", "Surprise me")
+# "Surprise me" / "you pick": code picks the name, so the chip (or the words) never become the name.
+SURPRISE_AGENT_NAME = "Juno"
+_PICK_FOR_ME = re.compile(
+    r"^(surprise me|you (pick|choose|decide)( one| for me)?|pick (one|for me)|dealer'?s choice|up to you)[.!]*$",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -60,6 +68,8 @@ def agent_name(raw: Optional[str], *, channel: str = "text", confidence: Optiona
     v = _clean(raw)
     if not v:
         return Validation("reject", reason="empty")
+    if _PICK_FOR_ME.match(re.sub(r"\s+", " ", v)):
+        return Validation("ok", SURPRISE_AGENT_NAME)
     if len(v) > AGENT_NAME_MAX_LEN:
         return Validation("reject", reason="too_long")
     if _ABUSIVE.search(v):

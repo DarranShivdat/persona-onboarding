@@ -361,6 +361,9 @@ def test_unknown_event_rejected(spec):
     ("Nova", "ok", "Nova"), ('"Juno"', "ok", "Juno"), ("", "reject", None), ("x" * 41, "reject", None),
     ("Captain Fantastic Of The Seas", "confirm", "Captain Fantastic Of The Seas"), ("Shitbot", "confirm", "Shitbot"),
     ("kys bot", "reject", None), ("Cassandra", "ok", "Cassandra"),
+    # DQ-04 "Surprise me" chip (and its spoken/typed cousins): code picks, never the literal words.
+    ("Surprise me", "ok", "Juno"), ("surprise me!", "ok", "Juno"), ("You pick", "ok", "Juno"),
+    ("up to you", "ok", "Juno"), ("Surprise Me Bot", "ok", "Surprise Me Bot"),
 ])
 def test_agent_name_validator(raw, outcome, value):
     from agent.brain.validators import agent_name

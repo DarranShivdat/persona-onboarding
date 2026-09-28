@@ -24,6 +24,7 @@ from ..brain import engine
 from ..brain.engine import Extraction, ResponsePlan, Turn
 from ..brain.spec import FlowSpec
 from ..brain.state import Channel, SessionState
+from ..brain.validators import AGENT_NAME_SUGGESTIONS  # spec §8 chat-agent-name chips
 from ..obs.meta import turn_metadata
 from ..obs.tracing import Tracer
 from ..store import CallLease, PgStore, VersionConflictError
@@ -96,8 +97,6 @@ def snapshot(spec: FlowSpec, state: SessionState, lease: Optional[CallLease]) ->
     }
 
 
-# Offered with the text agent_name ask (spec §8 chat-agent-name); the web renders them as chips.
-AGENT_NAME_SUGGESTIONS = ("Juno", "Atlas", "Surprise me")
 SLOT_LABELS = {"agent_name": "naming your assistant", "user_name": "your name",
                "need": "what you'd like help with", "gmail": "connecting Gmail"}
 
