@@ -7,6 +7,7 @@ docs/decisions/0001-voice-hosting.md and infra/voice-spike/README.md for env nam
 from __future__ import annotations
 
 import os
+import time
 
 import httpx
 from loguru import logger
@@ -63,16 +64,41 @@ async def cloudflare_ice_servers(ttl_secs: int = 3600) -> list[dict] | None:
 
 
 ICE_TTL_S = 3600
+# LAT-001: minted creds are reused while they have at least this long left, so a call's two
+# ICE lookups (browser GET /ice + server leg on POST /call) skip the Cloudflare round trip.
+ICE_MIN_REMAINING_S = 900
+_minted: tuple[list[dict], float] | None = None   # (servers, minted_at monotonic)
+
+
+def _cached(now: float) -> tuple[list[dict], int] | None:
+    if _minted is None:
+        return None
+    servers, at = _minted
+    left = ICE_TTL_S - (now - at)
+    return ([dict(s) for s in servers], int(left)) if left >= ICE_MIN_REMAINING_S else None
+
+
+def reset_ice_cache() -> None:
+    global _minted
+    _minted = None
 
 
 async def resolve_ice() -> tuple[list[dict], int | None]:
-    """(servers, ttl_s): Cloudflare-minted creds (ttl) if configured, else static (no ttl)."""
+    """(servers, ttl_s): Cloudflare-minted creds (ttl = time left) if configured, else static (no ttl)."""
+    global _minted
+    if ice_mode() == "cloudflare":
+        hit = _cached(time.monotonic())
+        if hit:
+            return hit
     try:
         minted = await cloudflare_ice_servers(ICE_TTL_S)
     except Exception as e:  # noqa: BLE001 - fall back to static config (never log the token)
         logger.warning(f"Cloudflare TURN mint failed, using static ICE config: {type(e).__name__}")
         minted = None
-    return (minted, ICE_TTL_S) if minted else (static_ice_servers(), None)
+    if minted:
+        _minted = ([dict(s) for s in minted], time.monotonic())
+        return minted, ICE_TTL_S
+    return static_ice_servers(), None
 
 
 async def resolve_ice_servers() -> list[dict]:

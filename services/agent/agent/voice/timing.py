@@ -2,6 +2,7 @@
 
 The budget is "user stops -> first bot audio" (< 1.5 s). Spans, all in ms:
 
+    (user stopped = VAD stop frame time minus the VAD's stop_secs, i.e. the end of speech)
     stt_final        user stopped (VAD) -> final transcript (may be negative: Deepgram
                      can finalize before the VAD stop fires)
     turn_wait        user stopped -> LLM #1 starts (Smart Turn / aggregation wait)
@@ -153,7 +154,8 @@ def build_timing_observer(timer: TurnTimer):
             if len(self._seen) > 4096:
                 self._seen.clear()
             if isinstance(f, VADUserStoppedSpeakingFrame):
-                timer.user_stopped()
+                # The VAD fires after `stop_secs` of silence: the caller actually stopped then.
+                timer.user_stopped(at=timer.clock() - float(getattr(f, "stop_secs", 0.0) or 0.0))
             elif isinstance(f, TranscriptionFrame):
                 timer.stt_final()
             elif isinstance(f, LLMFullResponseStartFrame):

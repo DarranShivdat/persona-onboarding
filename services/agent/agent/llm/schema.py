@@ -12,17 +12,23 @@ from ..brain.spec import FlowSpec
 TOOL_NAME = "record_slots"
 
 
-def record_slots_tool(spec: FlowSpec) -> dict[str, Any]:
+def record_slots_tool(spec: FlowSpec, *, compact: bool = False) -> dict[str, Any]:
+    """`compact` (voice, LAT-001): slots/confidences the user did not give are omitted instead
+    of sent as null/0, so the tool call is ~1/3 the output tokens (every token is on the
+    caller's wait). Same names, types and intents; `extract.parse` treats missing as null."""
     names = list(spec.slots)
+    absent = ("Omit it if the user did not give it in THIS message." if compact
+              else "null if the user did not give it in THIS message.")
     slot_props = {
         n: {
-            "type": ["string", "null"],
-            "description": f"{spec.slots[n]['description']} null if the user did not give it in THIS message.",
+            "type": "string" if compact else ["string", "null"],
+            "description": f"{spec.slots[n]['description']} {absent}",
         }
         for n in names
     }
     conf_props = {
-        n: {"type": "number", "description": f"0.0-1.0 confidence in slots.{n} (0 when null)."}
+        n: {"type": "number", "description": f"0.0-1.0 confidence in slots.{n}"
+            + (f" (only when slots.{n} is given)." if compact else " (0 when null).")}
         for n in names
     }
     return {
@@ -30,7 +36,8 @@ def record_slots_tool(spec: FlowSpec) -> dict[str, Any]:
         "description": (
             "Record what the user's latest message contains: a value for every slot they "
             "gave (in any order), per-slot confidence, and every intent that applies. "
-            "Call exactly once per user message."
+            + ("Only include slots given in this message; omit the rest. " if compact else "")
+            + "Call exactly once per user message."
         ),
         "strict": True,
         "input_schema": {
@@ -41,13 +48,13 @@ def record_slots_tool(spec: FlowSpec) -> dict[str, Any]:
                 "slots": {
                     "type": "object",
                     "additionalProperties": False,
-                    "required": names,
+                    "required": [] if compact else names,
                     "properties": slot_props,
                 },
                 "confidence": {
                     "type": "object",
                     "additionalProperties": False,
-                    "required": names,
+                    "required": [] if compact else names,
                     "properties": conf_props,
                 },
                 "intents": {

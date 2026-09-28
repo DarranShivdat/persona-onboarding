@@ -107,10 +107,28 @@ def test_every_spec_node_builds_and_tools_are_scoped():
 
 def test_record_slots_schema_matches_text_adapter_contract():
     fs = VoiceFlow(SPEC, LocalBrain(SPEC, SessionState("s"))).record_slots_schema()
-    tool = record_slots_tool(SPEC)
-    assert fs.name == tool["name"] == TOOL_NAME
+    tool = record_slots_tool(SPEC, compact=True)   # LAT-001: voice omits absent slots
+    text = record_slots_tool(SPEC)
+    assert fs.name == tool["name"] == text["name"] == TOOL_NAME
     assert fs.properties == tool["input_schema"]["properties"]
-    assert fs.required == tool["input_schema"]["required"]
+    assert fs.required == tool["input_schema"]["required"] == text["input_schema"]["required"]
+    # Same contract as the text adapter: the same slot names, confidences and intent enum.
+    for key in ("slots", "confidence"):
+        assert set(fs.properties[key]["properties"]) == set(text["input_schema"]["properties"][key]["properties"])
+        assert fs.properties[key]["required"] == []          # absent slots are omitted, not null
+    assert fs.properties["intents"] == text["input_schema"]["properties"]["intents"]
+
+
+def test_compact_extraction_parses_like_the_full_one():
+    from agent.llm.extract import parse
+
+    full = {"slots": {"user_name": "Sam", "agent_name": None, "need": None, "gmail": None},
+            "confidence": {"user_name": 0.9, "agent_name": 0, "need": 0, "gmail": 0}, "intents": ["affirm"]}
+    compact = {"slots": {"user_name": "Sam"}, "confidence": {"user_name": 0.9}, "intents": ["affirm"]}
+    empty = {"slots": "", "confidence": "", "intents": ["refuse_slot"]}   # what Haiku sends with nothing to fill
+    assert parse(SPEC, full) == parse(SPEC, compact)
+    x = parse(SPEC, empty)
+    assert x.slots == {} and x.intents == ["refuse_slot"]
 
 
 def test_llm_args_cannot_move_node_or_fill_gmail():

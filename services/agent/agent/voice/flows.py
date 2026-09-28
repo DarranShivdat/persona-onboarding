@@ -293,7 +293,7 @@ class VoiceFlow:
         self.direct_speech = direct_speech            # speak the brain's line via TTS, skip LLM #2
         self.timer = timer
         self.last: Optional[VoiceTurn] = None
-        self._tool = record_slots_tool(spec)
+        self._tool = record_slots_tool(spec, compact=True)   # LAT-001: ~1/3 the output tokens
         self._graduated_said = False
         self.stt_confidence: Optional[float] = None   # last final transcript's STT confidence
         self.node: Optional[str] = None               # the brain's current node on this call

@@ -177,3 +177,46 @@ def test_load_for_turn_reports_a_live_lease(service):
     lease = service.acquire_call(sid, ttl_s=30)
     _, got = service.store.load_for_turn(sid)
     assert got is not None and got.call_id == lease.call_id
+
+
+# --- LAT-001 continuation: ICE cred cache, turn-detection tuning ---------------------------
+
+def test_minted_ice_is_reused_until_it_nears_expiry(monkeypatch):
+    import asyncio as _asyncio
+
+    from agent.voice import ice
+
+    ice.reset_ice_cache()
+    monkeypatch.setenv("CLOUDFLARE_TURN_KEY_ID", "k")
+    monkeypatch.setenv("CLOUDFLARE_TURN_API_TOKEN", "t")
+    mints = []
+
+    async def fake_mint(ttl):
+        mints.append(ttl)
+        return [{"urls": ["turn:turn.example.test:3478?transport=udp"], "username": f"u{len(mints)}", "credential": "c"}]
+
+    now = [1000.0]
+    monkeypatch.setattr(ice, "cloudflare_ice_servers", fake_mint)
+    monkeypatch.setattr(ice.time, "monotonic", lambda: now[0])
+    try:
+        s1, ttl1 = _asyncio.run(ice.resolve_ice())
+        now[0] += 60
+        s2, ttl2 = _asyncio.run(ice.resolve_ice())
+        assert len(mints) == 1 and s2[0]["username"] == "u1" and ttl1 == 3600 and ttl2 == 3540
+        s2[0]["username"] = "mutated"                    # callers get copies
+        now[0] += ice.ICE_TTL_S - ice.ICE_MIN_REMAINING_S  # < 15 min left: mint fresh creds
+        s3, ttl3 = _asyncio.run(ice.resolve_ice())
+        assert len(mints) == 2 and s3[0]["username"] == "u2" and ttl3 == 3600
+    finally:
+        ice.reset_ice_cache()
+
+
+def test_turn_detection_is_tuned_for_latency():
+    from agent.voice import session as vs
+
+    assert vs.VAD_STOP_S == 0.2 and vs.TURN_MAX_SILENCE_S <= 2.0
+    params = vs.build_user_params(vs.VoiceConfig())
+    assert params.vad_analyzer.params.stop_secs == 0.2
+    assert params.vad_analyzer.params.start_secs == 0.2 and params.vad_analyzer.params.confidence == 0.7  # barge-in unchanged
+    stop = params.user_turn_strategies.stop[0]
+    assert stop._turn_analyzer.params.stop_secs == vs.TURN_MAX_SILENCE_S
