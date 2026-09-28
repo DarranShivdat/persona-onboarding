@@ -77,3 +77,9 @@ Test L (new) covers roles and model resolution via `--dry-run`.
 `PERSONA_FINISH_PCT` (82) · `PERSONA_MAX_RECOVERY` (2) · `PERSONA_OPUS_MODEL`
 (`claude-opus-5-5`) · `PERSONA_FABLE_MODEL` (`claude-fable-5`) · `PERSONA_WORKER_ROLE` ·
 `PERSONA_WORKER_MOCK=1` / `PERSONA_MOCK_MODE=...` · `PERSONA_CAFFEINATE_MOCK=1`.
+
+**Keep-awake:** the supervisor holds `caffeinate -dimsu -w <supervisor pid>` for its whole life
+(`PERSONA_CAFFEINATE_MODE=always`, default). `PERSONA_CAFFEINATE_MODE=workers` holds it only while
+workers run, but never before `PERSONA_KEEP_AWAKE_UNTIL` (default `2026-09-28T18:00:00-07:00`,
+Mon 6pm PT; `0` disables). `-s` only prevents system sleep on AC power: keep the Mac plugged in
+with the lid open. `supervisor.json` records `caffeinate_pid`, `caffeinate_mode`, `keep_awake_until`.

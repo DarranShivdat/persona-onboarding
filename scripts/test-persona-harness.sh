@@ -421,6 +421,7 @@ test_I() {
   dir=$(new_status_dir I)
   wid="i-caf"
   export PERSONA_CAFFEINATE_MOCK=1
+  export PERSONA_CAFFEINATE_MODE=workers PERSONA_KEEP_AWAKE_UNTIL=0
   export PERSONA_STALE_SECONDS=120
   export PERSONA_FINISH_PCT=99
   export PERSONA_SUPERVISOR_POLL_SECONDS=0.5
@@ -669,6 +670,27 @@ test_L() {
 
 # ---- run all ----
 log "=== Persona harness acceptance (tmpdir=$TMP_BASE) ==="
+test_M() {
+  log "TEST M: keep-awake 'always' mode holds caffeinate with no workers; released on stop"
+  local dir cpid
+  dir=$(new_status_dir M)
+  export PERSONA_CAFFEINATE_MOCK=1 PERSONA_CAFFEINATE_MODE=always PERSONA_SUPERVISOR_POLL_SECONDS=0.5
+  start_supervisor "$dir" || { log "  FAIL: supervisor start"; FAIL=$((FAIL+1)); return; }
+  wait_for 10 python3 -c "import json,sys; d=json.load(open('$dir/supervisor.json')); sys.exit(0 if d.get('caffeinate_pid') else 1)"
+  cpid=$(python3 -c "import json; print(json.load(open('$dir/supervisor.json')).get('caffeinate_pid') or 0)")
+  assert_true "M caffeinate held with zero workers" python3 -c "import os; os.kill(int('$cpid'),0)"
+  assert_true "M supervisor.json records mode=always" python3 -c "import json,sys; sys.exit(0 if json.load(open('$dir/supervisor.json')).get('caffeinate_mode')=='always' else 1)"
+  stop_supervisor "$dir" >/dev/null 2>&1
+  sleep 2
+  assert_true "M caffeinate released after stop" python3 -c "
+import os,sys
+try:
+  os.kill(int('$cpid'),0); sys.exit(1)
+except OSError:
+  sys.exit(0)"
+  unset PERSONA_CAFFEINATE_MODE
+}
+
 test_A
 test_B
 test_C
@@ -681,6 +703,7 @@ test_I
 test_J
 test_K
 test_L
+test_M
 
 log "=== SUMMARY: PASS=$PASS FAIL=$FAIL ==="
 if [ "$FAIL" -gt 0 ]; then

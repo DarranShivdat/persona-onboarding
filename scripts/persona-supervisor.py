@@ -55,6 +55,29 @@ def env_int(name: str, default: int) -> int:
     return int(v)
 
 
+DEFAULT_KEEP_AWAKE_UNTIL = "2026-09-28T18:00:00-07:00"  # Persona trial: Mon 6pm PT
+# Mock keep-awake sleeper for tests: exits when the supervisor pid (argv[1]) dies.
+MOCK_CAFFEINATE = (
+    "import os,sys,time\np=int(sys.argv[1])\nwhile True:\n"
+    "    try:\n        os.kill(p,0)\n    except OSError:\n        break\n    time.sleep(1)"
+)
+
+
+def parse_until(v: Any) -> float:
+    v = str(v or "").strip()
+    if not v or v == "0":
+        return 0.0
+    try:
+        return float(v)
+    except ValueError:
+        pass
+    try:
+        from datetime import datetime
+        return datetime.fromisoformat(v).timestamp()
+    except Exception:
+        return 0.0
+
+
 def now() -> float:
     return time.time()
 
@@ -269,6 +292,11 @@ class Supervisor:
         self.finish_git_idle = env_float("PERSONA_FINISH_GIT_IDLE_SECONDS", DEFAULT_FINISH_GIT_IDLE)
         self.supervisor_path = status_dir / "supervisor.json"
         self.caffeinate_pid: Optional[int] = None
+        # Keep-awake policy. "always" (default): hold caffeinate for the supervisor's whole
+        # life. "workers": only while managed workers run -- but in either mode, hold at least
+        # until PERSONA_KEEP_AWAKE_UNTIL (epoch seconds or ISO-8601 with offset; "0" disables).
+        self.caffeinate_mode = os.environ.get("PERSONA_CAFFEINATE_MODE", "always").strip().lower()
+        self.keep_awake_until = parse_until(os.environ.get("PERSONA_KEEP_AWAKE_UNTIL", DEFAULT_KEEP_AWAKE_UNTIL))
         self._stream_offsets: dict[str, int] = {}
         self._stop = False
         self.script_dir = Path(__file__).resolve().parent
@@ -284,6 +312,8 @@ class Supervisor:
             "active_worker_ids": active,
             "version": VERSION,
             "caffeinate_pid": self.caffeinate_pid,
+            "caffeinate_mode": self.caffeinate_mode,
+            "keep_awake_until": self.keep_awake_until,
             "clean_shutdown": False,
             "status_dir": str(self.status_dir),
             "poll_seconds": self.poll,
@@ -371,13 +401,13 @@ class Supervisor:
         try:
             if use_mock:
                 proc = subprocess.Popen(
-                    [sys.executable, "-c", "import time;\nwhile True: time.sleep(60)"],
+                    [sys.executable, "-c", MOCK_CAFFEINATE, str(os.getpid())],
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                 )
             else:
                 proc = subprocess.Popen(
-                    ["caffeinate", "-dims"],
+                    ["caffeinate", "-dimsu", "-w", str(os.getpid())],
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                 )
@@ -386,7 +416,7 @@ class Supervisor:
         except FileNotFoundError:
             # Non-mac fallback for robustness
             proc = subprocess.Popen(
-                [sys.executable, "-c", "import time;\nwhile True: time.sleep(60)"],
+                [sys.executable, "-c", MOCK_CAFFEINATE, str(os.getpid())],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
@@ -402,8 +432,15 @@ class Supervisor:
             append_event(self.status_dir, "SUPERVISOR_CAFFEINATE_STOP", pid=self.caffeinate_pid)
         self.caffeinate_pid = None
 
+    def want_caffeinate(self) -> bool:
+        if self.caffeinate_mode == "always":
+            return True
+        if self.keep_awake_until and now() < self.keep_awake_until:
+            return True
+        return bool(self.managed_alive())
+
     def update_caffeinate(self) -> None:
-        if self.managed_alive():
+        if self.want_caffeinate():
             self.ensure_caffeinate()
         else:
             self.release_caffeinate()
