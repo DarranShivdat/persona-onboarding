@@ -5,8 +5,8 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **REDEPLOYING — agent (RESUME-003: fresh-call line 'Hi, it's Atlas! So, <ask>'). Last LIVE: agent 65c8201, web 1293997** |
-| OWNER | EM executor (RESUME-003) — started 2:37pm PT Mon |
+| STATE | **REDEPLOYING — agent then web (GMAIL-NOTNOW: card 'Not now' defers Gmail and graduates). Agent 8224b77 (RESUME-003) smoke 7/7 PASS; web 1293997** |
+| OWNER | EM executor (RESUME-003 + GMAIL-NOTNOW) — started 2:47pm PT Mon |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
 ## Env files (gitignored, mode 600, values never committed/printed)
