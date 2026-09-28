@@ -8,8 +8,8 @@ Ready packets live in `docs/orchestration/packets/`.
 **Submission due Mon Sep 28, 2026, 8:00pm ET = 5:00pm PT.** Target: hosted URL live and
 working end to end by **Mon 12:00pm PT** — **ahead: hosted + smoke PASS Sun ~10:48pm**.
 
-Status Mon ~1:47am: **M1 ✅ M2 ✅ M3 ✅ M5 ✅**; **M6 DOCS/HOSTED/PROMPT ✅**; **M7** NAME/GRAD/AUDIT/GUARD/LAT-001/LAT-002/REQ-001 ✅;
-LAT tip + split-turn name fix **LIVE** (agent `/health` sha `d4de37d`, web build `e2fc98f`). Smoke 7/7 PASS Mon 1:47am.
+Status Mon ~2:19am: **M1 ✅ M2 ✅ M3 ✅ M5 ✅**; **M6 DOCS/HOSTED/PROMPT ✅**; **M7** NAME/GRAD/AUDIT/GUARD/LAT-001/LAT-002/REQ-001 ✅ LIVE;
+LAT tip **LIVE** (agent `d4de37d`, web `e2fc98f`). Smoke 7/7 PASS Mon 2:19am. voice-polish (LAT-003…) OWNER EM in flight — not merged.
 Live: web `https://persona-onboarding-darran.vercel.app`, agent `https://persona-onboarding-agent.fly.dev`.
 Latency probe after tip: user-stop→first-audio p50 2.29s / p90 2.48s (pre-LAT with the 1:00am hotfix: p50 4.32s / p90 7.02s; ~8s was the broken 12:06–1:00am window). Target <1.5s → LAT-003.
 Remaining Darran: Google Console test users + Branding homepage/privacy/authorized domain
@@ -106,9 +106,10 @@ READY FOR PRODUCT TEST to Darran.
 | **PROMPT-001** ✅ merged | Agent-name suggestion chips + tone polish from design copy (DQ-04 residual) | B-high / impl | FE-005 | chips on agent_name ask; qa:fast/flow/e2e |
 
 ## Parallelism
-Now (Mon ~1:47am PT): M7 complete on main; LAT tip + be8e932 **LIVE** (DEPLOY-STATE LIVE).
-No ready Opus packets. Hosted latency probes already collected under `.persona-qa/latency/` (p50 2.29s after tip vs 4.32s pre-LAT; see docs/qa/live-test-2026-09-27.md).
-Next: Mon morning hosted human smoke (text/voice/Gmail/hangup); Darran still needed for Google Console test users.
+Now (Mon ~2:17am PT): M7 LAT tip **LIVE** (agent `d4de37d` / web `e2fc98f`); smoke 7/7 PASS.
+**voice-polish** OWNER EM in flight on `em/voice-polish` (LAT-003/VQA-001/NAME-002/ICE-002/VIS-001/WRK-001) — reconcile left worktree alone.
+No ready Opus packets. Hosted latency probes under `.persona-qa/latency/` (p50 2.29s after tip).
+Next: finish/merge voice-polish (QA then local merge; deploy only if OWNER claims); Mon morning hosted human smoke; Darran Google Console test users.
 
 Keep 2–3 Opus workers active when packets are ready. Darran still needed for Google Console test users.
 
