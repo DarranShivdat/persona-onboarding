@@ -5,7 +5,7 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **DEPLOYED — agent hotfix redeploying (owner EM executor)** |
+| STATE | **LIVE — deployed + hosted smoke PASS** |
 | OWNER | EM executor (claimed Sun Sep 27 8:34pm PT; re-claimed 10:36pm PT) — reconcile: do NOT `--apply` |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
@@ -46,3 +46,4 @@ Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a
 - Sun 10:48PM PT — reconcile smoke.sh PASS (7/7): agent /health db ok (sha 67efd12), web / (build 406fb5c), session+turn via proxy, agent session+turn, ICE+TURN, OAuth start redirect
 - Sun 10:48PM PT — remaining Darran: Google Console test users + Branding homepage/privacy/authorized domain (URLs in this file); OAuth app may stay Testing
 - Sun 10:51PM PT — smoke.sh 7/7 PASS; hosted browser call connects+captions but hangup DELETE hung → teardown timeouts fix, redeploying agent
+- Sun 10:55PM PT — agent hotfix (hangup wait 1s) deployed; smoke.sh 7/7, pages 200, hosted browser call desktop+mobile PASS
