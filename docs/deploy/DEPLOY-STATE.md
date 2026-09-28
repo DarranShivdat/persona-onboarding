@@ -5,7 +5,7 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **LIVE — deployed + hosted smoke PASS** |
+| STATE | **REDEPLOYING agent (EM executor) — LIVE-FIX 2** |
 | OWNER | EM executor — deploy finished 10:55pm PT. Later `--apply` runs = redeploys only; log them below |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
@@ -67,3 +67,4 @@ Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a
 - Sun 10:58PM PT — web-only redeploy done (572108f): /privacy shows mailto darranshivdat1@gmail.com + 30-day retention, verified live; agent unchanged
 - Sun 11:11PM PT — 11:1xpm PT EM executor: agent redeploy 13ef15d (prod text chat was FakeLlm; now Claude extract + reaction-only phrasing)
 - Sun 11:15PM PT — 11:15PM PT EM executor: agent ddd8ac5 LIVE (1st attempt crashed: product-facts.md missing from image → fixed Dockerfile/.dockerignore). smoke 7/7; live text chat now Claude-backed.
+- Sun 11:21PM PT — 11:21PM PT EM executor: agent redeploy 5273e0d (need-vs-refusal, post-call copy, pitch filter)
