@@ -5,8 +5,8 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **LIVE — agent 65c8201 (NAME-GREET: call greets as the named assistant, 'Hi, it's Atlas!'; plus CUTOFF-001/CLIP-001/NAME-004/VQA-002), web 1293997 (RESET-002, RING-002, MUTE-002, FONT-001); quick ack ON via Fly secret** |
-| OWNER | EM executor (NAME-GREET) — deploy finished 2:27pm PT Mon |
+| STATE | **REDEPLOYING — agent (RESUME-003: fresh-call line 'Hi, it's Atlas! So, <ask>'). Last LIVE: agent 65c8201, web 1293997** |
+| OWNER | EM executor (RESUME-003) — started 2:37pm PT Mon |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
 ## Env files (gitignored, mode 600, values never committed/printed)
