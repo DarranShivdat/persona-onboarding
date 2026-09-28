@@ -107,15 +107,12 @@ READY FOR PRODUCT TEST to Darran.
 | **PROMPT-001** ✅ merged | Agent-name suggestion chips + tone polish from design copy (DQ-04 residual) | B-high / impl | FE-005 | chips on agent_name ask; qa:fast/flow/e2e |
 
 ## Parallelism
-Now (Mon ~1:21am PT): M7 LAT-001 ✅ (dda04e8) + LAT-002 ✅ (5acf776) merged. REQ-001 running
-(req-001-20260928-012154). Claude CLI early-exited LAT-002 workers twice (same pattern as
-LAT-001 235340); work was already committed on branch — merged after qa:fast/flow PASS.
-Redeploy agent with LAT tip still pending (EM; go-ahead already given — status-check only
-this cycle; live agent still sha 7a4ea2a).
+Now (Mon ~1:23am PT): M7 LAT-001 ✅ (dda04e8) + LAT-002 ✅ (5acf776) + REQ-001 ✅ merged.
+No ready Opus packets while another EM executor holds DEPLOY-STATE **REDEPLOYING** for the
+LAT tip (do not double-deploy). After LIVE: run hosted `latency-call.spec.ts`
+(`PERSONA_LATENCY_PROBE=1`) and message Darran with before/after latency.
 
-Next: agent redeploy → hosted latency probe (PERSONA_LATENCY_PROBE=1) → Mon morning human smoke.
-
-Keep 2–3 Opus workers active overnight. Darran still needed for Google Console test users.
+Keep 2–3 Opus workers active when packets are ready. Darran still needed for Google Console test users.
 
 ## Decisions (resolved by Darran, 2026-09-26)
 1. **Gmail scopes: read + write** (half the product is automation): `openid email profile`
