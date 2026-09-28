@@ -86,6 +86,8 @@ class Extractor:
             kw["messages"][0]["content"] = user + "\n" + AUTO_INSTRUCTION
         if self.policy.thinking is not None:
             kw["thinking"] = self.policy.thinking
+        if (self.policy.thinking or {}).get("type") != "enabled":
+            kw["temperature"] = 0  # extraction is classification, not creativity
         return kw
 
     def extract(self, utterance: str, context: dict[str, Any], *,

@@ -251,6 +251,8 @@ def _advance(spec, st, channel, plan, ev) -> TurnResult:
         return _graduate(spec, st, plan, ev, "complete")
     _move(spec, st, target, plan, ev)
     _describe(spec, st, plan)
+    if plan.explain_why and st.node not in st.explained:
+        st.explained.append(st.node)
     return TurnResult(st, plan, ev)
 
 
@@ -341,7 +343,10 @@ def _describe(spec, st, plan):
     slot = n["slot"]
     if plan.confirm is None:
         plan.ask = slot
-    if st.node_attempts.get(node, 0) == 0 and spec.slots[slot].get("explain_on_first_ask"):
+    if (st.node_attempts.get(node, 0) == 0 and spec.slots[slot].get("explain_on_first_ask")
+            and node not in st.explained):
+        # Explain once per session; re-entering the node (e.g. after a correction)
+        # must not repeat the pitch.
         plan.explain_why = True
     if "push_gmail_connect" in n["tools"] and GMAIL_CARD not in plan.push_ui:
         plan.push_ui.append(GMAIL_CARD)

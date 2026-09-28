@@ -27,6 +27,7 @@ FEATURES: list[tuple[str, list[str], list[list[str]], str]] = [
     ("voice", [], [["DEEPGRAM_API_KEY"], ["PERSONA_VOICE_FAKE_VENDORS"]],
      "POST /call is lease-only (answer: null); the browser falls back to text"),
     ("voice_claude", ["ANTHROPIC_API_KEY"], [], "calls use the stub turn (no Claude on voice)"),
+    ("text_claude", ["ANTHROPIC_API_KEY"], [], "text chat uses FakeLlm (naive extraction + fixed templates)"),
     ("voice_cartesia", ["CARTESIA_API_KEY"], [], "Deepgram TTS is primary (no TTS failover)"),
     ("turn", [], [["CLOUDFLARE_TURN_KEY_ID", "CLOUDFLARE_TURN_API_TOKEN"],
                   ["PERSONA_TURN_URLS", "PERSONA_TURN_USERNAME", "PERSONA_TURN_CREDENTIAL"]],

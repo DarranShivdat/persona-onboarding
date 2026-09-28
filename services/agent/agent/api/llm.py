@@ -71,19 +71,21 @@ def template_phrase(spec: FlowSpec, state: SessionState, plan: ResponsePlan) -> 
     if plan.absorbed:
         return ""
     out: list[str] = []
-    if plan.resume:
-        out.append("Welcome back!")
+    if plan.graduate:
+        # One templated summary (never "let's get to work" next to a "still left" list).
+        return T.graduation_summary(state, plan.deferred)
     if "greet" in plan.say:
         out.append(T.GREET)  # copy.md A-01
+    elif plan.resume:
+        out.append("Let's pick up where we left off.")
     if plan.respond_to:
         out.append("Good question — happy to get into that once we're set up.")
-    for s in plan.acknowledge + plan.changed:
-        out.append(f"Got it: {state.slots[s].value}.")
+    for s in plan.acknowledge:
+        out.append(T.ack_for(s, state.slots[s].value))
+    for s in plan.changed:
+        out.append(T.ack_for(s, state.slots[s].value, changed=True))
     for s, reason in plan.rejected.items():
-        out.append(f"Hmm, that didn't work for your {s.replace('_', ' ')} ({reason}).")
-    if plan.graduate:
-        out.append("You're all set — let's get to work.")
-        return " ".join(out)
+        out.append(T.REJECTED.get(reason, f"Hmm, that didn't work for your {s.replace('_', ' ')}."))
     if plan.confirm:
         out.append(f"Just to confirm, {state.slots[plan.confirm].value}? (yes/no)")
     elif plan.offer_call:

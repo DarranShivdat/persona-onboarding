@@ -376,4 +376,7 @@ def create_app_from_env() -> FastAPI:
     dsn = os.environ["PERSONA_DATABASE_URL"]
     store = PgStore(dsn)
     gmail = GmailService(store=store, cipher=TokenCipher.from_env(), oauth=GoogleOAuth.from_env())
-    return create_app(store=store, settings=Settings.from_env(), gmail=gmail, voice=VoiceConfig.from_env())
+    from .claude_llm import llm_from_env  # Claude for the text channel when keyed (live test 2026-09-27)
+
+    return create_app(store=store, llm=llm_from_env(load_spec()), settings=Settings.from_env(),
+                      gmail=gmail, voice=VoiceConfig.from_env())

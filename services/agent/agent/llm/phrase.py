@@ -23,7 +23,7 @@ from .guard import GuardResult, guard
 from .models import phrase_model, policy_for
 from .prompts import approved_facts, phrasing_system
 
-PHRASE_MAX_TOKENS = 200
+PHRASE_MAX_TOKENS = 120  # 1-2 short sentences; hard cap on rambling
 
 
 @dataclass
@@ -88,9 +88,10 @@ def template_reply(spec: FlowSpec, plan: ResponsePlan, state: SessionState,
     elif plan.resume:
         parts.append(T.RESUME[channel])
     if plan.acknowledge:
-        parts.append(T.ACK)
+        parts += [T.ack_for(s, state.slots[s].value if s in state.slots else None) for s in plan.acknowledge]
     elif plan.changed:
-        parts.append(T.CHANGED)
+        parts += [T.ack_for(s, state.slots[s].value if s in state.slots else None, changed=True)
+                  for s in plan.changed]
     parts += [T.RESPOND[i] for i in plan.respond_to if i in T.RESPOND]
     parts += [T.REJECTED[r] for r in plan.rejected.values() if r in T.REJECTED]
     if plan.skipped:
@@ -142,6 +143,8 @@ class Phraser:
         }
         if self.policy.thinking is not None:
             kw["thinking"] = self.policy.thinking
+        if (self.policy.thinking or {}).get("type") != "enabled":
+            kw["temperature"] = 0.4
         return kw
 
     def allowed_corpus(self, state: SessionState) -> str:

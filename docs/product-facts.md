@@ -28,7 +28,7 @@ Status: DRAFT — Darran to approve (D-class). Updated 2026-09-26 with Darran's 
   (Settings → Disconnect), which revokes access and deletes the stored tokens.
 
 ## Voice
-- Voice calls are processed by third-party speech services (speech-to-text and
+- Voice calls are processed by speech providers (speech-to-text and
   text-to-speech) to run the conversation. Call audio is not saved.
 
 ## Retention and contact (approved by Darran, 2026-09-27)

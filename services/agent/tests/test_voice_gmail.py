@@ -53,7 +53,7 @@ async def _say(flow, ctx, utterance, args):
 def test_gmail_ask_on_call_pushes_card_and_offers_type_it():
     vt = _run(LocalBrain(SPEC, _at_gmail()).event("call_started"))
     assert "gmail_connect_card" in vt.plan.push_ui and vt.plan.ask == "gmail"
-    assert "Connect Gmail button" in vt.line and vt.line.endswith(GMAIL_TYPE_IT)
+    assert "Connect Gmail button" in vt.line and GMAIL_TYPE_IT not in vt.line
     assert voice_tools(SPEC, "gmail") == ["record_slots"]   # card + type-it are code, not LLM tools
 
 
@@ -63,7 +63,7 @@ def test_ec19_voice_privacy_question_answers_and_stays_at_gmail():
                              _args("what do you do with my email?")))
     assert node["name"] == "gmail" and result["node"] == "gmail"
     assert T.RESPOND["privacy_question"] in result["say"]
-    assert GMAIL_TYPE_IT in result["say"] and "gmail_connect_card" in flow.last.plan.push_ui
+    assert "Connect Gmail button" in result["say"] and "gmail_connect_card" in flow.last.plan.push_ui
     assert not flow.last.state.filled("gmail")
 
 
@@ -229,7 +229,7 @@ async def _watched(service, sid, flow, action):
 def test_card_is_pushed_on_the_call(service, store):
     sid, _ = _to_gmail_on_call(service)
     flow = _run(_call(service, sid))
-    assert flow.last.plan.node == "gmail" and GMAIL_TYPE_IT in flow.last.line
+    assert flow.last.plan.node == "gmail" and "Connect Gmail button" in flow.last.line
     cards = _pushes(store, sid, "gmail_connect_card")
     assert cards and cards[-1].channel == "voice" and cards[-1].payload["data"] == {"node": "gmail"}
 
@@ -359,6 +359,6 @@ def test_reconnect_inside_grace_resumes_at_gmail_with_card_and_type_it(service, 
 
     node, flow = _run(go())
     said = node["pre_actions"][0]["text"]
-    assert node["name"] == "gmail" and said.startswith(T.RESUME["voice"]) and GMAIL_TYPE_IT in said
+    assert node["name"] == "gmail" and said.startswith(T.RESUME["voice"]) and "Connect Gmail button" in said
     assert "gmail_connect_card" in flow.last.plan.push_ui
     assert store.load(sid).slot("need").status == "filled"

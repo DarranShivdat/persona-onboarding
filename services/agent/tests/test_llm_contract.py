@@ -254,8 +254,8 @@ def test_graduation_and_absorb_do_not_call_llm():
     st = SessionState(session_id="s", node="graduated", graduated=True)
     st.slots["need"] = SlotValue(value="triage my inbox", status="filled")
     r = ph.phrase(ResponsePlan(node="graduated", graduate=True, deferred=["user_name", "gmail"]), st, "voice")
-    assert r.text == ("You're all set. Your assistant is ready to start on this: triage my inbox. "
-                      "Whenever you like, you can tell your assistant your name and connect Gmail from the main screen.")
+    assert r.text == ("You're all set. Your assistant's first job: triage my inbox. "
+                      "You can tell your assistant your name and connect Gmail from the main screen whenever you like.")
     assert ph.phrase(ResponsePlan(absorbed=True), st, "voice").text == ""
     assert ph.client.messages.calls == []
 

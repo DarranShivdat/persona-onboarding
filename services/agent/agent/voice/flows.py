@@ -63,7 +63,7 @@ GMAIL_TYPE_IT = "Or, if it's easier, type your email in the chat."
 GMAIL_TYPED = ("Thanks, I see the email you typed. To actually connect it, tap Continue with Google "
                "on your screen and sign in there.")
 GMAIL_FAILED = ("Looks like Google didn't finish signing you in. You can tap Try again on your screen, "
-                "type your email in the chat, or just say skip and we'll do it later.")
+                "or just say skip and we'll do it later.")
 GMAIL_CONNECTED = "Gmail's connected."
 # Scope -> what the assistant can't do without it (ARCHITECTURE §11 partial grants).
 GMAIL_CAPABILITY = {
@@ -116,7 +116,8 @@ def voice_line(spec: FlowSpec, plan: ResponsePlan, state: SessionState) -> str:
     rest = template_reply(spec, plan, state, CHANNEL, critical=bool(crit))
     gmail = ""
     if plan.ask == "gmail" and not crit:
-        gmail = GMAIL_TYPED if spelled else GMAIL_TYPE_IT
+        # Live test 2026-09-27: "type your email in the chat" misled (typing never connects).
+        gmail = GMAIL_TYPED if spelled else ""
     return " ".join(p for p in [VOICE_GREET if greet else "", rest, gmail, *crit] if p)
 
 

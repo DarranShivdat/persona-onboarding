@@ -29,6 +29,27 @@ FIRST_ASK_AGENT_NAME = "First things first: what would you like to call me?"
 AGENT_NAME_NUDGE = "No pressure. How about {0}, or {1}? Anything you like works."
 RESUME = {"text": "Welcome back, let's pick up where we left off.", "voice": "Hey, we got cut off. Let's pick up where we left off."}
 ACK = "Got it."
+# Natural per-slot acknowledgements (live test 2026-09-27: "Got it: Juno." read like a form).
+ACK_SLOT = {
+    "agent_name": "{v}. I like it.",
+    "user_name": "Nice to meet you, {v}.",
+    "need": "Good one, I can help with that.",
+    "gmail": "Gmail's connected.",
+}
+CHANGED_SLOT = {
+    "agent_name": "Okay, {v} it is.",
+    "user_name": "Thanks, {v} it is.",
+    "need": "Okay, noted: {v}.",
+    "gmail": "Updated.",
+}
+
+
+def ack_for(slot: str, value: Optional[str], changed: bool = False) -> str:
+    table = CHANGED_SLOT if changed else ACK_SLOT
+    line = table.get(slot)
+    if not line or ("{v}" in line and not value):
+        return CHANGED if changed else ACK
+    return line.format(v=(value or "").strip().rstrip("."))
 CHANGED = "Updated."
 SKIPPED = "No problem, we can come back to that later."
 SUGGEST = "A few ideas: getting your inbox under control, drafting replies, or keeping your calendar in check."
@@ -126,11 +147,15 @@ def graduation_summary(state: SessionState, deferred: list[str]) -> str:
     hi = f"You're all set, {user.value}." if user and user.status == "filled" and user.value else "You're all set."
     parts = [hi]
     if need and need.status == "filled" and need.value:
-        parts.append(f"{who} is ready to start on this: {need.value.rstrip('.')}.")
+        parts.append(f"{who}'s first job: {_lower_first(need.value.rstrip('.'))}.")
     else:
         parts.append(f"{who} is ready when you are.")
     todo = [DEFERRED[s] for s in deferred if s in DEFERRED]
     if todo:
         items = todo[0] if len(todo) == 1 else ", ".join(todo[:-1]) + " and " + todo[-1]
-        parts.append(f"Whenever you like, you can {items} from the main screen.")
+        parts.append(f"You can {items} from the main screen whenever you like.")
     return " ".join(parts)
+
+
+def _lower_first(v: str) -> str:
+    return v[:1].lower() + v[1:] if v[:2] != v[:2].upper() else v
