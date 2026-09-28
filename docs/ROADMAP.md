@@ -8,9 +8,9 @@ Ready packets live in `docs/orchestration/packets/`.
 **Submission due Mon Sep 28, 2026, 8:00pm ET = 5:00pm PT.** Target: hosted URL live and
 working end to end by **Mon 12:00pm PT** — **ahead: hosted + smoke PASS Sun ~10:48pm**.
 
-Status Mon ~12:54pm: **M1 ✅ M2 ✅ M3 ✅ M5 ✅**; **M6 DOCS/HOSTED/PROMPT ✅**; **M7** NAME/GRAD/AUDIT/GUARD/LAT-001/LAT-002/REQ-001 + voice-polish + RESET/HOME/SIL ✅ on tip **`64b0652` LIVE** (smoke 7/7; LIVE audit in flight under deploy owner).
-Main tip **`64f31e2`** (merged spelling-check 'yes' confirm follow-up) — **deploy-needed** (not LIVE yet; do not steal OWNER while DEPLOY-STATE=REDEPLOYING).
-Latency after polish: p50 **2.27s** / p90 **2.43s**; connect ~1.81s. `PERSONA_VOICE_QUICK_ACK` built; Fly secrets may have flag ON (owner left untouched).
+Status Mon ~1:27pm: **M1 ✅ M2 ✅ M3 ✅ M5 ✅**; **M6 DOCS/HOSTED/PROMPT ✅**; **M7** NAME/GRAD/AUDIT/GUARD/LAT/REQ + voice-polish + RESET/HOME/SIL + **HONEST-001/NAME-003** ✅ on tip **`c029e5d` LIVE** (smoke 7/7 PASS; LIVE audit 246 PASS at deploy).
+Main tip **`517ffb0`** (deploy-state LIVE stamp) matches live agent+web **`c029e5d`**. DEPLOY-STATE=LIVE (owner finished ~1:25pm PT).
+Latency after polish: p50 **2.27s** / p90 **2.43s**; connect ~1.81s. `PERSONA_VOICE_QUICK_ACK` ON via Fly secret (left untouched).
 Live: web `https://persona-onboarding-darran.vercel.app`, agent `https://persona-onboarding-agent.fly.dev`.
 Remaining Darran: Google Console test users + Branding homepage/privacy/authorized domain
 (see `docs/deploy/DEPLOY-STATE.md`). OAuth stays Testing until then.
@@ -106,9 +106,9 @@ READY FOR PRODUCT TEST to Darran.
 | **PROMPT-001** ✅ merged | Agent-name suggestion chips + tone polish from design copy (DQ-04 residual) | B-high / impl | FE-005 | chips on agent_name ask; qa:fast/flow/e2e |
 
 ## Parallelism
-Now (Mon ~12:54pm): RESET/HOME/SIL **LIVE** tip `64b0652` (agent+web); smoke 7/7 PASS; LIVE button audit still running (deploy OWNER). Main `64f31e2` = spelling-check 'yes' follow-up merged locally — **tip redeploy needed** after OWNER clears REDEPLOYING.
+Now (Mon ~1:27pm): HONEST-001/NAME-003 + RESET/HOME/SIL **LIVE** tip `c029e5d` (agent+web); smoke 7/7 PASS; DEPLOY-STATE=LIVE.
 No ready Opus packets / no active workers. Do not invent inventory work.
-Next: finish LIVE audit → tip redeploy for `64f31e2` if still needed → Darran product smoke (text/voice/Gmail); Google Console test users/Branding unchanged.
+Next: Darran product smoke (text/voice/Gmail); Google Console test users/Branding unchanged; submit by Mon 5:00pm PT.
 
 Keep 2–3 Opus workers active when packets are ready. Darran still needed for Google Console test users.
 
@@ -156,3 +156,5 @@ See docs/qa/live-test-2026-09-27.md and docs/qa/requirements-audit.md.
 | **VIS-001** ✅ (EM executor, em/voice-polish) | Refresh gmail-card-idle@mobile + graduation@mobile baselines (post-GRAD-001 UI); kill stale fe-004 :3000 server; clear dead lock | EM | GRAD-001 | qa:visual green |
 | **WRK-001** ✅ (EM executor, em/voice-polish) | claude-worker.sh launches survive the launching run ending (session/process-group isolation) | EM | — | launch survives parent exit |
 | **REQ-001** ✅ merged 667172a (~1:23am PT) | Refresh requirements-audit after M7 merges | B-high / impl | LAT-001 | docs only; qa:fast |
+| **RESET-001 / HOME-002 / SIL-002** ✅ LIVE `64b0652` (~12:58pm) | Start over + `?reset=1`; home replies from current values; gmail-step silence waits for OAuth | EM | — | smoke 7/7 + LIVE audit 246 |
+| **HONEST-001 + NAME-003** ✅ LIVE `c029e5d` (~1:25pm) | Fixed need ack (`Noted: {need}.` + permissions-only Gmail pitch, no capability claims); name read-back loops until explicit yes (cap 4), incl. spelled names | EM | NAME-001/002 | smoke 7/7; live API replay PASS |
