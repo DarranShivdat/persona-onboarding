@@ -81,8 +81,15 @@ SYMBOLS = {".": "dot", "_": "underscore", "-": "dash", "+": "plus"}
 EMAIL_CHUNK = 4
 
 
-def ask_line(slot: str, channel: Channel) -> str:
-    lines = ASK[slot]
+def ask_line(slot: str, channel: Channel, spec: Optional[FlowSpec] = None) -> str:
+    lines = ASK.get(slot)
+    if lines is None and spec is not None:
+        # A slot added to flow.yaml without a hand-written line asks with its spec `ask`
+        # (or its description): new nodes need no code change (GUARD-001 modularity).
+        sdef = spec.slots[slot]
+        return sdef.get("ask") or sdef["description"]
+    if lines is None:
+        raise KeyError(slot)
     return lines.get(channel) or lines["text"]
 
 
