@@ -10,6 +10,7 @@ prints names only.
 import asyncio
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -326,7 +327,9 @@ def test_env_report_lists_missing_names_never_values():
 
 
 def test_main_help():
-    out = subprocess.run([sys.executable, "-m", "agent.main", "--help"], capture_output=True, text=True, timeout=60)
+    agent_root = Path(__file__).resolve().parents[1]  # qa:flow runs pytest from the repo root
+    out = subprocess.run([sys.executable, "-m", "agent.main", "--help"], capture_output=True, text=True,
+                         timeout=60, cwd=agent_root)
     assert out.returncode == 0 and "--port" in out.stdout
 
 
