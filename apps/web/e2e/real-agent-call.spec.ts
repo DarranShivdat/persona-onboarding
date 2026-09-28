@@ -47,7 +47,7 @@ test("real agent: call connects, opening is captioned, hangup resumes in chat", 
   // The brain's opening line (call_started) arrives as a voice transcript -> caption.
   await expect(panel.getByLabel("Live captions")).toContainText(/Persona|call/i, { timeout: 15_000 });
   // FakeLlm phrases call_started and call_ended alike: once on voice now, once in chat after.
-  const ask = thread.getByText("And what should I call you?", { exact: false });
+  const ask = thread.getByText("what should I call you?", { exact: false }) // FakeLlm or Claude text phrasing;
   await expect(ask).toHaveCount(1);
 
   await panel.getByRole("button", { name: "End" }).click();
