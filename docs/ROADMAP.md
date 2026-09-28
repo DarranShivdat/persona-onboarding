@@ -9,7 +9,7 @@ Ready packets live in `docs/orchestration/packets/`.
 working end to end by **Mon 12:00pm PT** — **ahead: hosted + smoke PASS Sun ~10:48pm**.
 
 Status Sun ~11:53pm: **M1 ✅ M2 ✅ M3 ✅ M5 ✅**; **M6 DOCS/HOSTED/PROMPT ✅**;
-**M7** NAME/GRAD/AUDIT/GUARD/LAT-001/LAT-002 ✅ merged; REQ-001 running; agent redeploy of LAT tip pending.
+**M7** NAME/GRAD/AUDIT/GUARD/LAT-001/LAT-002 ✅ merged; REQ-001 ✅; LAT tip redeploy in progress (other EM holds DEPLOY-STATE).
 Live: web `https://persona-onboarding-darran.vercel.app` (Vercel bot checkpoint on bare curl),
 agent `https://persona-onboarding-agent.fly.dev` (`/health` db ok, sha 3f61b67 — NAME-001 era;
 main tip 6cf9b17 undeployed GRAD/GUARD/AUDIT). Smoke historically 7/7 PASS.
@@ -23,7 +23,7 @@ Remaining Darran: Google Console test users + Branding homepage/privacy/authoriz
 | Sun ~8:55pm | **FE-005** ✅ + **VOICE-004-lite** ✅ → **M2 ✅ M3 ✅** | done |
 | Sun ~10:35–10:48pm | **INFRA-002b ✅** deploy + smoke PASS (pooler DB, Fly agent, Vercel web) | done |
 | ASAP (blocks Gmail demo) | Darran: Google Console — add reviewer test-user emails; Branding homepage `/about` + privacy + authorized domain + confirm redirect URI (URLs in DEPLOY-STATE). | Darran |
-| Sun night – Mon 8:00am | M6 ✅; M7 LAT-001/002 ✅; REQ-001 running; redeploy LAT tip; real voice call smoke | EM + workers |
+| Sun night – Mon 8:00am | M6 ✅; M7 LAT-001/002/REQ ✅; LAT tip redeploy in flight; real voice call smoke | EM + workers |
 | Mon 8:00–10:00am | Hosted smoke (human): text flow, voice call (normal + TURN-only), Gmail OAuth test user, hangup/redial; fix-only | EM + Darran |
 | Mon 10:00am–12:00pm | Hosted edge-case sweep (hangup, refusal, nonsense, early graduation, two tabs), latency tuning, fix-only; spend caps set | EM + workers |
 | **Mon 12:00pm** | **Hosted URL live and end-to-end** | EM |
@@ -154,4 +154,4 @@ See docs/qa/live-test-2026-09-27.md and docs/qa/requirements-audit.md.
 | **GUARD-001** ✅ merged fe9c8cc | Per-node tool/extraction schema, reject out-of-node tool calls, modularity tests | B-high / impl | NAME-001 | qa:flow + new isolation tests |
 | **LAT-001** ✅ merged dda04e8 (~1:16am PT) | Voice latency: 2 DB RTs/turn, direct brain speech (skip LLM #2), timing + bench (handler p50 143ms @65ms RTT); region rec: Fly→iad | B-high / impl | GUARD-001 | qa:fast/flow; bench handler <200ms |
 | **LAT-002** ✅ merged 5acf776 (~1:21am PT) | Compact record_slots (voice), ICE mint cache, VAD/turn tune, hosted latency probe | B-high / impl | LAT-001 | qa:fast/flow |
-| **REQ-001** 🟡 running req-001-20260928-012154 | Refresh requirements-audit after M7 merges | B-high / impl | LAT-001 | docs only; qa:fast |
+| **REQ-001** ✅ merged 667172a (~1:23am PT) | Refresh requirements-audit after M7 merges | B-high / impl | LAT-001 | docs only; qa:fast |
