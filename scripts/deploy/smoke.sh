@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Post-deploy smoke test (read-mostly; creates one throwaway onboarding session).
 #
-#   bash scripts/deploy/smoke.sh <web-url> <agent-url>
+#   bash scripts/deploy/smoke.sh <web-url> <agent-url> [--audit]
 #   e.g. bash scripts/deploy/smoke.sh https://persona-onboarding-darran.vercel.app https://persona-onboarding-agent.fly.dev
 #
 # Checks: agent /health (+db ok), web home page, session create via the web proxy (cookie),
@@ -11,10 +11,16 @@
 # Env: SMOKE_ICE_PATHS (space-separated URLs to try for the ICE route), SMOKE_TIMEOUT (s, 15),
 #      SMOKE_REQUIRE_TURN=0 (STUN-only ICE passes; local stack), SMOKE_SKIP_OAUTH=1 (no Google
 #      client configured; local offline stack). Deploy runs leave both unset.
+# --audit: afterwards run the LIVE button audit against <web-url> (AUDIT-001, PERSONA_AUDIT_URL;
+#      read-only: may create sessions, starts 1 real call, never completes a Google sign-in).
 set -uo pipefail
 
-case "${1:-}" in -h|--help) sed -n '2,14p' "$0"; exit 0 ;; esac
-[ $# -eq 2 ] || { sed -n '2,14p' "$0"; exit 2; }
+AUDIT=0
+ARGS=()
+for a in "$@"; do if [ "$a" = --audit ]; then AUDIT=1; else ARGS+=("$a"); fi; done
+set -- ${ARGS[@]+"${ARGS[@]}"}
+case "${1:-}" in -h|--help) sed -n '2,16p' "$0"; exit 0 ;; esac
+[ $# -eq 2 ] || { sed -n '2,16p' "$0"; exit 2; }
 WEB="${1%/}"; AGENT="${2%/}"
 T="${SMOKE_TIMEOUT:-15}"
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
@@ -103,6 +109,14 @@ case "$CODE:$LOC" in
     else bad "OAuth start" "Location lacks client_id or https redirect_uri"; fi ;;
   *) bad "OAuth start" "HTTP $CODE, Location=${LOC:-none} (oauth_unconfigured? check GOOGLE_OAUTH_* on Vercel)" ;;
 esac
+fi
+
+# 8. (--audit) LIVE button audit: every control on every screen, desktop + mobile.
+if [ "$AUDIT" = 1 ]; then
+  ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+  echo "      running LIVE button audit (PERSONA_AUDIT_URL=$WEB) ..."
+  if (cd "$ROOT" && PERSONA_AUDIT_URL="$WEB" npm run qa:audit); then ok "LIVE button audit (npm run qa:audit)"
+  else bad "LIVE button audit" "see .persona-qa/audit/button-audit.md"; fi
 fi
 
 echo
