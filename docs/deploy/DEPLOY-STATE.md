@@ -5,8 +5,8 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **LIVE — agent+web 1293997 (CUTOFF-001 fresh call never says 'we got cut off'; CLIP-001 120ms lead-in silence before each spoken line; RESET-002 Start over < 1s; RING-002 ring 124px; MUTE-002 overlay badge; FONT-001 one bubble font token; plus NAME-004/VQA-002; quick ack ON via Fly secret)** |
-| OWNER | EM executor (cutoff/clip/UI batch) — deploy finished 2:18pm PT Mon |
+| STATE | **REDEPLOYING — agent (NAME-GREET: the call introduces the assistant by its agent_name). Last LIVE: agent+web 1293997** |
+| OWNER | EM executor (NAME-GREET) — started 2:24pm PT Mon |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
 ## Env files (gitignored, mode 600, values never committed/printed)
