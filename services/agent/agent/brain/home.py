@@ -42,7 +42,7 @@ EDITABLE = ("agent_name", "user_name", "need")
 # Reply kinds (plan.respond_to) the phrasing layer turns into HOME_* templates.
 HOME_KINDS = ("prompt_injection", "privacy_question", "home_capability", "home_task", "home_offer_gmail",
               "home_need_added", "home_chat", "home_ask_user_name", "home_ask_agent_name", "home_ask_need",
-              "home_confirm_spelling", "home_math", "home_off_topic", "home_cancelled")
+              "home_confirm_spelling", "home_math", "home_off_topic", "home_cancelled", "home_kept")
 # Validator outcomes that need a yes/no during onboarding are refused on home (no pending
 # confirm state after graduation): the user just picks another value.
 _CONFIRM_REASON = "needs_confirm"
@@ -180,6 +180,7 @@ def apply_home(spec: FlowSpec, state: SessionState, turn):
         return TurnResult(copy.deepcopy(state), plan, ev)
 
     wait = pending(st)
+    kept: Optional[str] = None   # slot the user re-confirmed (the value was already that)
     if text:
         _set_pending(st)   # any typed/spoken turn resolves (or abandons) what we were waiting on
     slots = {k: v for k, v in x.slots.items() if v and (not text or k == "gmail" or _grounded(k, v, text))}
@@ -196,7 +197,7 @@ def apply_home(spec: FlowSpec, state: SessionState, turn):
         if wait[0] == "spell" and len(wait) == 4:
             slot, typed, suggestion = wait[1], wait[2], wait[3]
             if _YES.match(text) and not _grounded(slot, typed, text):
-                slots, editing = {slot: suggestion}, True
+                slots, editing, kept = {slot: suggestion}, True, slot
             elif _NO.match(text) and not _value_from(_NO.sub("", text)):
                 _set_pending(st, "ask", slot)
                 plan.respond_to.append(f"home_ask_{slot}")
@@ -206,7 +207,7 @@ def apply_home(spec: FlowSpec, state: SessionState, turn):
                 plan.note = "spelled"   # they chose this spelling: don't ask again
         elif wait[0] == "ask" and len(wait) == 2 and wait[1] in EDITABLE:
             slot = wait[1]
-            slots, editing = {slot: slots.get(slot) or floor.get(slot) or _value_from(text)}, True
+            slots, editing, kept = {slot: slots.get(slot) or floor.get(slot) or _value_from(text)}, True, slot
     elif text and not slots:
         for slot, rx in _ASK_EDIT:
             if rx.match(text):
@@ -221,6 +222,10 @@ def apply_home(spec: FlowSpec, state: SessionState, turn):
     if slots.get("gmail"):
         _gmail(spec, st, slots["gmail"], turn, plan, ev)
 
+    if kept and not (plan.changed or plan.acknowledge or plan.rejected or plan.respond_to):
+        # "yes" to "did you mean Darran?" when it already was Darran: confirm it, don't deflect.
+        plan.respond_to.append("home_kept")
+        plan.note = kept
     if not (plan.changed or plan.acknowledge or plan.rejected or plan.respond_to):
         answer = _math(text)
         if answer:

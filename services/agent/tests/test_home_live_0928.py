@@ -83,6 +83,15 @@ def test_live_transcript_replay_on_home(client, llm, store):
     assert sum("all set" in t for t in replies(store, sid)) == n_closing
 
 
+def test_yes_to_the_spelling_check_confirms_even_when_unchanged():
+    # live replay on 64b0652: the name already was Darran, so "yes" fell through to the generic line
+    grad = apply(SPEC, at("gmail", agent_name="jarvis", user_name="Darran", need="connect email"),
+                 say("later", intents=["refuse_slot"])).state
+    r = apply(SPEC, grad, say("my name is Darrran not darren"))
+    r2 = apply(SPEC, r.state, say("yes"))
+    assert template_phrase(SPEC, r2.state, r2.plan) == "Thanks, Darran it is."
+
+
 def test_spelling_check_accepts_the_typed_spelling_when_insisted():
     grad = apply(SPEC, at("gmail", agent_name="jarvis", user_name="Darren", need="connect email"),
                  say("later", intents=["refuse_slot"])).state
