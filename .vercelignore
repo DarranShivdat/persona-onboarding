@@ -1,0 +1,20 @@
+# Vercel CLI uploads from the REPO ROOT (vercel-web.sh) and does NOT read .gitignore.
+# Allowlist only what the apps/web build needs; never upload env files, worker logs, services.
+/*
+!/package.json
+!/package-lock.json
+!/apps
+!/docs
+/apps/*
+!/apps/web
+/docs/*
+!/docs/design
+/docs/design/*
+!/docs/design/tokens.json
+**/.env*
+!**/.env.example
+**/node_modules
+**/.next
+apps/web/test-results
+apps/web/playwright-report
+apps/web/tsconfig.tsbuildinfo

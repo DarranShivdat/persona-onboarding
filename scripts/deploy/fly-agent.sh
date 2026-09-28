@@ -69,7 +69,9 @@ fi
 
 if [ "$DO_DEPLOY" = 1 ]; then
   step "Build remotely + deploy (context = repo root; .dockerignore allowlists the agent only)"
-  run fly deploy --remote-only -c infra/fly.toml -a "$APP" --env "GIT_SHA=$(git_sha)" --wait-timeout 600 .
+  # --ha=false: exactly ONE machine — call pipelines live in-process, so a 2nd machine would split
+  # POST /call and the WebRTC session across machines (fly defaults to 2 on first deploy).
+  run fly deploy --remote-only --ha=false -c infra/fly.toml -a "$APP" --env "GIT_SHA=$(git_sha)" --wait-timeout 600 .
   step "Verify"
   run fly status -a "$APP"
   run curl -fsS --max-time 10 "https://$APP.fly.dev/health"

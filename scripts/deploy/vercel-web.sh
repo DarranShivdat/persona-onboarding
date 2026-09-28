@@ -50,9 +50,8 @@ run $VC whoami $SCOPE_ARGS
 if [ "$DO_LINK" = 1 ]; then
   step "Link the repo root to the project (creates it on first link)"
   run $VC link --yes --project "$PROJECT" $SCOPE_ARGS
-  manual "Vercel dashboard → $PROJECT → Settings → Build & Deployment: Root Directory = apps/web,"
-  manual "  Framework = Next.js, Node.js = 22.x, 'Include files outside the root directory' = ON."
-  manual "  (The CLI cannot set Root Directory; without it the build runs at the repo root and fails.)"
+  step "Project settings: Root Directory = apps/web, Next.js, Node 22 (upload = repo root, see .vercelignore)"
+  run $VC project update "$PROJECT" --root-directory apps/web --framework nextjs --node-version 22.x --yes $SCOPE_ARGS
 fi
 
 if [ "$DO_ENV" = 1 ]; then

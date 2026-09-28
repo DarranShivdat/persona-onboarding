@@ -31,3 +31,6 @@ harness/convo/fixtures/recordings/*.raw
 .DS_Store
 .idea/
 .vscode/*
+
+# Vercel CLI link state
+.vercel/
