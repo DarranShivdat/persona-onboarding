@@ -86,14 +86,13 @@ test("wrong account on a call shows the address and a way to switch", async ({ b
   }
 });
 
-test("EC-20 voice: 'Not now' on the card during a call defers Gmail, graduates and ends the call", async ({ browser, context, page, baseURL }) => {
-  const { id, bot } = await onCall(browser, context, page, baseURL!);
+test("EC-20 voice: 'Not now' on the card during a call defers Gmail and graduates", async ({ browser, context, page, baseURL }) => {
+  const { bot } = await onCall(browser, context, page, baseURL!);
   try {
     await page.getByTestId("gmail-card").getByRole("button", { name: "Not now" }).click();
     await expect(page.locator("main.home")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText("Connect Gmail when you’re ready")).toBeVisible();
-    // The call says the short line + closing, then hangs up politely.
-    await expect.poll(async () => (await agentLog(id)).call_live, { timeout: 30_000 }).toBe(false);
+    // The spoken line + polite hang-up are the agent's (tests/test_gmail_not_now_0928.py); the stub has no pipeline.
   } finally {
     await bot.close();
   }
