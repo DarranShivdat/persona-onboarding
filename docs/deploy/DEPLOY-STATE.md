@@ -14,14 +14,18 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 - `.persona-deploy/web.env` (read by vercel-web.sh) = `apps/web/.env.local`
 - Blank until first deploy: `PERSONA_AGENT_BASE_URL`, `GOOGLE_OAUTH_REDIRECT_URL`.
 
-## Key verification (Sun 8:33pm PT)
-Anthropic PASS · Deepgram PASS · Cartesia PASS · Cloudflare TURN mint PASS ·
-**Postgres FAIL** — `PERSONA_DATABASE_URL` still contains the Supabase template placeholder
-password, and the direct host `db.<ref>.supabase.co` is IPv6-only (Darran's Mac has no IPv6).
+## Key verification (Sun 9:18pm PT)
+Anthropic PASS · Deepgram PASS · Cartesia PASS · Cloudflare TURN keys SET ·
+Google OAuth client SET · Vercel CLI logged in (`npx vercel whoami` ok) ·
+**Postgres FAIL** — `PERSONA_DATABASE_URL` still points at the direct host
+`db.<ref>.supabase.co:5432` (IPv6-only; Mac has no IPv6). Password field is non-empty /
+non-placeholder, but the host must be the **Session pooler** (`*.pooler.supabase.com`,
+user `postgres.<ref>`). Fly: `fly auth whoami` still fails (no access token).
 
 ## Blockers (Darran)
 1. Supabase → Project Settings → Database: copy the **Session pooler** connection string
-   (IPv4, port 5432, user `postgres.<ref>`) with the real DB password (reset it if unknown).
+   (IPv4, port 5432, user `postgres.<ref>`) into `services/agent/.env` as
+   `PERSONA_DATABASE_URL` (replace the direct `db.<ref>.supabase.co` host).
 2. `fly auth login` on the Mac (flyctl installed, no token). Vercel CLI is logged in.
 
 ## Order once unblocked
