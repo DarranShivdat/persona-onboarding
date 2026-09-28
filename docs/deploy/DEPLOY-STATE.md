@@ -5,7 +5,7 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **REDEPLOYING — agent be8e932 (split-turn name fix) (EM executor)** |
+| STATE | **LIVE — agent d4de37d (be8e932 split-turn name fix + LAT-001/002 tip)** |
 | OWNER | EM executor — deploy finished 10:55pm PT. Later `--apply` runs = redeploys only; log them below |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
@@ -77,3 +77,4 @@ Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a
 - Mon 1:10AM PT — 01:08 PT hotfix 7a4ea2a verified live (health sha, real voice turn → tool call → spoken line). LAT-001 integration next.
 - Mon 1:21AM PT — 01:24 PT EM executor holds deploy: merged LAT-002 (817ebc5) onto main; running qa:e2e + qa:audit, then agent+web redeploy + latency probe. Other owners: do not --apply until LIVE.
 - Mon 1:35AM PT — 01:40 PT agent+web LAT-001/002 deployed (agent sha 415f15c, web e2fc98f) and probed; live probe found spelled name split by Smart Turn -> 'An'; redeploying agent with fix be8e932.
+- Mon 1:47AM PT — 01:47 PT EM reconcile: be8e932 redeploy confirmed LIVE (agent /health sha d4de37d, Fly machine started checks passing); smoke.sh 7/7 PASS; post-fix latency probes ~2.0–2.5s user-stop→first-audio (was ~8s pre-LAT); qa:audit LIVE PASS 01:45; STATE → LIVE.
