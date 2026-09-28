@@ -200,7 +200,7 @@ def _to_gmail_on_call(service) -> tuple[str, str]:
     return sid, call_id
 
 
-async def _call(service, sid, utterances=("I'm Sam, S-A-M", "help me triage my inbox every morning"), **kw):
+async def _call(service, sid, utterances=("I'm Sam, S-A-M", "yes", "help me triage my inbox every morning"), **kw):
     ctx = _Ctx()
     flow = VoiceFlow(SPEC, ServiceBrain(service, sid), context=ctx, **kw)
     await flow.opening()

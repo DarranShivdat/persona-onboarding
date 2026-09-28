@@ -96,7 +96,7 @@ function homeReply(s, text) {
   if ((m = t.match(/^(?:rename yourself|call yourself)\s+(.+?)[.!]*$/i))) return homeEdit(s, "agent_name", m[1]).reply ?? HOME_REJECT.agent_name;
   if (/what can you do|what will you do/i.test(t)) return "I'm here for your email, calendar and everyday tasks, and I ask for your OK before acting for you. This trial can't carry out tasks yet.";
   const gmail = s.slots.gmail.status === "filled" ? "" : " Connect Gmail on this screen whenever you're ready.";
-  if (/inbox|email|calendar|send|check|reply|schedule/i.test(t)) return `I can't do that in this trial yet, so nothing's been read, sent or changed.${gmail}`;
+  if (/inbox|email|calendar|send|check|reply|schedule/i.test(t)) return `This trial doesn't carry out tasks yet, so nothing's been read, sent or changed.${gmail}`;
   return "You can rename me, change your name or what you'd like help with right here.";
 }
 
@@ -129,7 +129,7 @@ function turn(s, text) {
     s.node = nextMissing(s);
     reply = `Got it: ${text.trim()}. ${ASK[s.node]}`;
   } else {
-    reply = "Happy to help with that.";
+    reply = "Okay, noted.";
   }
   s.version += 1;
   push(s, "transcript", { role: "user", text, channel: "text" });

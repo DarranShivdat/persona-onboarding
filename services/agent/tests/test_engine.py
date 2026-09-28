@@ -254,7 +254,11 @@ def test_low_confidence_voice_name_needs_spell_back_EC11(spec):
 def test_spelled_hard_name_EC13(spec):
     st = at("user_name", "voice")
     r = apply(spec, st, say("It's Siobhan, S-I-O-B-H-A-N", "voice", conf={"user_name": 0.3}, user_name="S-I-O-B-H-A-N"))
-    assert status(r, "user_name") == "filled" and r.state.slots["user_name"].value == "Siobhan"
+    # Live 2026-09-28: a spoken spelling is read back too (STT mishears letters: "D a r r a m").
+    assert status(r, "user_name") == "candidate" and r.state.slots["user_name"].value == "Siobhan"
+    assert r.plan.confirm == "user_name"
+    ok = apply(spec, r.state, say("yes", "voice", intents=["affirm"]))
+    assert status(ok, "user_name") == "filled" and ok.state.slots["user_name"].value == "Siobhan"
 
 
 def test_joke_agent_name_confirmed_then_filled_EC15(spec):

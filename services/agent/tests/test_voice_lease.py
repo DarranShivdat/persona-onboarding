@@ -187,7 +187,7 @@ def test_hangup_resumes_in_chat_naming_whats_left(store):
     with TestClient(app) as c:
         svc.check_token = lambda _sid, _tok: True  # session created via the service, not the route
         call_id = c.post(f"/v1/sessions/{sid}/call", headers={"Authorization": "Bearer x"}).json()["call_id"]
-        _run(_talk(svc, sid, ["I'm Sam, S-A-M", "help me triage my inbox every morning"]))
+        _run(_talk(svc, sid, ["I'm Sam, S-A-M", "yes", "help me triage my inbox every morning"]))
         mid = svc.get_snapshot(sid)
         assert mid["active_channel"] == "voice" and mid["node"] == "gmail"
 
@@ -217,7 +217,7 @@ def test_hangup_is_idempotent_and_resumes_once(service):
     async def go():
         control = CallControl(service)
         lease = await control.start(sid)
-        await _talk(service, sid, ["I'm Sam, S-A-M"])
+        await _talk(service, sid, ["I'm Sam, S-A-M", "yes"])
         first = await control.end(sid, lease.call_id, "user_hangup")
         second = await control.end(sid, lease.call_id, "client_gone")
         return first, second
@@ -245,7 +245,7 @@ def test_orphaned_call_is_finished_before_the_next_text_turn(service):
     """Process died mid-call: the lease expires, the next chat turn resumes cleanly."""
     sid = _on_call(service)
     service.acquire_call(sid, ttl_s=0.2)
-    _run(_talk(service, sid, ["I'm Sam, S-A-M"]))
+    _run(_talk(service, sid, ["I'm Sam, S-A-M", "yes"]))
     time.sleep(0.4)
     service.llm.push(_x("help me triage my inbox every morning"))
     service.text_turn(sid, "help me triage my inbox every morning")
@@ -295,7 +295,7 @@ def test_reconnect_inside_grace_resumes_same_call(service):
         lease = await control.start(sid)
         s = CallSession(MagicMock(pc_id="pc"), VoiceConfig(), call_id=lease.call_id)
         s.attach(control, sid)
-        await _talk(service, sid, ["I'm Sam, S-A-M"])
+        await _talk(service, sid, ["I'm Sam, S-A-M", "yes"])
         await s._on_ended("client_disconnected")        # Wi-Fi drop: not a hangup
         dropped = service.get_snapshot(sid)
         assert control.in_grace(lease.call_id)
@@ -326,7 +326,7 @@ def test_grace_expiry_is_a_hangup(service):
     async def go():
         control = CallControl(service, HandoffSettings(grace_s=20), sleep=clock.sleep)
         lease = await control.start(sid)
-        await _talk(service, sid, ["I'm Sam, S-A-M", "help me triage my inbox every morning"])
+        await _talk(service, sid, ["I'm Sam, S-A-M", "yes", "help me triage my inbox every morning"])
         await control.disconnected(sid, lease.call_id, "client_disconnected")
         assert service.store.load(sid).active_channel == "voice"
         clock.fire()
@@ -352,7 +352,7 @@ def test_api_reconnect_route_and_real_grace_window(store):
     auth = {"Authorization": "Bearer x"}
     with TestClient(app) as c:
         call_id = c.post(f"/v1/sessions/{sid}/call", headers=auth).json()["call_id"]
-        _run(_talk(svc, sid, ["I'm Sam, S-A-M"]))
+        _run(_talk(svc, sid, ["I'm Sam, S-A-M", "yes"]))
         d = c.request("DELETE", f"/v1/sessions/{sid}/call/{call_id}", json={"reason": "network_drop"}, headers=auth)
         assert d.json() == {"released": False, "in_grace": True, "grace_s": 0.3}
         r = c.post(f"/v1/sessions/{sid}/call", json={"resume_call_id": call_id}, headers=auth)
@@ -384,7 +384,7 @@ def test_typed_text_during_call_merges_and_is_acknowledged_by_voice(service):
     seen = []
 
     async def go():
-        flow, _ = await _talk(service, sid, ["I'm Sam, S-A-M", "help me triage my inbox every morning"])
+        flow, _ = await _talk(service, sid, ["I'm Sam, S-A-M", "yes", "help me triage my inbox every morning"])
         loop = asyncio.get_running_loop()
         unwatch = flow.brain.watch_text(lambda out: loop.call_soon_threadsafe(seen.append, out))
         before = service.store.load(sid).version

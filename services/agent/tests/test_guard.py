@@ -200,7 +200,8 @@ def test_llm_asking_for_another_node_is_ignored():
     result, node = _run(flow.handle_record_slots(hijack))
     st = _run(brain.current())
     clean = apply(SPEC, base, _say("voice", user_name="S-A-M"))  # what the brain alone decides
-    assert st.node == clean.state.node == node["name"] == result["node"] == flow.node == "need"
+    # A spoken name is read back first, so both stay on user_name (never gmail/graduated).
+    assert st.node == clean.state.node == node["name"] == result["node"] == flow.node == "user_name"
     assert not st.graduated and not st.filled("gmail")
 
 

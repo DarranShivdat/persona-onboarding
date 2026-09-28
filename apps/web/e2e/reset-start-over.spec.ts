@@ -8,7 +8,7 @@ const GRAD = {
   graduated: true,
   slots: { agent_name: "Juno", user_name: "Maya", need: "Inbox triage", gmail: "skipped" },
   deferred: ["gmail"],
-  transcript: [["assistant", "You're all set, Maya. Juno's first job: inbox triage."]] as ["assistant", string][],
+  transcript: [["assistant", "You're all set, Maya. Juno has noted what you'd like help with: inbox triage."]] as ["assistant", string][],
 };
 
 async function isStub(): Promise<boolean> {

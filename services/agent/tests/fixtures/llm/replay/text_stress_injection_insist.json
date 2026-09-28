@@ -89,7 +89,7 @@
     "node": "agent_name",
     "filled": [],
     "state_unchanged": true,
-    "reply": "I can't do that, but I'm happy to keep going with setup. What would you like to call me?",
+    "reply": "I'll leave that one. Let's keep going with setup. What would you like to call me?",
     "dropped_reasons": [
      "tool",
      "claim:gmail_connected",

@@ -140,13 +140,13 @@ def test_voice_turn_makes_two_db_round_trips_and_no_reload(service):
     ctx = _Ctx()
     flow = VoiceFlow(SPEC, brain, context=ctx)
     _run(flow.opening())
-    for u in ["I'm Sam, S-A-M", "help me triage my inbox every morning"]:
+    for u in ["I'm Sam, S-A-M", "yes", "help me triage my inbox every morning"]:
         ctx.messages.append({"role": "user", "content": u})
         result, _ = _run(flow.handle_record_slots(_args(u)))
         assert brain.last_db.calls == 2             # load state+lease, one-statement commit
         assert flow.last.state == service.store.load(sid)   # the committed state, not a re-read
     kinds = [e.kind for e in service.store.events_after(sid, 0)]
-    assert kinds.count("user_utterance") == 2 and "transition" in kinds
+    assert kinds.count("user_utterance") == 3 and "transition" in kinds
 
 
 def test_one_statement_commit_keeps_version_check_and_event_order(service):

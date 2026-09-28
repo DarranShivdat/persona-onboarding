@@ -45,12 +45,13 @@ def _x(utterance) -> Extraction:
 
 
 def test_chat_then_call_then_chat_share_one_session(service):
-    call_part, typed_after = COMMON[:5], COMMON[5:]
+    call_part, typed_after = COMMON[:6], COMMON[6:]
 
-    # all-text reference run
+    # all-text reference run (a typed name needs no read-back "yes")
     ref, _, _ = service.create()
-    service.llm.push(_x("Call it Nova"), _x("I'd rather type"), *[_x(u) for u in COMMON])
-    for u in ["Call it Nova", "I'd rather type", *COMMON]:
+    ref_script = [u for u in call_part if u != "yes"] + typed_after
+    service.llm.push(_x("Call it Nova"), _x("I'd rather type"), *[_x(u) for u in ref_script])
+    for u in ["Call it Nova", "I'd rather type", *ref_script]:
         service.text_turn(ref, u)
 
     # chat -> call -> chat on one session

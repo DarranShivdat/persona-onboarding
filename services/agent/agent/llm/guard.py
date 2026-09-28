@@ -66,6 +66,13 @@ _CONNECTED = re.compile(
     r"|\byou're (now )?(connected|linked)\b",
     re.I,
 )
+# HONEST-001 (live 2026-09-28): a model line never claims or denies that the assistant can do
+# the user's thing ("I can help with that", "I can't do that"). Fixed wording, not a judgment
+# of what it can do: any such sentence is dropped and the templated line is used instead.
+_CAPABILITY = re.compile(
+    r"\b(?!you\b)(\w+)\s*(can(not|'t|’t)?|could(n't|n’t)?|will|'ll|’ll|won't|won’t)\s+"
+    r"(definitely\s+|totally\s+|absolutely\s+|easily\s+)?(help|do|handle|manage|take care of|sort)\s+"
+    r"(you\s+)?(with\s+)?(that|this|it|those|these)\b", re.I)
 _CONDITIONAL = re.compile(r"\b(once|when|after|if|until|as soon as)\b", re.I)
 _SENTENCE = re.compile(r"(?<=[.!?])\s+")
 
@@ -87,6 +94,8 @@ def check(sentence: str, *, allowed: str = "", gmail_connected: bool = False) ->
         return "json"
     if _FABRICATED.search(sentence):
         return "claim:fabricated_action"
+    if _CAPABILITY.search(sentence):
+        return "claim:capability"
     if not gmail_connected and _CONNECTED.search(sentence) and not _CONDITIONAL.search(sentence):
         return "claim:gmail_connected"
     for name, pat in _CLAIMS:

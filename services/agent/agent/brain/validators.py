@@ -167,14 +167,17 @@ _SENTENCE = re.compile(
 def person_name(raw: Optional[str], *, channel: str = "text", confidence: Optional[float] = None,
                 utterance: Optional[str] = None, confirm_policy: Optional[dict] = None) -> Validation:
     """Confirm policy (flow.yaml user_name.confirm_policy): voice `always` reads the name back
-    (spelled) before it is filled; text `unusual` confirms only odd names. A spelled name
-    *is* the spell-back and is accepted as is on either channel."""
+    (spelled) before it is filled; text `unusual` confirms only odd names. A typed spelled
+    name is accepted as is; a spoken one is read back too (live 2026-09-28: STT heard
+    "D a r r a m" for Darran and it was filled without a read-back)."""
     pol = confirm_policy or {}
     v = re.sub(r"\s+", " ", _clean(raw)).rstrip(".!")
     if not v:
         return Validation("reject", reason="empty")
     spelled = _unspell(v)
     if spelled is not None:
+        if channel == "voice" and pol.get("voice") == "always":
+            return Validation("confirm", spelled, reason="spelled_read_back")
         return Validation("ok", spelled)
     if len(v) > PERSON_NAME_MAX_LEN or len(v.split(" ")) > PERSON_NAME_MAX_WORDS:
         return Validation("reject", reason="too_long")

@@ -30,16 +30,16 @@ slots:
     description: The user's own name (what the assistant should call them).
     required: true
     channels: [text, voice]
-    validator: person_name      # letters/space/hyphen/apostrophe; a spelled name ("D A R R A N") is taken as is
+    validator: person_name      # letters/space/hyphen/apostrophe; a typed spelled name ("D A R R A N") is taken as is
     why: "So your assistant knows who it's working for."
     confirm: always             # per channel below (NAME-001: STT heard "Darren" for "Darran")
     confirm_policy:
-      voice: always             # every spoken name is read back + spelled before it is filled
+      voice: always             # every spoken name (spelled ones too) is read back + spelled before it is filled
       text: unusual             # typed text is authoritative; confirm only odd names
       text_min_confidence: 0.8  # ...extraction confidence below this,
       text_max_words: 2         # ...more words than this, a sentence, digits/symbols, or not as typed
       spell_after: 2            # voice: after this many unconfirmed tries, ask to spell letter by letter
-      max_attempts: 3           # then keep the best candidate (filled, low_confidence) and move on
+      max_attempts: 4           # then keep the latest candidate (filled, low_confidence) and move on
   need:
     description: One concrete thing the user wants help with.
     required: true
@@ -53,7 +53,8 @@ slots:
     channels: [text, voice]
     validator: gmail_oauth      # filled ONLY by the OAuth callback (verified). Spoken capture yields
                                 # a *candidate* that still requires OAuth to be 'connected'.
-    why: "Your assistant works out of your inbox; connecting Gmail lets it read, sort, draft and send for you (always with your OK)."
+    # HONEST-001: the bridge after any need + permissions only; no claim tied to the need.
+    why: "To get started, let's connect your Gmail. Connecting it will let your assistant read, organize, and send email with your OK."
     confirm: never
     explain_on_first_ask: true  # the value line rides on the first ask, so one refusal = respected
     extraction: candidate_only  # GUARD-001: an extracted email is at most a candidate, never filled

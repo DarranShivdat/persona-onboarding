@@ -62,7 +62,7 @@ GOOD = [
     "Tap the Connect Gmail button whenever you're ready.",
     "If you disconnect, the stored tokens are deleted.",
     "Sorry, I can only do English for now.",
-    "I can't do that, but I'm happy to keep going with setup.",
+    "I'll leave that one. Let's keep going with setup.",
 ]
 
 

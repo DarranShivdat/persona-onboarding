@@ -65,6 +65,7 @@ class ResponsePlan:
     changed: list[str] = field(default_factory=list)       # filled slots overwritten (change_answer)
     ask: Optional[str] = None                              # slot to ask for next
     confirm: Optional[str] = None                          # slot whose candidate needs a yes/no
+    reconfirm: bool = False                                # the same read-back again (no yes/no yet)
     denied: list[str] = field(default_factory=list)        # candidates the user just said "no" to
     spell: Optional[str] = None                            # ask the user to spell this slot, letter by letter
     explain_why: bool = False
@@ -261,17 +262,15 @@ def _resolve_confirms(spec, st, touched, intents, plan, ev) -> bool:
             st.slots[name] = SlotValue(attempts=sv.attempts)
             ev.append({"type": "slot_cleared", "slot": name})
         else:
-            plan.confirm = name  # still waiting on the yes/no
+            plan.confirm = name  # still waiting on the yes/no: read it back again
+            plan.reconfirm = True
     return handled
 
 
 def _implicit_yes(name, touched, intents) -> bool:
-    """NAME-002: the caller answered the name read-back with new information ("I mostly
-    want help with my inbox") instead of yes/no: that is a yes. The new info was already
-    extracted and validated this turn (`touched`). A correction (a new name, change_answer)
-    or a "no" is never an implicit yes: those re-confirm / re-ask as before."""
-    return (name == NAME_SLOT and bool(touched - {name})
-            and not {"deny", "change_answer"} & set(intents))
+    """Retired (live 2026-09-28): a name read-back is settled only by an explicit yes. New
+    information given instead of yes/no is still extracted, but the read-back is repeated."""
+    return False
 
 
 def _call_intents(spec, st, turn, intents, touched, plan, ev):
@@ -365,7 +364,7 @@ def _apply_event(spec, st, turn, plan, ev) -> TurnResult:
 
 NAME_SLOT = "user_name"
 NAME_SPELL_AFTER = 2
-NAME_MAX_ATTEMPTS = 3
+NAME_MAX_ATTEMPTS = 4
 # "you've got my name wrong" / "that's not how you spell it": a correction with no new value.
 _NAME_WRONG = re.compile(r"\b(my name|spell|spelt|spelled|misspel\w*)\b", re.IGNORECASE)
 

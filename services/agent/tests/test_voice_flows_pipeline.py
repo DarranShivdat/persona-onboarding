@@ -130,7 +130,7 @@ async def _drive(state: SessionState, utterances: list[str], *, direct_speech: b
 
 def test_flow_manager_pipeline_drives_the_shared_brain():
     st = apply(SPEC, SessionState(session_id="p1"), Turn(channel="text", event="open")).state
-    st, fm, llm, graduated = asyncio.run(_drive(st, ["I'm Sam, S-A-M", "uh", "help me triage my inbox every morning",
+    st, fm, llm, graduated = asyncio.run(_drive(st, ["I'm Sam, S-A-M", "yes", "uh", "help me triage my inbox every morning",
                                                     "just let me in"], direct_speech=False))
     assert st.graduated and st.active_channel == "voice"
     assert st.slot("user_name").value == "Sam" and st.slot("need").status == "filled"
@@ -145,7 +145,7 @@ def test_direct_speech_skips_the_phrasing_llm_run():
     a phrasing turn (it only extracts via record_slots)."""
     st = apply(SPEC, SessionState(session_id="p3"), Turn(channel="text", event="open")).state
     sink = TTSSink()
-    st, fm, llm, graduated = asyncio.run(_drive(st, ["I'm Sam, S-A-M", "uh", "help me triage my inbox every morning",
+    st, fm, llm, graduated = asyncio.run(_drive(st, ["I'm Sam, S-A-M", "yes", "uh", "help me triage my inbox every morning",
                                                     "just let me in"], sink=sink))
     assert st.graduated and fm.current_node == "graduated" and len(graduated) == 1
     assert llm.spoken == []                                   # no LLM #2 on any turn

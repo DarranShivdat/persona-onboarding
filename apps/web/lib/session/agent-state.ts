@@ -56,8 +56,8 @@ export function composerFor(s: AgentState): SessionSnapshot["composer"] {
 }
 
 const DEFER_COPY: Record<SlotName, (agent: string) => { title: string; reason: string; action: string }> = {
-  gmail: (a) => ({ title: "Connect Gmail when you’re ready", reason: `${a} needs it to sort your inbox. Takes a minute.`, action: "Connect" }),
-  need: (a) => ({ title: `Tell ${a} what to start on`, reason: `One thing ${a} can take off your plate.`, action: "Add" }),
+  gmail: (a) => ({ title: "Connect Gmail when you’re ready", reason: `Lets ${a} read, organize, and send email with your OK. Takes a minute.`, action: "Connect" }),
+  need: (a) => ({ title: `Tell ${a} what to start on`, reason: "One thing you'd like help with.", action: "Add" }),
   user_name: (a) => ({ title: `Tell ${a} your name`, reason: `So ${a} knows who it’s working for.`, action: "Add" }),
   agent_name: () => ({ title: "Name your assistant", reason: "Pick whatever feels right.", action: "Add" }),
 };
@@ -72,7 +72,7 @@ export function toHome(s: AgentState, extra: { gmail?: GmailCardState; thread?: 
   return {
     userName: user || "there",
     focus: {
-      label: `${agent} is starting with`,
+      label: "You asked for help with",
       value: need || "Getting to know you",
       detail: "Nothing gets sent or changed without your OK.",
       slot: "need",

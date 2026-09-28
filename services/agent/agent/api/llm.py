@@ -27,7 +27,7 @@ _ASK = {
     "agent_name": T.ask_line("agent_name", "text"),
     "user_name": "And what should I call you?",
     "need": "What's one thing you'd love a hand with this week?",
-    "gmail": "Last step: connect your Gmail with the button below.",
+    "gmail": "Use the Connect Gmail button whenever you're ready.",
 }
 _YES = {"yes", "y", "sure", "ok", "okay", "yeah", "yep", "call me"}
 _NO = {"no", "n", "nope", "no thanks", "type", "typing"}
@@ -83,9 +83,9 @@ def template_phrase(spec: FlowSpec, state: SessionState, plan: ResponsePlan) -> 
     if plan.respond_to:
         out.append("Good question — happy to get into that once we're set up.")
     for s in plan.acknowledge:
-        out.append(T.ack_for(s, state.slots[s].value))
+        out.append(T.slot_ack(state, s))
     for s in plan.changed:
-        out.append(T.ack_for(s, state.slots[s].value, changed=True))
+        out.append(T.slot_ack(state, s, changed=True))
     for s, reason in plan.rejected.items():
         out.append(T.REJECTED.get(reason, f"Hmm, that didn't work for your {s.replace('_', ' ')}."))
     if plan.confirm:

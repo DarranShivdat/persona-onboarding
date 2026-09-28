@@ -88,10 +88,9 @@ def template_reply(spec: FlowSpec, plan: ResponsePlan, state: SessionState,
     elif plan.resume:
         parts.append(T.RESUME[channel])
     if plan.acknowledge:
-        parts += [T.ack_for(s, state.slots[s].value if s in state.slots else None) for s in plan.acknowledge]
+        parts += [T.slot_ack(state, s) for s in plan.acknowledge]
     elif plan.changed:
-        parts += [T.ack_for(s, state.slots[s].value if s in state.slots else None, changed=True)
-                  for s in plan.changed]
+        parts += [T.slot_ack(state, s, changed=True) for s in plan.changed]
     parts += [T.RESPOND[i] for i in plan.respond_to if i in T.RESPOND]
     parts += [T.REJECTED[r] for r in plan.rejected.values() if r in T.REJECTED]
     if plan.skipped:
@@ -99,6 +98,19 @@ def template_reply(spec: FlowSpec, plan: ResponsePlan, state: SessionState,
     if not critical:
         parts += _ask_parts(spec, plan, channel, state)
     return " ".join(dict.fromkeys(parts))
+
+
+def fixed_copy_only(plan: ResponsePlan, state: SessionState) -> bool:
+    """HONEST-001 hard guardrail: at the need step no model-written text reaches the user.
+    The need is acknowledged with one fixed template ("Noted: ...") and bridged to Gmail by
+    the flow's fixed copy, whatever the need is, so nothing can claim (or deny) a capability.
+    Also the name kept at the read-back cap ("I'll go with ... for now")."""
+    if "need" in plan.acknowledge or "need" in plan.changed or "need" in plan.rejected:
+        return True
+    if plan.ask == "need" or plan.node == "need" or plan.suggest_examples:
+        return True
+    sv = state.slots.get("user_name")
+    return "user_name" in plan.acknowledge and sv is not None and bool(sv.low_confidence)
 
 
 def _hesitated_on_agent_name(plan: ResponsePlan, state: SessionState) -> bool:
@@ -159,7 +171,7 @@ class Phraser:
         crit = critical_lines(plan, state, channel)
         brief = build_brief(plan, state, channel, utterance, critical=bool(crit))
         fallback = template_reply(self.spec, plan, state, channel, critical=bool(crit))
-        if not _has_content(brief) or self.client is None:
+        if not _has_content(brief) or self.client is None or fixed_copy_only(plan, state):
             return PhraseResult(_join(fallback, crit), "template", brief=brief)
 
         t0 = time.perf_counter()

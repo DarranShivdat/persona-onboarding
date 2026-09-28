@@ -107,7 +107,8 @@ def test_task_request_is_honest_and_offers_gmail(spec):
     r = apply(spec, home_state(), say("can you check my inbox and reply to Tom?"))
     text = reply(spec, r)
     assert r.plan.respond_to == ["home_task", "home_offer_gmail"]
-    assert "can't" in text and "Connect Gmail" in text
+    assert "doesn't carry out tasks" in text and "Connect Gmail" in text
+    assert "can't do that" not in text and "help with that" not in text
     r = apply(spec, home_state(gmail=True), say("send an email to Tom"))
     assert "home_offer_gmail" not in r.plan.respond_to
 

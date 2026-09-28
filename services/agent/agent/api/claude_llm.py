@@ -37,7 +37,7 @@ from ..llm import templates as T
 from ..llm.client import blocks, field
 from ..llm.extract import Extractor, turn_context
 from ..llm.guard import guard
-from ..llm.phrase import Phraser, _ask_parts, critical_lines, template_reply
+from ..llm.phrase import Phraser, _ask_parts, critical_lines, fixed_copy_only, template_reply
 from ..llm.prompts import approved_facts
 from .llm import home_ack, home_tail, is_home, naive_extract, template_phrase
 
@@ -121,7 +121,10 @@ class ClaudeTurnLlm:
                             or plan.skipped)
         reaction = ""
         fixed = [i for i in plan.respond_to if i in _TEMPLATED_RESPONSES]
-        if fixed and not (plan.acknowledge or plan.changed):
+        if has_reaction and fixed_copy_only(plan, state):
+            # HONEST-001: the need step is fixed copy only (no model reaction at all).
+            reaction = template_reply(self.spec, _reaction_only(plan), state, "text", critical=True)
+        elif fixed and not (plan.acknowledge or plan.changed):
             # Privacy / injection / language answers are policy text: templated, never paraphrased.
             reaction = " ".join(T.RESPOND[i] for i in fixed)
         elif has_reaction:
@@ -137,7 +140,8 @@ class ClaudeTurnLlm:
         rest (rejections, honesty about tasks, privacy, Gmail) is templated policy text."""
         # Corrections ("my name is Darran not Darren") get the deterministic "Thanks, Darran it
         # is." — only brand-new fills get a model reaction.
-        edits = [s for s in plan.acknowledge if s in ("agent_name", "user_name", "need")]
+        # HONEST-001: a need edit is fixed copy ("Noted: ..."), never a model reaction.
+        edits = [s for s in plan.acknowledge if s in ("agent_name", "user_name")]
         reaction = ""
         if edits and not plan.rejected and "home_need_added" not in plan.respond_to:
             p = copy.copy(plan)

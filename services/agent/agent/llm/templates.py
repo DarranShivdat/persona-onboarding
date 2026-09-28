@@ -18,7 +18,7 @@ ASK: dict[str, dict[str, str]] = {
         "voice": "What's one thing you'd most like help with first?",
     },
     "gmail": {
-        "text": "Next, connect your Gmail with the Connect Gmail button whenever you're ready.",
+        "text": "Use the Connect Gmail button whenever you're ready.",
         "voice": "I've put a Connect Gmail button on your screen. Tap it whenever you're ready.",
     },
 }
@@ -33,7 +33,9 @@ ACK = "Got it."
 ACK_SLOT = {
     "agent_name": "{v}. I like it.",
     "user_name": "Nice to meet you, {v}.",
-    "need": "Good one, I can help with that.",
+    # HONEST-001 (live 2026-09-28): ONE fixed need ack for every need, no capability claim either
+    # way (never "I can help with that"). The LLM only extracts the need; code says this.
+    "need": "Noted: {v}.",
     "gmail": "Gmail's connected.",
 }
 CHANGED_SLOT = {
@@ -49,7 +51,19 @@ def ack_for(slot: str, value: Optional[str], changed: bool = False) -> str:
     line = table.get(slot)
     if not line or ("{v}" in line and not value):
         return CHANGED if changed else ACK
-    return line.format(v=(value or "").strip().rstrip("."))
+    v = (value or "").strip().rstrip(".")
+    return line.format(v=_lower_first(v) if slot == "need" else v)
+
+
+def slot_ack(state: SessionState, slot: str, changed: bool = False) -> str:
+    """ack_for plus the name kept at the read-back cap ("I'll go with ... for now")."""
+    sv = state.slots.get(slot)
+    value = sv.value if sv else None
+    if slot == "user_name" and sv is not None and sv.low_confidence and value:
+        return NAME_KEEP.format(v=value.strip().rstrip("."))
+    return ack_for(slot, value, changed)
+
+
 CHANGED = "Updated."
 SKIPPED = "No problem, we can come back to that later."
 SUGGEST = "A few ideas: getting your inbox under control, drafting replies, or keeping your calendar in check."
@@ -63,7 +77,7 @@ RESPOND = {
         "Gmail connects through Google sign-in, so your assistant never sees your password, "
         "and nothing is sent without your OK."
     ),
-    "prompt_injection": "I can't do that, but I'm happy to keep going with setup.",
+    "prompt_injection": "I'll leave that one. Let's keep going with setup.",
     "abuse": "Let's keep it friendly.",
     "off_topic": "Good question. Let's finish getting you set up first.",
     "other_language": "Sorry, I can only do English for now.",
@@ -154,7 +168,7 @@ NAME_CONFIRM_TEXT = "Just checking, should I call you {v}?"
 NAME_REASK = "Sorry about that. What's your name again?"
 NAME_SPELL_ASK = "Sorry, could you spell it for me, letter by letter?"
 NAME_CONFIRMED = "Perfect, thanks {v}."
-NAME_KEEP = "No worries, I'll go with {v} for now. You can fix it anytime."
+NAME_KEEP = "I'll go with {v} for now. You can edit it anytime."
 
 
 def name_confirm_line(value: str, channel: Channel, attempt: int = 1) -> str:
@@ -216,7 +230,8 @@ def graduation_summary(state: SessionState, deferred: list[str]) -> str:
     hi = f"You're all set, {user.value}." if user and user.status == "filled" and user.value else "You're all set."
     parts = [hi]
     if need and need.status == "filled" and need.value:
-        parts.append(f"{who}'s first job: {_lower_first(need.value.rstrip('.'))}.")
+        # HONEST-001: restate the need, no claim that the assistant will (or can) do it.
+        parts.append(f"{who} has noted what you'd like help with: {_lower_first(need.value.rstrip('.'))}.")
     else:
         parts.append(f"{who} is ready when you are.")
     todo = [DEFERRED[s] for s in deferred if s in DEFERRED]
@@ -233,21 +248,21 @@ def _lower_first(v: str) -> str:
 # Post-graduation home conversation (GRAD-001). Policy text: templated, never paraphrased.
 # Claims stay inside docs/product-facts.md; this trial never executes tasks.
 HOME_REPLY = {
-    "prompt_injection": "I can't do that, and nothing's changed.",
+    "prompt_injection": "I'll leave that one, and nothing's changed.",
     "privacy_question": RESPOND["privacy_question"],
     "home_capability": (
         "I'm here for your email, calendar and everyday tasks, and I ask for your OK before acting "
-        "for you. This trial can't carry out tasks yet."
+        "for you. This trial doesn't carry out tasks yet."
     ),
-    "home_task": "I can't do that in this trial yet, so nothing's been read, sent or changed.",
+    "home_task": "This trial doesn't carry out tasks yet, so nothing's been read, sent or changed.",
     "home_offer_gmail": "Connect Gmail on this screen whenever you're ready.",
     "home_need_added": "I've added that to what you'd like help with.",
     "home_chat": "You can rename me, change your name or what you'd like help with right here.",
     "home_ask_user_name": "Sure. What should I call you?",
     "home_ask_agent_name": "Sure. What would you like to call me?",
     "home_ask_need": "Sure. What would you like help with?",
-    "home_off_topic": ("That's outside what I can help with in this trial, but I can update my name, "
-                       "your name, or what you'd like help with."),
+    "home_off_topic": ("That's outside this trial's setup. You can rename me, change your name, "
+                       "or update what you'd like help with."),
     "home_math_tail": "Otherwise, I'm here if you want to rename me, change your name, or update what you'd like help with.",
     "home_cancelled": "No problem, nothing's changed.",
 }

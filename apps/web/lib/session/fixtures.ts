@@ -316,7 +316,7 @@ const BUILDERS: Record<StateName, () => SessionSnapshot> = {
       home: {
         userName: "Maya",
         focus: {
-          label: "Juno is starting with",
+          label: "You asked for help with",
           value: "Getting your inbox under control",
           detail:
             "First up: a short list of what needs a reply, and the junk ready to archive. Nothing gets sent or changed without your OK.",
@@ -333,7 +333,7 @@ const BUILDERS: Record<StateName, () => SessionSnapshot> = {
             id: "defer-gmail",
             slot: "gmail",
             title: "Connect Gmail when you’re ready",
-            reason: "Juno needs it to sort your inbox. Takes a minute.",
+            reason: "Lets Juno read, organize, and send email with your OK. Takes a minute.",
             action: "Connect",
           },
         ],

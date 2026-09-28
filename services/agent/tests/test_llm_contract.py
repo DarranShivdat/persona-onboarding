@@ -205,21 +205,34 @@ def test_run_turn_traces_generations(tmp_path):
 
 
 def test_phrase_request_brief_and_cache():
-    ph = _phraser(text_resp("Nice to meet you, Sam. What would you like help with first?"))
-    st = SessionState(session_id="s", node="need")
-    st.slots["user_name"] = SlotValue(value="Sam", status="filled")
-    r = ph.phrase(ResponsePlan(node="need", acknowledge=["user_name"], ask="need"), st, "text")
+    ph = _phraser(text_resp("Nova, I like it. What should I call you?"))
+    st = SessionState(session_id="s", node="user_name")
+    st.slots["agent_name"] = SlotValue(value="Nova", status="filled")
+    r = ph.phrase(ResponsePlan(node="user_name", acknowledge=["agent_name"], ask="user_name"), st, "text")
     kw = ph.client.messages.calls[0]
     assert kw["system"][-1]["cache_control"] == {"type": "ephemeral"} and "tools" not in kw
     brief = json.loads(kw["messages"][0]["content"][len("<brief>"):-len("</brief>")])
-    assert brief["acknowledge"] == {"user_name": "Sam"} and brief["ask"] == "need"
-    assert r.source == "llm" and r.text.startswith("Nice to meet you, Sam.")
+    assert brief["acknowledge"] == {"agent_name": "Nova"} and brief["ask"] == "user_name"
+    assert r.source == "llm" and r.text.startswith("Nova, I like it.")
+
+
+def test_need_step_never_calls_the_phrasing_llm():
+    """HONEST-001: at the need step (asking it, or acknowledging it) the reply is fixed copy."""
+    ph = _phraser(text_resp("Good one, I can help with that!"))
+    st = SessionState(session_id="s", node="need")
+    st.slots["user_name"] = SlotValue(value="Sam", status="filled")
+    r = ph.phrase(ResponsePlan(node="need", acknowledge=["user_name"], ask="need"), st, "text")
+    assert r.source == "template" and r.text == "Nice to meet you, Sam. " + T.ask_line("need", "text")
+    st.slots["need"] = SlotValue(value="Text messages", status="filled")
+    r = ph.phrase(ResponsePlan(node="gmail", acknowledge=["need"], ask="gmail", explain_why=True), st, "text")
+    assert r.source == "template" and r.text.startswith("Noted: text messages. To get started, let's connect your Gmail.")
+    assert ph.client.messages.calls == []
 
 
 def test_phrase_falls_back_to_template_when_guard_drops_everything():
-    ph = _phraser(text_resp('{"ask": "need"}\n*waves*'))
-    r = ph.phrase(ResponsePlan(node="need", ask="need"), SessionState(session_id="s"), "voice")
-    assert r.source == "template" and r.text == T.ask_line("need", "voice")
+    ph = _phraser(text_resp('{"ask": "user_name"}\n*waves*'))
+    r = ph.phrase(ResponsePlan(node="user_name", ask="user_name"), SessionState(session_id="s"), "voice")
+    assert r.source == "template" and r.text == T.ask_line("user_name", "voice")
     assert [x for _, x in r.dropped] == ["json", "stage_direction"]
 
 
@@ -254,7 +267,7 @@ def test_graduation_and_absorb_do_not_call_llm():
     st = SessionState(session_id="s", node="graduated", graduated=True)
     st.slots["need"] = SlotValue(value="triage my inbox", status="filled")
     r = ph.phrase(ResponsePlan(node="graduated", graduate=True, deferred=["user_name", "gmail"]), st, "voice")
-    assert r.text == ("You're all set. Your assistant's first job: triage my inbox. "
+    assert r.text == ("You're all set. Your assistant has noted what you'd like help with: triage my inbox. "
                       "You can tell your assistant your name and connect Gmail from the main screen whenever you like.")
     assert ph.phrase(ResponsePlan(absorbed=True), st, "voice").text == ""
     assert ph.client.messages.calls == []

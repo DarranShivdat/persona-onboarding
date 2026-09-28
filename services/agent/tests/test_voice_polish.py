@@ -276,7 +276,7 @@ def test_second_extraction_without_new_caller_words_is_ignored():
     assert st.node == "gmail"
 
 
-# --- NAME-002: implicit yes at the read-back ------------------------------------------
+# --- NAME-002 retired (live 2026-09-28): only an explicit yes settles the read-back ----
 
 
 def _pending_name():
@@ -285,14 +285,16 @@ def _pending_name():
     return r.state
 
 
-def test_new_info_at_the_read_back_is_an_implicit_yes_and_is_extracted():
+def test_new_info_at_the_read_back_is_extracted_but_the_name_is_read_back_again():
     r = apply(SPEC, _pending_name(), say("I mostly want help with my inbox", need="help with my inbox"))
     sv = r.state.slots["user_name"]
-    assert sv.status == "filled" and sv.value == "Sam" and not sv.needs_confirm
+    assert sv.status == "candidate" and sv.value == "Sam" and sv.needs_confirm
     assert r.state.slots["need"].value == "help with my inbox" and r.state.filled("need")
-    assert "user_name" in r.plan.acknowledge and "need" in r.plan.acknowledge
-    assert r.state.node == "gmail" and r.plan.confirm is None
-    assert any(e.get("implicit_confirm") for e in r.events if e.get("slot") == "user_name")
+    assert r.plan.acknowledge == ["need"] and r.plan.confirm == "user_name" and r.plan.reconfirm
+    assert r.state.node == "user_name" and not r.state.graduated
+    assert not any(e.get("implicit_confirm") for e in r.events)
+    r = apply(SPEC, r.state, say("yes", intents=["affirm"]))
+    assert r.state.filled("user_name") and r.state.node == "gmail"
 
 
 def test_a_correction_at_the_read_back_still_reconfirms():
@@ -312,16 +314,20 @@ def test_no_or_a_question_at_the_read_back_is_not_an_implicit_yes():
     assert not r.state.filled("user_name")
 
 
-def test_voice_flow_implicit_yes_speaks_the_name_ack_then_moves_on():
+def test_voice_flow_new_info_repeats_the_read_back_then_yes_moves_on():
     async def go():
         flow = VoiceFlow(SPEC, LocalBrain(SPEC, at("user_name")), context=_Ctx())
         await flow.opening()
         flow.context.messages.append({"role": "user", "content": "I'm Sam"})
         await flow.handle_record_slots(_args({"user_name": "Sam"}), None)
         flow.context.messages.append({"role": "user", "content": "I want help with my inbox"})
-        r, _ = await flow.handle_record_slots(_args({"need": "help with my inbox"}), None)
-        return r, await flow.brain.current()
-    r, st = asyncio.run(go())
+        again, _ = await flow.handle_record_slots(_args({"need": "help with my inbox"}), None)
+        flow.context.messages.append({"role": "user", "content": "yes"})
+        r, _ = await flow.handle_record_slots(_args(None, ["affirm"]), None)
+        return again, r, await flow.brain.current()
+    again, r, st = asyncio.run(go())
+    assert again["node"] == "user_name"
+    assert again["say"] == "Noted: help with my inbox. Thanks. So that's Sam, S-A-M?"
     assert r["say"].startswith("Perfect, thanks Sam.") and r["node"] == "gmail"
     assert st.slots["user_name"].value == "Sam" and st.filled("need")
 

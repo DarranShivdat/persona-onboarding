@@ -1,7 +1,9 @@
 """NAME-001: getting the user's name right (live test 2026-09-27: "Darran" heard as "Darren").
 
-Voice always reads the name back (spelled); a "no" re-asks, then asks for letters; the
-third miss keeps the best candidate (filled, low_confidence). Text confirms only unusual
+Voice always reads the name back (spelled), including a spelled name (live 2026-09-28:
+STT heard "D a r r a m" for Darran and it was filled silently); only an explicit "yes"
+settles it. A "no" re-asks, then asks for letters; the fourth miss keeps the latest
+candidate (filled, low_confidence, "I'll go with ... for now"). Text confirms only unusual
 names — typed text is authoritative. Corrections at any later point update user_name.
 """
 import asyncio
@@ -85,7 +87,7 @@ def test_assemble_spelling(utterance, expected):
     ("Dar4n", {"channel": "text", "utterance": "Dar4n"}, "confirm", "unusual_charset"),
     ("D-A-R-R-A-N", {"channel": "text", "utterance": "D-A-R-R-A-N"}, "ok", None),
     ("Darren", {"channel": "voice", "confidence": 0.95}, "confirm", "voice_read_back"),
-    ("D-A-R-R-A-N", {"channel": "voice"}, "ok", None),     # spelling IS the read-back
+    ("D-A-R-R-A-N", {"channel": "voice"}, "confirm", "spelled_read_back"),  # STT mishears letters
 ])
 def test_person_name_confirm_policy(raw, kw, outcome, reason):
     r = person_name(raw, confirm_policy=POLICY, **kw)
@@ -104,13 +106,49 @@ def test_voice_always_confirms_user_name_then_yes_fills():
     assert r.state.node == "need" and r.plan.acknowledge == ["user_name"]
 
 
-def test_voice_no_with_spelled_correction_fills_the_spelling():
+def test_voice_no_with_spelled_correction_reads_the_spelling_back_then_yes_fills():
     r = run(at("user_name"), say("Darran", user_name="Darren"),
             say("no, it's D A R R A N", intents=["deny"], user_name="Darren"))
+    assert name(r).status == "candidate" and name(r).value == "Darran" and r.state.node == "user_name"
+    assert r.plan.confirm == "user_name"
+    assert voice_line(SPEC, r.plan, r.state) == "Thanks. So that's Darran, D-A-R-R-A-N?"
+    r = apply(SPEC, r.state, YES)
     assert name(r).status == "filled" and name(r).value == "Darran" and r.state.node == "need"
 
 
-def test_voice_no_reasks_then_asks_to_spell_then_caps_at_three():
+def test_live_0928_darram_is_read_back_not_filled():
+    """Live 2026-09-28 (voice): "Derek" read back, "No. D a r r a m." (STT heard m for n) was
+    filled as Darram with no read-back. Now it is read back, and "no" keeps the loop going."""
+    r = run(at("user_name"), say("Derek.", user_name="Derek"))
+    assert voice_line(SPEC, r.plan, r.state) == "Nice to meet you. Did I get that right: Derek, D-E-R-E-K?"
+    r = apply(SPEC, r.state, say("No. D a r r a m.", intents=["change_answer"], user_name="Darram"))
+    assert name(r).status == "candidate" and name(r).value == "Darram" and r.state.node == "user_name"
+    assert voice_line(SPEC, r.plan, r.state) == "Thanks. So that's Darram, D-A-R-R-A-M?"
+    r = apply(SPEC, r.state, say("No. D A R R A N.", intents=["deny"], user_name="Darran"))
+    assert name(r).status == "candidate" and name(r).value == "Darran"
+    assert voice_line(SPEC, r.plan, r.state) == "Thanks. So that's Darran, D-A-R-R-A-N?"
+    r = apply(SPEC, r.state, YES)
+    assert name(r).status == "filled" and name(r).value == "Darran" and not name(r).low_confidence
+    assert r.state.node == "need" and voice_line(SPEC, r.plan, r.state).startswith("Perfect, thanks Darran.")
+
+
+@pytest.mark.parametrize("turn", [
+    say("hmm"),
+    say("text messages", need="text messages"),                       # new info is not a yes
+    say("I mostly want help with my inbox", need="help with my inbox"),
+    say("what?", intents=["off_topic"]),
+])
+def test_voice_name_never_advances_without_an_explicit_yes(turn):
+    r = apply(SPEC, at("user_name"), say("Darran", user_name="Darren"))
+    r = apply(SPEC, r.state, turn)
+    assert name(r).status == "candidate" and r.plan.confirm == "user_name"
+    assert r.state.node == "user_name" and not r.state.graduated
+    assert voice_line(SPEC, r.plan, r.state).endswith("Darren, D-A-R-R-E-N?")
+    r = apply(SPEC, r.state, YES)
+    assert name(r).status == "filled" and name(r).value == "Darren"
+
+
+def test_voice_no_reasks_then_asks_to_spell_then_caps_at_four():
     st = at("user_name")
     r = run(st, say("Darran", user_name="Darren"), NO)
     assert name(r).status == "empty" and r.plan.ask == "user_name" and r.plan.denied == ["user_name"]
@@ -121,15 +159,19 @@ def test_voice_no_reasks_then_asks_to_spell_then_caps_at_three():
     assert r.plan.spell == "user_name" and r.plan.ask == "user_name"             # now: letter by letter
     r = apply(SPEC, r.state, say("Darren", user_name="Darren"))                 # didn't spell after all
     assert r.plan.confirm == "user_name" and name(r).confirm_attempts == 3
-    r = apply(SPEC, r.state, NO)                                                 # cap: keep it, move on
-    assert name(r).status == "filled" and name(r).value == "Darren" and name(r).low_confidence
+    r = apply(SPEC, r.state, NO)                                                 # still no: letters again
+    assert name(r).status == "empty" and r.plan.spell == "user_name"
+    r = apply(SPEC, r.state, say("D A R R U N", user_name="Darrun"))            # spelled: read back
+    assert r.plan.confirm == "user_name" and name(r).confirm_attempts == 4 and name(r).value == "Darrun"
+    r = apply(SPEC, r.state, NO)                                                 # cap: keep latest, move on
+    assert name(r).status == "filled" and name(r).value == "Darrun" and name(r).low_confidence
     assert r.state.node == "need" and r.plan.acknowledge == ["user_name"] and r.plan.confirm is None
     assert any(e.get("low_confidence") for e in r.events)
 
 
 def test_voice_new_candidate_past_the_cap_is_kept_not_reread():
     st = at("user_name")
-    st.slots["user_name"] = SlotValue("Darren", "candidate", "voice", needs_confirm=True, confirm_attempts=3)
+    st.slots["user_name"] = SlotValue("Darren", "candidate", "voice", needs_confirm=True, confirm_attempts=4)
     r = apply(SPEC, st, say("no, Darrun", intents=["deny"], user_name="Darrun"))
     assert name(r).status == "filled" and name(r).value == "Darrun" and name(r).low_confidence
     assert r.state.node == "need"
@@ -138,7 +180,7 @@ def test_voice_new_candidate_past_the_cap_is_kept_not_reread():
 def test_voice_spelling_with_as_in_and_double_is_assembled_from_the_transcript():
     st = at("user_name")
     r = apply(SPEC, st, say("D as in David, A, double R, A, N", user_name="D as in David A double R A N"))
-    assert name(r).status == "filled" and name(r).value == "Darran"
+    assert name(r).status == "candidate" and name(r).value == "Darran" and r.plan.confirm == "user_name"
 
 
 # --- brain: text confirms only unusual names -----------------------------------------
@@ -177,7 +219,9 @@ def test_voice_spelled_correction_later_updates_name():
     st = at("gmail", user_name="Darren")
     st.slots["need"] = SlotValue("inbox", "filled", "voice", validated_by="need")
     r = apply(SPEC, st, say("actually it's D A R R A N", intents=["change_answer"], user_name="Darran"))
-    assert name(r).value == "Darran" and name(r).status == "filled" and r.plan.changed == ["user_name"]
+    assert name(r).value == "Darran" and name(r).status == "candidate" and r.plan.confirm == "user_name"
+    r = apply(SPEC, r.state, YES)
+    assert name(r).value == "Darran" and name(r).status == "filled"
 
 
 def test_voice_unspelled_correction_is_read_back_first():
@@ -196,6 +240,8 @@ def test_you_got_my_name_wrong_reopens_the_name():
     assert name(r).status == "empty" and r.state.node == "user_name" and r.plan.ask == "user_name"
     assert r.plan.spell == "user_name"
     r = apply(SPEC, r.state, say("D A R R A N", user_name="DARRAN"))
+    assert name(r).value == "Darran" and name(r).status == "candidate" and r.plan.confirm == "user_name"
+    r = apply(SPEC, r.state, YES)
     assert name(r).value == "Darran" and name(r).status == "filled" and r.state.node == "need"
 
 
@@ -221,8 +267,11 @@ def test_voice_lines_are_templated_short_and_spell_only_the_name():
     assert voice_line(SPEC, r4.plan, r4.state) == T.NAME_SPELL_ASK
     r5 = apply(SPEC, r4.state, say("Darren", user_name="Darren"))
     r6 = apply(SPEC, r5.state, NO)
-    l6 = voice_line(SPEC, r6.plan, r6.state)
-    assert l6.startswith("No worries, I'll go with Darren for now.") and "help with" in l6
+    assert voice_line(SPEC, r6.plan, r6.state) == T.NAME_SPELL_ASK
+    r7 = apply(SPEC, r6.state, say("Darren", user_name="Darren"))
+    r8 = apply(SPEC, r7.state, NO)
+    l6 = voice_line(SPEC, r8.plan, r8.state)
+    assert l6.startswith("I'll go with Darren for now. You can edit it anytime.") and "help with" in l6
     for line in (l1, T.NAME_REASK, T.NAME_SPELL_ASK, T.NAME_KEEP.format(v="Darren")):
         assert len(line.split()) < 25
     assert "Alpha" not in l1 and "as in" not in l1
@@ -252,7 +301,10 @@ def test_voice_flow_darren_then_spelled_no_fills_darran():
         ctx.messages.append({"role": "user", "content": "Darren"})
         r1, n1 = await flow.handle_record_slots(_args({"user_name": "Darren"}), None)
         ctx.messages.append({"role": "user", "content": "no, it's D A R R A N"})
-        r2, n2 = await flow.handle_record_slots(_args({"user_name": "Darren"}, ["deny"]), None)
+        rb, nb = await flow.handle_record_slots(_args({"user_name": "Darren"}, ["deny"]), None)
+        assert rb["node"] == "user_name" and "Darran, D-A-R-R-A-N?" in rb["say"]   # spelled: read back
+        ctx.messages.append({"role": "user", "content": "yes"})
+        r2, n2 = await flow.handle_record_slots(_args(None, ["affirm"]), None)
         return r1, n1, r2, n2, await brain.current()
 
     r1, n1, r2, n2, final = asyncio.run(go())
@@ -264,3 +316,16 @@ def test_voice_flow_darren_then_spelled_no_fills_darran():
     assert r2["say"].startswith("Perfect, thanks Darran.")
     # the graduation screen/summary uses the confirmed spelling
     assert "Darran" in T.graduation_summary(final, [])
+
+
+def test_text_cap_keeps_latest_and_says_so():
+    st = at("user_name", "text")
+    r = apply(SPEC, st, say("Dar4n", "text", user_name="Dar4n"))
+    for v in ["Dar5n", "Dar6n", "Dar7n"]:
+        assert r.plan.confirm == "user_name"
+        r = run(r.state, say("no", "text", intents=["deny"]), say(v, "text", user_name=v))
+    assert name(r).confirm_attempts == 4 and r.plan.confirm == "user_name"
+    r = apply(SPEC, r.state, say("no", "text", intents=["deny"]))
+    assert name(r).status == "filled" and name(r).value == "Dar7n" and name(r).low_confidence
+    from agent.api.llm import template_phrase
+    assert template_phrase(SPEC, r.state, r.plan).startswith("I'll go with Dar7n for now. You can edit it anytime.")

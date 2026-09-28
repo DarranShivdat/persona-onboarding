@@ -269,7 +269,7 @@ rules require them (open question). The mockup uses a plain primary pill.
 
 - Headline "You're all set, Maya." with the lede "Juno is ready. Here's what it knows so
   far."
-- A wide white tile: "Juno is starting with" plus a summary of the **need**, and a line
+- A wide white tile: "You asked for help with" (HONEST-001: no capability claim) plus a summary of the **need**, and a line
   about the first thing Juno will do (the brain writes this; it restates the user's need
   and makes no new product claims). Then two mist tiles: **Your assistant** and **You**.
 - **Deferred prompts**:

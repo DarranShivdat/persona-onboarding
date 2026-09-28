@@ -11,7 +11,7 @@ What it may change — and only through the same validators as onboarding:
     value; "I *also* want help with X" appends to `need` instead of replacing it.
   - gmail: only a turn with `oauth_verified=True` (the OAuth callback) fills it.
 Anything else is answered, never acted on: this trial doesn't execute tasks, so a task
-request gets an honest "can't do that yet" (no fabricated inbox facts, nothing "sent").
+request gets an honest "this trial doesn't carry out tasks yet" (no fabricated inbox facts, nothing "sent").
 
 The plan it returns uses the engine's `ResponsePlan` with `say=["home"]`; `respond_to`
 carries the home reply kinds (HOME_KINDS) for the phrasing layer's HOME_* templates.

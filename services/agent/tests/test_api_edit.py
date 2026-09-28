@@ -59,7 +59,7 @@ def test_home_text_turn_gets_scoped_reply_not_graduation_repeat(client, llm, sto
     r = turn(client, sid, auth, "can you check my inbox?")
     assert r.status_code == 200
     reply = r.json()["reply"]
-    assert reply and "all set" not in reply and "can't" in reply
+    assert reply and "all set" not in reply and "doesn't carry out tasks" in reply
     r = turn(client, sid, auth, "rename yourself Juno")
     assert r.json()["state"]["slots"]["agent_name"]["value"] == "Juno"
     texts = [p["data"]["text"] for p in pushes(store, sid) if p["type"] == "transcript"]

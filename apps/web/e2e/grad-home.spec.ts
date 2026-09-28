@@ -9,7 +9,7 @@ const GRADUATED: Seed = {
   graduated: true,
   deferred: ["gmail"],
   slots: { agent_name: "Juno", user_name: "Maya", need: "Getting your inbox under control", gmail: "skipped" },
-  transcript: [["assistant", "You're all set, Maya. Juno's first job: getting your inbox under control."]],
+  transcript: [["assistant", "You're all set, Maya. Juno has noted what you'd like help with: getting your inbox under control."]],
 };
 
 async function isStub(): Promise<boolean> {
@@ -36,7 +36,7 @@ test("home composer: a message gets a scoped reply in the home thread", async ({
   await send(page, "Can you check my inbox?");
   const thread = page.getByTestId("home-thread");
   await expect(thread.locator(".msg.user")).toHaveText("Can you check my inbox?");
-  await expect(thread.locator(".msg.agent").last()).toContainText("can't do that in this trial yet");
+  await expect(thread.locator(".msg.agent").last()).toContainText("doesn't carry out tasks yet");
   await expect(thread).not.toContainText("all set");
 });
 

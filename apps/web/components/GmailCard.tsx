@@ -23,7 +23,7 @@ export function GmailCard({ card, agent, inCall, onAct }: { card: Card; agent: s
     const busy = card.state === "connecting";
     return (
       <div className={`gcard ${inCall ? "in-call" : ""}`} role="group" aria-label="Connect Gmail" data-testid="gmail-card" data-state={card.state}>
-        {head("Connect Gmail", `So ${agent} can work in your inbox`, <MailIcon />)}
+        {head("Connect Gmail", `What ${agent} will be able to access`, <MailIcon />)}
         <ul className="full">
           <li>
             <b>Read</b>
@@ -39,7 +39,7 @@ export function GmailCard({ card, agent, inCall, onAct }: { card: Card; agent: s
           </li>
         </ul>
         <p className="full">Nothing is sent or changed without your OK. You sign in on Google, so {agent} never sees your password.</p>
-        <p className="compact">{agent} will read, organize, draft, and send email for you. Nothing is sent or changed without your OK.</p>
+        <p className="compact">Connecting Gmail will let {agent} read, organize, and send email with your OK.</p>
         <div className="note">
           <b>Heads up:</b> this is a trial, so Google will say it hasn’t verified the app. Choose <b>Continue</b>, then tick the Gmail boxes (or <b>Select all</b>). Only invited Google accounts can connect for now.
         </div>

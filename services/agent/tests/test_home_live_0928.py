@@ -33,7 +33,7 @@ def test_closing_line_uses_current_confirmed_values():
     st = at("gmail", agent_name="jarvis", user_name="Darran", need="connect email")
     r = apply(SPEC, st, say("later", intents=["refuse_slot"]))
     line = template_phrase(SPEC, r.state, r.plan)
-    assert line.startswith("You're all set, Darran. jarvis's first job: connect email.")
+    assert line.startswith("You're all set, Darran. jarvis has noted what you'd like help with: connect email.")
     assert "Juno" not in line and "Darren" not in line and "mom" not in line
 
 
@@ -77,7 +77,7 @@ def test_live_transcript_replay_on_home(client, llm, store):
     assert replies(store, sid)[-1].startswith("5 + 5 is 10.")
     llm.push(Extraction(intents=["off_topic"]))
     turn(client, sid, auth, "who won the world cup?")
-    assert replies(store, sid)[-1].startswith("That's outside what I can help with")
+    assert replies(store, sid)[-1].startswith("That's outside this trial's setup.")
 
     # 1) nothing after graduation repeats the closing
     assert sum("all set" in t for t in replies(store, sid)) == n_closing

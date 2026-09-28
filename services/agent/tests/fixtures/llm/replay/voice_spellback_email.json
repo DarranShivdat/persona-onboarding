@@ -115,30 +115,14 @@
      "cache_read_input_tokens": 1500
     }
    },
-   "phrase": {
-    "id": "msg_synthetic",
-    "type": "message",
-    "role": "assistant",
-    "model": "synthetic",
-    "stop_reason": "end_turn",
-    "content": [
-     {
-      "type": "text",
-      "text": "Thanks, Shivon. What's one thing you'd most like help with first?"
-     }
-    ],
-    "usage": {
-     "input_tokens": 120,
-     "output_tokens": 30,
-     "cache_read_input_tokens": 1800
-    }
-   },
+   "phrase": null,
    "expect": {
     "node": "need",
     "filled": [
      "agent_name",
      "user_name"
-    ]
+    ],
+    "reply": "Nice to meet you, Shivon. What's one thing you'd most like help with first?"
    }
   },
   {
@@ -177,31 +161,15 @@
      "cache_read_input_tokens": 1500
     }
    },
-   "phrase": {
-    "id": "msg_synthetic",
-    "type": "message",
-    "role": "assistant",
-    "model": "synthetic",
-    "stop_reason": "end_turn",
-    "content": [
-     {
-      "type": "text",
-      "text": "Got it, let's tame that calendar. Connecting Gmail lets Nova read, sort, draft and send for you, always with your OK. I've put a Connect Gmail button on your screen."
-     }
-    ],
-    "usage": {
-     "input_tokens": 120,
-     "output_tokens": 30,
-     "cache_read_input_tokens": 1800
-    }
-   },
+   "phrase": null,
    "expect": {
     "node": "gmail",
     "filled": [
      "agent_name",
      "user_name",
      "need"
-    ]
+    ],
+    "reply": "Noted: my calendar is a mess. To get started, let's connect your Gmail. Connecting it will let your assistant read, organize, and send email with your OK. I've put a Connect Gmail button on your screen. Tap it whenever you're ready."
    }
   },
   {

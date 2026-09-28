@@ -155,7 +155,9 @@ def _name_line(plan: ResponsePlan, state: SessionState) -> str:
     re-ask / spell-it-for-me ask. Empty when the plan has no name business."""
     sv = state.slots.get(NAME)
     if plan.confirm == NAME and sv and sv.value:
-        return T.name_confirm_line(sv.value, CHANNEL, sv.confirm_attempts)
+        # A repeated read-back (no yes/no yet) says "So that's ...?", not "Nice to meet you" again.
+        attempt = max(sv.confirm_attempts, 2) if plan.reconfirm else sv.confirm_attempts
+        return T.name_confirm_line(sv.value, CHANNEL, attempt)
     if NAME in plan.denied and plan.ask == NAME:
         return T.NAME_SPELL_ASK if plan.spell == NAME else T.NAME_REASK
     return ""

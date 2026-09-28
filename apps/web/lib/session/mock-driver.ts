@@ -5,7 +5,7 @@ import { fixture, type StateName } from "./fixtures";
 import { applyPush } from "./types";
 import type { EditableSlot, EditResult, SessionDriver, SessionSnapshot, UIAction, UIPush } from "./types";
 
-const MOCK_HOME_REPLY = "I can’t do that in this trial yet, so nothing’s been read, sent or changed.";
+const MOCK_HOME_REPLY = "This trial doesn’t carry out tasks yet, so nothing’s been read, sent or changed.";
 
 type Reply = StateName | ((d: MockSessionDriver) => void);
 

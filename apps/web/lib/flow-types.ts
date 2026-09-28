@@ -33,7 +33,7 @@ export const SLOT_WHY: { readonly [S in SlotName]: string } = {
   agent_name: "It's how your assistant will introduce itself to you and sign off emails.",
   user_name: "So your assistant knows who it's working for.",
   need: "Knowing what you need lets your assistant get useful on day one.",
-  gmail: "Your assistant works out of your inbox; connecting Gmail lets it read, sort, draft and send for you (always with your OK).",
+  gmail: "To get started, let's connect your Gmail. Connecting it will let your assistant read, organize, and send email with your OK.",
 };
 
 export const NODE_KINDS: { readonly [N in NodeId]: NodeKind } = {
