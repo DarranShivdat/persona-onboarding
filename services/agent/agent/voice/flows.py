@@ -75,7 +75,7 @@ if TYPE_CHECKING:  # pipecat is a runtime extra; the brain-level pieces import w
 CHANNEL = "voice"
 # T.GREET pitches the call itself; on the call the greeting just opens the questions.
 VOICE_GREET = "Hi, it's Persona! Let's get you set up. It's just a few quick questions."
-VOICE_CONTINUE = "Hi, it's Persona! Let's pick up where we left off in the chat."
+VOICE_CONTINUE = T.RESUME[CHANNEL]   # fresh call continuing a chat (CUTOFF-001)
 TYPED_ACK = "I see you typed that in the chat."
 GMAIL_TYPE_IT = "Or, if it's easier, type your email in the chat."
 GMAIL_TYPED = ("Thanks, I see the email you typed. To actually connect it, tap Continue with Google "
@@ -481,13 +481,13 @@ class VoiceFlow:
     async def opening(self, *, reconnect: bool = False) -> "NodeConfig":
         """Call connected: `call_started` moves the session onto voice; speak the brain's
         opening verbatim, then wait for the caller. The brain's resume line ("we got cut
-        off") is right for a reconnect inside the grace window; a fresh call that
-        continues a chat says it is picking up from the chat instead."""
+        off") is only for a reconnect inside the grace window. The brain's own voice resume
+        line is the fresh-call one ("pick up where we left off in the chat"), so the chat
+        transcript and a fresh call never say "we got cut off" (CUTOFF-001)."""
         self._mark_seen()   # anything already in the context (e.g. chat history) is not a call turn
         vt = await self.brain.event("call_started")
-        cut_off = T.RESUME[CHANNEL]
-        if not reconnect and vt.plan.resume and vt.line.startswith(cut_off):
-            vt.line = VOICE_CONTINUE + vt.line[len(cut_off):]
+        if reconnect and vt.plan.resume and vt.line.startswith(VOICE_CONTINUE):
+            vt.line = T.RESUME_CUT_OFF + vt.line[len(VOICE_CONTINUE):]
         _, node = await self._after(vt, opening=True)
         return node
 

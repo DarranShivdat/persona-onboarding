@@ -27,7 +27,12 @@ OFFER_CALL = "The rest goes faster out loud. Quick call? Texting works just as w
 GREET = "Hi! I'm your new assistant. I'll help with email, your calendar, and the everyday stuff."
 FIRST_ASK_AGENT_NAME = "First things first: what would you like to call me?"
 AGENT_NAME_NUDGE = "No pressure. How about {0}, or {1}? Anything you like works."
-RESUME = {"text": "Welcome back, let's pick up where we left off.", "voice": "Hey, we got cut off. Let's pick up where we left off."}
+# CUTOFF-001 (live 2026-09-28): the brain cannot tell a fresh call from a dropped one, so its
+# voice resume line is the fresh-call one; only a real reconnect (lease resumed inside the
+# grace window, VoiceFlow.opening(reconnect=True)) swaps in RESUME_CUT_OFF.
+RESUME = {"text": "Welcome back, let's pick up where we left off.",
+          "voice": "Hi, it's Persona! Let's pick up where we left off in the chat."}
+RESUME_CUT_OFF = "Hey, we got cut off. Let's pick up where we left off."
 ACK = "Got it."
 # Natural per-slot acknowledgements (live test 2026-09-27: "Got it: Juno." read like a form).
 ACK_SLOT = {

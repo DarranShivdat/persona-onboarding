@@ -359,6 +359,6 @@ def test_reconnect_inside_grace_resumes_at_gmail_with_card_and_type_it(service, 
 
     node, flow = _run(go())
     said = node["pre_actions"][0]["text"]
-    assert node["name"] == "gmail" and said.startswith(T.RESUME["voice"]) and "Connect Gmail button" in said
+    assert node["name"] == "gmail" and said.startswith(T.RESUME_CUT_OFF) and "Connect Gmail button" in said
     assert "gmail_connect_card" in flow.last.plan.push_ui
     assert store.load(sid).slot("need").status == "filled"
