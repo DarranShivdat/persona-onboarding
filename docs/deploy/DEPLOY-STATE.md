@@ -6,13 +6,14 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 | Field | Value |
 |---|---|
 | STATE | **LIVE — deployed + hosted smoke PASS** |
-| OWNER | EM executor (claimed Sun Sep 27 8:34pm PT; re-claimed 10:36pm PT) — reconcile: do NOT `--apply` |
+| OWNER | EM executor — deploy finished 10:55pm PT. Later `--apply` runs = redeploys only; log them below |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
 ## Env files (gitignored, mode 600, values never committed/printed)
 - `.persona-deploy/agent.env` (read by supabase-db.sh / fly-agent.sh) = `services/agent/.env`
 - `.persona-deploy/web.env` (read by vercel-web.sh) = `apps/web/.env.local`
-- Blank until first deploy: `PERSONA_AGENT_BASE_URL`, `GOOGLE_OAUTH_REDIRECT_URL`.
+- `.persona-deploy/web.env` now has PERSONA_AGENT_BASE_URL + GOOGLE_OAUTH_REDIRECT_URL; `apps/web/.env.local`
+  keeps them blank on purpose (local dev must not hit the prod agent/DB).
 
 ## Key verification (Sun 10:36pm PT)
 Anthropic PASS · Deepgram PASS · Cartesia PASS · Cloudflare TURN mint PASS ·
@@ -20,12 +21,26 @@ Anthropic PASS · Deepgram PASS · Cartesia PASS · Cloudflare TURN mint PASS ·
 `postgres.<ref>`, password percent-encoded, `sslmode=require`); `select 1` OK from box and Mac.
 Fly: `fly auth whoami` PASS (`darranshivdat1@gmail.com`).
 
-## Order once unblocked
+## Live (Sun Sep 27, 10:55pm PT)
+- Web (Vercel `persona-onboarding-darran`, scope darran-s-projects): https://persona-onboarding-darran.vercel.app
+- Agent (Fly `persona-onboarding-agent`, sjc, 1 machine shared-cpu-2x/2GB, `--ha=false`): https://persona-onboarding-agent.fly.dev
+- DB: Supabase session pooler (us-east-1); migrations 0001–0004 applied.
+- Vercel env (Production): PERSONA_AGENT_BASE_URL, PERSONA_INTERNAL_SECRET, GOOGLE_OAUTH_CLIENT_ID,
+  GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REDIRECT_URL. Fly secrets: the 10 agent.env names.
+- Hosted smoke: smoke.sh 7/7; `/`, `/about`, `/privacy` 200; agent `GET /v1/sessions/{id}/ice`
+  → stun+turn+turns; hosted browser voice call (real-agent-call.spec, desktop + mobile, real
+  Deepgram/Cartesia/Claude over Cloudflare TURN) PASS.
+- Redeploy agent: `bash scripts/deploy/fly-agent.sh --apply --deploy-only` (~20s downtime, 1 machine).
+  Redeploy web: `bash scripts/deploy/vercel-web.sh --apply --scope darran-s-projects --deploy-only`.
+- Known: agent-side aioice logs `TransactionFailed 401` on TURN ChannelBind (media still flows);
+  `transport_cleanup` teardown step can hang → capped at 5s/step. DB us-east-1 vs agent sjc (~65ms/query).
+
+## Order (done)
 supabase-db.sh --apply → fly-agent.sh --apply (sjc) → vercel-web.sh --apply → set
 PERSONA_AGENT_BASE_URL (Vercel) + GOOGLE_OAUTH_REDIRECT_URL → vercel redeploy → smoke.sh →
 Google Cloud redirect URI / homepage / privacy / authorized domain.
 
-## Google Cloud values (predicted; confirm after `vercel-web.sh --apply` prints the domain)
+## Google Cloud values (CONFIRMED — Vercel production alias assigned)
 Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a third party's).
 - Authorized redirect URI: `https://persona-onboarding-darran.vercel.app/api/oauth/google/callback`
 - Authorized JavaScript origin (optional): `https://persona-onboarding-darran.vercel.app`
@@ -47,3 +62,4 @@ Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a
 - Sun 10:48PM PT — remaining Darran: Google Console test users + Branding homepage/privacy/authorized domain (URLs in this file); OAuth app may stay Testing
 - Sun 10:51PM PT — smoke.sh 7/7 PASS; hosted browser call connects+captions but hangup DELETE hung → teardown timeouts fix, redeploying agent
 - Sun 10:55PM PT — agent hotfix (hangup wait 1s) deployed; smoke.sh 7/7, pages 200, hosted browser call desktop+mobile PASS
+- Sun 10:55PM PT — DEPLOY-STATE finalized (Live section, Google values confirmed); removed auto-generated vercel.json
