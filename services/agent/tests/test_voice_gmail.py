@@ -16,7 +16,7 @@ from agent.brain.engine import Extraction, ResponsePlan, Turn, apply  # noqa: E4
 from agent.brain.state import SessionState, SlotValue  # noqa: E402
 from agent.llm import templates as T  # noqa: E402
 from agent.llm.extract import parse  # noqa: E402
-from agent.voice.flows import (GMAIL_CONNECTED, GMAIL_FAILED, GMAIL_TYPE_IT, GMAIL_TYPED, TYPED_ACK,  # noqa: E402
+from agent.voice.flows import (GMAIL_CONNECTED, GMAIL_FAILED, GMAIL_TYPE_IT, GMAIL_TYPED,  # noqa: E402
                                LocalBrain, VoiceFlow, gmail_oauth_line, voice_line, voice_tools)
 
 from test_voice_flows import SPEC, _args, _Ctx  # noqa: E402
@@ -248,7 +248,7 @@ def test_type_it_goes_through_the_text_path_and_is_acknowledged_without_spelling
     assert st.slot("gmail").status == "candidate" and st.slot("gmail").source == "text"
     assert st.node == "gmail" and st.active_channel == "voice" and not st.graduated
     said = node["pre_actions"][0]["text"]
-    assert said.startswith(TYPED_ACK) and GMAIL_TYPED in said and not _spelled(said)
+    assert GMAIL_TYPED in said and "typed" not in said and not _spelled(said)   # TYPED-001
 
 
 def test_oauth_on_the_call_is_heard_and_graduates_with_partial_grant_stated(service, store):

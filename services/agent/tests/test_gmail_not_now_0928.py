@@ -74,7 +74,7 @@ def test_voice_not_now_says_short_line_graduates_and_ends_the_call():
 
 
 def test_tapping_not_now_during_a_call_speaks_the_line_and_ends_the_call():
-    from agent.voice.flows import TYPED_ACK, LocalBrain, VoiceFlow
+    from agent.voice.flows import LocalBrain, VoiceFlow
     from test_voice_flows import _Ctx
 
     said = []
@@ -86,4 +86,21 @@ def test_tapping_not_now_during_a_call_speaks_the_line_and_ends_the_call():
     flow = VoiceFlow(SPEC, LocalBrain(SPEC, r.state), context=_Ctx(), on_graduated=graduated)
     node = asyncio.run(flow.typed_turn(r.plan))
     assert node["name"] == "graduated"
-    assert len(said) == 1 and said[0].startswith(T.GMAIL_DEFERRED) and TYPED_ACK not in said[0]
+    assert len(said) == 1 and said[0].startswith(T.GMAIL_DEFERRED) and "typed" not in said[0]
+
+
+def test_typed_text_during_a_call_gets_no_typing_meta_comment():
+    """TYPED-001: text typed during a call is acknowledged like speech ("Noted: ..."), never
+    "I see you typed that in the chat"."""
+    from agent.voice.flows import LocalBrain, VoiceFlow
+    from test_voice_flows import _Ctx
+    import agent.voice.flows as F
+
+    st = _at_gmail("voice")
+    st.node = "need"
+    st.slots.pop("need")
+    r = apply(SPEC, st, Turn(channel="text", utterance="text messages", extraction=Extraction(slots={"need": "text messages"})))
+    node = asyncio.run(VoiceFlow(SPEC, LocalBrain(SPEC, r.state), context=_Ctx()).typed_turn(r.plan))
+    said = node["pre_actions"][0]["text"]
+    assert said.startswith("Noted: text messages.") and "typed" not in said.lower()
+    assert not hasattr(F, "TYPED_ACK") and "typed" not in F.GMAIL_TYPED

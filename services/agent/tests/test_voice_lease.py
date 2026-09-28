@@ -27,7 +27,7 @@ from agent.obs.tracing import NoopTracer  # noqa: E402
 from agent.store import LeaseHeldError, PgStore  # noqa: E402
 from agent.store.testing import ephemeral_dsn, reset  # noqa: E402
 from agent.voice.config import VoiceConfig  # noqa: E402
-from agent.voice.flows import TYPED_ACK, ServiceBrain, VoiceFlow  # noqa: E402
+from agent.voice.flows import ServiceBrain, VoiceFlow  # noqa: E402
 from agent.voice.handoff import CallControl, HandoffSettings  # noqa: E402
 from agent.voice.session import CallSession  # noqa: E402
 
@@ -400,7 +400,8 @@ def test_typed_text_during_call_merges_and_is_acknowledged_by_voice(service):
     assert st.version == before + 1                       # processed exactly once
     assert st.slot("gmail").status == "candidate" and st.node == "gmail" and st.active_channel == "voice"
     assert len(seen) == 1
-    assert node["name"] == "gmail" and node["pre_actions"][0]["text"].startswith(TYPED_ACK)
+    said = node["pre_actions"][0]["text"]
+    assert node["name"] == "gmail" and "typed" not in said.lower() and "Continue with Google" in said   # TYPED-001
     typed = [e for e in service.store.events_after(sid, limit=1000)
              if e.kind == "user_utterance" and e.payload["text"] == "priya.k@gmail.com"]
     assert len(typed) == 1 and typed[0].channel == "text"
@@ -418,7 +419,7 @@ def test_call_session_speaks_typed_turn_and_moves_node():
         last = None
 
         async def typed_turn(self, plan):
-            return {"name": "gmail", "pre_actions": [{"type": "tts_say", "text": f"{TYPED_ACK} ok"}]}
+            return {"name": "gmail", "pre_actions": [{"type": "tts_say", "text": "ok"}]}
 
     s = CallSession(MagicMock(pc_id="pc"), VoiceConfig(), call_id="c1")
     s.flow, s._flow_manager = _Flow(), _FM()

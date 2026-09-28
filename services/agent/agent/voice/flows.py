@@ -20,7 +20,7 @@ writes — so a chat that continues on the call never forks state (invariant 6).
 
 Call hand-off (VOICE-003): `opening(reconnect=True)` resumes a dropped call with the
 brain's "we got cut off" line (a fresh call that continues a chat says it is picking up
-instead); `typed_turn` acknowledges, by voice, text the user typed in the chat during the
+instead); `typed_turn` answers, by voice, text the user typed in the chat during the
 call — that turn already ran once through the text path (same serialized session), so
 the voice side only speaks the brain's result and moves to its node, never re-extracts.
 Lease/grace live in `handoff.py`; silence nudges in `silence.py`.
@@ -102,9 +102,9 @@ def _resume_into_ask(rest: str, state: SessionState) -> str:
         return rest
     tail = rest[len(greet):].strip()
     return f"{voice_continue(state)} {_lower_first(tail)}" if tail else greet
-TYPED_ACK = "I see you typed that in the chat."
+# TYPED-001 (live 2026-09-28): no meta-comment about typing; typed text is acknowledged like speech.
 GMAIL_TYPE_IT = "Or, if it's easier, type your email in the chat."
-GMAIL_TYPED = ("Thanks, I see the email you typed. To actually connect it, tap Continue with Google "
+GMAIL_TYPED = ("Thanks. To actually connect it, tap Continue with Google "
                "on your screen and sign in there.")
 GMAIL_FAILED = ("Looks like Google didn't finish signing you in. You can tap Try again on your screen, "
                 "or just say skip and we'll do it later.")
@@ -545,8 +545,6 @@ class VoiceFlow:
         line = voice_line(self.spec, plan, state)
         if source == "gmail_oauth":
             line = f"{gmail_oauth_line(data)} {line}".strip()
-        elif not plan.graduate:
-            line = f"{TYPED_ACK} {line}".strip()
         vt = VoiceTurn(state, plan, line)
         _, node = await self._after(vt, opening=True)
         return node
