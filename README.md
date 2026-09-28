@@ -9,7 +9,7 @@ test-user note, what's cut, caveats). Walkthrough script: [`docs/WALKTHROUGH.md`
 **Start over** button in the header (with a confirm step) or open `/?reset=1` to begin a fresh
 onboarding.
 
-> Gmail connect uses Google OAuth in **testing mode**: only invited Google accounts can connect;
+> Gmail connect uses Google OAuth and works with any Google account. The app isn't Google-verified yet, so
 > choose *Continue* on the "unverified app" notice and tick the Gmail boxes (or *Select all*).
 
 ---

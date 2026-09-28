@@ -3,8 +3,8 @@
 A script to read aloud while screen-recording, or to follow on your own.
 **Bold** = do this on screen. Plain text = say this. Times are rough.
 
-Setup: a laptop with Chrome, Safari, or Firefox, a working mic, and a Google account
-that's on the trial's test-user list (see [REVIEWER.md](REVIEWER.md#before-you-start-gmail-needs-an-invited-account)).
+Setup: a laptop with Chrome, Safari, or Firefox, a working mic, and any Google account
+(see [REVIEWER.md](REVIEWER.md#before-you-start-gmail)).
 Close other tabs that are using the mic.
 
 ---
@@ -57,8 +57,7 @@ Close other tabs that are using the mic.
 **On "Google hasn't verified this app", choose Continue. Tick the Gmail boxes (or
 Select all), then Continue.**
 
-> The app is in Google's testing mode for this trial, so only invited accounts can
-> connect, and Google shows this notice. The call waits while I sign in.
+> The app isn't Google-verified yet for this trial, so Google shows this notice. The call waits while I sign in.
 
 **Back on the call, the card shows the connected address and the assistant confirms it.**
 
@@ -99,8 +98,7 @@ Don't debug on camera. Switch to typing and keep going:
   feature: "We got cut off, and nothing's lost."
 - **During a call:** use the "Type instead of talking…" composer for any answer, such as
   an awkward name or a noisy room. Typed and spoken turns go into the same conversation.
-- **Gmail 403 `access_denied`:** the account isn't an invited test user. Say "Testing
-  mode only allows invited accounts," skip Gmail ("later"), and graduate. The assistant
-  keeps a reminder to connect Gmail.
+- **Gmail sign-in fails:** skip Gmail ("not now") and graduate. The assistant keeps a
+  reminder to connect Gmail.
 - **Declined the call from the start:** the whole flow (name, Gmail card, need,
   graduation) works in text.

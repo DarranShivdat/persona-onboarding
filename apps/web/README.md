@@ -22,7 +22,7 @@ Surfaces (one page, one session):
   agent API's turns + UI pushes such as the Gmail card).
 - **Phone simulator** — browser "call" UI (ringing, connected timer, mute, hang up,
   live captions, speaking indicator) over Pipecat SmallWebRTC to the agent service.
-- **Gmail connect card** — Google OAuth (testing mode); can be pushed mid-call.
+- **Gmail connect card** — Google OAuth (published, unverified); can be pushed mid-call.
 - **Graduation** — hand-off into the "main experience" with deferred prompts.
 
 Rules: no transition logic in the browser (the agent brain owns progress); the

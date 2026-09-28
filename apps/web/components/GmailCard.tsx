@@ -41,7 +41,7 @@ export function GmailCard({ card, agent, inCall, onAct }: { card: Card; agent: s
         <p className="full">Nothing is sent or changed without your OK. You sign in on Google, so {agent} never sees your password.</p>
         <p className="compact">Connecting Gmail will let {agent} read, organize, and send email with your OK.</p>
         <div className="note">
-          <b>Heads up:</b> this is a trial, so Google will say it hasn’t verified the app. Choose <b>Continue</b>, then tick the Gmail boxes (or <b>Select all</b>). Only invited Google accounts can connect for now.
+          <b>Heads up:</b> this is a trial, so Google will say it hasn’t verified the app. Choose <b>Continue</b>, then tick the Gmail boxes (or <b>Select all</b>).
         </div>
         <div className="actions">
           {busy ? (

@@ -21,12 +21,11 @@ mess"), both get recorded and those questions are skipped. Once the assistant kn
 you need, or if you insist on stopping, you can wrap up early. Anything you skipped is
 kept as a reminder.
 
-## Before you start: Gmail needs an invited account
+## Before you start: Gmail
 
-The Google app is in **testing mode**, so only Google accounts on the trial's test-user
-list can connect. If your account isn't on the list, Google shows
-`Error 403: access_denied`. Send Darran the Google address you plan to use, or skip Gmail;
-everything else works without it.
+Any Google account can connect. The Google app is published but not yet verified, so
+Google shows an "unverified app" notice first. You can also skip Gmail; everything else
+works without it.
 
 On the Google screens:
 1. Google says it **hasn't verified this app**. Choose **Continue**.
@@ -39,8 +38,7 @@ It reads your email to understand what needs attention, organizes it (labels, ar
 mark as read, drafts), and sends email for you, but only after you say OK. Nothing is
 sent or changed in your inbox without your explicit OK. You sign in with Google, so the
 assistant never sees your password. Tokens are stored encrypted, and you can disconnect
-at any time, which revokes access and deletes the stored tokens. In testing mode, Google
-asks you to reconnect about once a week.
+at any time, which revokes access and deletes the stored tokens.
 
 ## 5-minute happy path
 
@@ -102,12 +100,11 @@ These are designed behaviours. Please try to break them.
   barge-in).
 
 These were **never cut**: the text flow, the browser voice call with TURN, Gmail OAuth
-read and write (testing mode), hangup resume, early graduation, and steer-back.
+read and write, hangup resume, early graduation, and steer-back.
 
 ## Known caveats
 
-- **Invited Google accounts only**, and Google shows an "unverified app" notice. See above.
-- **Weekly reconnect** in testing mode, as noted above.
+- Google shows an **"unverified app"** notice before Gmail connect. See above.
 - **Voice** audio is processed by third-party speech services (speech-to-text and
   text-to-speech) to run the conversation.
 - This is a trial build. It makes no claims about Persona's production service (pricing,
