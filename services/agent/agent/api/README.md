@@ -5,6 +5,8 @@
 - `POST /v1/sessions/{id}/turns` -> text turn: extraction (Anthropic SDK) -> brain -> phrasing
 - `POST /v1/sessions/{id}/gmail` -> server-to-server from the Next.js OAuth callback
   with the verified address (shared secret); fills `gmail`, notifies a live call
+- `DELETE /v1/sessions/{id}/gmail` -> disconnect (shared secret): Google revoke + clear tokens
+- `GET  /v1/sessions/{id}/gmail/demo` -> read-only value demo (1–3 recent message summaries)
 - `POST /v1/sessions/{id}/call` -> SmallWebRTC offer/answer (acquires the call lease)
 - `DELETE /v1/sessions/{id}/call/{call_id}` -> release the call lease (`{"reason": ...}` optional)
 - `GET  /v1/sessions/{id}/events` -> SSE stream (UI pushes: gmail card, transcript, state)
@@ -26,8 +28,20 @@ Rate limits per IP + per session; all mutating routes require the session token.
   (injected `TurnLlm`; `FakeLlm` offline default) -> `brain.apply` -> phrase ->
   `UPDATE sessions ... WHERE id AND version = n` + `session_events` in one transaction.
   A lost race (or stale `version`) -> `409 {"error": "version_conflict"}`; reload and retry.
-- Gmail: header `X-Persona-Internal-Secret`; body `{email, google_sub, scopes}`; the only
-  path with `oauth_verified=True`. Upserts `gmail_connections` in the same transaction.
+- Gmail: header `X-Persona-Internal-Secret`; body `{email, google_sub, scopes, refresh_token?}`;
+  the only path with `oauth_verified=True`. Upserts `gmail_connections` in the same transaction.
+  `refresh_token` is AES-GCM encrypted (`PERSONA_TOKEN_ENCRYPT_KEY`, agent/gmail/crypto.py)
+  before it reaches the store and is never echoed. Response adds `gmail: {token_status}`:
+  `stored` | `missing` (no token sent) | `key_unavailable` (no key configured; not stored).
+  A reconnect without a token keeps the stored one only for the same `google_sub`.
+- Gmail disconnect: `DELETE .../gmail` (same secret) -> `{revoked, token_status: "revoked"}`;
+  revokes at Google (best effort), nulls the token, sets `revoked_at`. Idempotent. The
+  `gmail` slot stays filled (graduation is not undone).
+- Gmail demo: session token; `{messages: [{id, from, subject, snippet, date}]}` (≤3, metadata
+  only). Access tokens are refreshed on use and kept in memory only. A dead grant
+  (`invalid_grant`, revoked, missing token) -> `409 {"error": "gmail_reconnect_required", reason}`
+  and the connection is marked `invalid`. Writes (draft/send/modify) are not exposed over
+  HTTP; `GmailClient` refuses them without a `ConfirmGate` grant from a prior confirm turn.
 - Call: `201 {call_id, lease_expires_at, answer: null, status: "lease_acquired"}`; a second
   acquire while the lease is live -> `409 {"error": "call_in_progress"}`. The SDP answer and
   lease renewal land in VOICE-001.
@@ -36,5 +50,5 @@ Rate limits per IP + per session; all mutating routes require the session token.
   `start_call`, `end_call`, `call_state` `{state, call_id}`, `graduate` `{deferred}`.
   Without `Last-Event-ID` the stream replays the session's pushes from the start (rebuilds
   the chat on reload); with it, only later pushes. Keepalive comment every 15 s.
-- Errors: 401 bad token/secret, 404 unknown session, 409 conflict/lease, 422 bad body,
+- Errors: 401 bad token/secret, 404 unknown session, 409 conflict/lease/gmail reconnect, 422 bad body,
   429 rate limited.

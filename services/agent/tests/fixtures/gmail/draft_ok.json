@@ -1,0 +1,16 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "https://gmail.googleapis.com/gmail/v1/users/me/drafts"
+  },
+  "response": {
+    "status": 200,
+    "json": {
+      "id": "r-1234567890",
+      "message": {
+        "id": "190a1f00000000fe",
+        "threadId": "190a1f00000000fe"
+      }
+    }
+  }
+}

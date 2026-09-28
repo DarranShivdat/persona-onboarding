@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 
 from ..brain.spec import FlowSpec, load_spec
 from ..brain.validators import gmail_oauth
+from ..gmail import GmailError, GmailService, GoogleOAuth, ReconnectRequired, TokenCipher
 from ..obs.tracing import Tracer, get_tracer
 from ..store import LeaseHeldError, NotFoundError, PgStore, VersionConflictError
 from .llm import FakeLlm, TurnLlm
@@ -56,6 +57,8 @@ class GmailIn(BaseModel):
     email: str = Field(min_length=3, max_length=320)
     google_sub: str = Field(min_length=1, max_length=255)
     scopes: list[str] = Field(default_factory=list)
+    # Optional: FE-003 may still stub it. Encrypted before it touches the store; never logged/echoed.
+    refresh_token: Optional[str] = Field(default=None, max_length=2048, repr=False)
 
 
 class CallIn(BaseModel):
@@ -98,6 +101,7 @@ def create_app(
     settings: Optional[Settings] = None,
     ip_limiter: Optional[RateLimiter] = None,
     session_limiter: Optional[RateLimiter] = None,
+    gmail: Optional[GmailService] = None,
 ) -> FastAPI:
     settings = settings or Settings()
     notifier = Notifier()
@@ -107,7 +111,8 @@ def create_app(
     session_limiter = session_limiter or SlidingWindowLimiter(40, 60)
 
     app = FastAPI(title="persona-agent", version="0.0.1")
-    app.state.service, app.state.settings = svc, settings
+    gmail = gmail or GmailService(store=store, cipher=None, oauth=None)
+    app.state.service, app.state.settings, app.state.gmail = svc, settings, gmail
 
     @app.exception_handler(NotFoundError)
     async def _nf(_: Request, __: NotFoundError):
@@ -120,6 +125,15 @@ def create_app(
     @app.exception_handler(LeaseHeldError)
     async def _lh(_: Request, __: LeaseHeldError):
         return JSONResponse({"error": "call_in_progress"}, status_code=409)
+
+    @app.exception_handler(ReconnectRequired)
+    async def _rc(_: Request, exc: ReconnectRequired):
+        return JSONResponse({"error": "gmail_reconnect_required", "reason": exc.reason}, status_code=409)
+
+    @app.exception_handler(GmailError)
+    async def _ge(_: Request, exc: GmailError):
+        status = exc.status if exc.status in (403, 503) else 502
+        return JSONResponse({"error": exc.code}, status_code=status)
 
     def limit(request: Request, session_id: Optional[str] = None) -> None:
         ip = request.client.host if request.client else "unknown"
@@ -158,19 +172,44 @@ def create_app(
         outcome = await run_in_threadpool(svc.text_turn, session_id, body.text, expected_version=body.version)
         return _turn_json(outcome)
 
+    def require_internal(secret: Optional[str]) -> None:
+        if not settings.internal_secret:
+            raise HTTPException(503, "gmail_route_disabled")  # fail closed without a configured secret
+        if not (secret and secrets.compare_digest(secret, settings.internal_secret)):
+            raise HTTPException(401, "invalid_internal_secret")
+
     @app.post("/v1/sessions/{session_id}/gmail")
     async def post_gmail(session_id: str, body: GmailIn, request: Request,
                          x_persona_internal_secret: Optional[str] = Header(None)):
-        if not settings.internal_secret:
-            raise HTTPException(503, "gmail_route_disabled")  # fail closed without a configured secret
-        if not (x_persona_internal_secret and secrets.compare_digest(x_persona_internal_secret, settings.internal_secret)):
-            raise HTTPException(401, "invalid_internal_secret")
+        require_internal(x_persona_internal_secret)
         limit(request, session_id)
         if gmail_oauth(body.email, oauth_verified=True).outcome != "ok":
             raise HTTPException(422, "invalid_email")
+        await run_in_threadpool(store.load, session_id)  # 404 before sealing a token for a bogus session
+        sealed = gmail.seal(session_id, body.refresh_token)
         outcome = await run_in_threadpool(
-            svc.gmail_connected, session_id, email=body.email, google_sub=body.google_sub, scopes=body.scopes)
-        return _turn_json(outcome)
+            svc.gmail_connected, session_id, email=body.email, google_sub=body.google_sub, scopes=body.scopes,
+            sealed=sealed)
+        conn = await run_in_threadpool(store.gmail_connection, session_id)
+        return {**_turn_json(outcome), "gmail": {"token_status": conn.token_status if conn else "missing"}}
+
+    @app.delete("/v1/sessions/{session_id}/gmail")
+    async def delete_gmail(session_id: str, request: Request,
+                           x_persona_internal_secret: Optional[str] = Header(None)):
+        """Disconnect: Google revoke (best effort) + clear stored tokens. Idempotent."""
+        require_internal(x_persona_internal_secret)
+        limit(request, session_id)
+        await run_in_threadpool(store.load, session_id)
+        revoked = await run_in_threadpool(gmail.disconnect, session_id)
+        return {"revoked": revoked, "token_status": "revoked"}
+
+    @app.get("/v1/sessions/{session_id}/gmail/demo")
+    async def gmail_demo(session_id: str, request: Request,
+                         authorization: Optional[str] = Header(None), x_session_token: Optional[str] = Header(None)):
+        """Read-only value demo: 1–3 recent inbox messages (from/subject/snippet/date only)."""
+        await authorize(session_id, _bearer(authorization, x_session_token, None))
+        limit(request, session_id)
+        return {"messages": await run_in_threadpool(gmail.demo, session_id)}
 
     @app.post("/v1/sessions/{session_id}/call", status_code=201)
     async def post_call(session_id: str, request: Request, body: Optional[CallIn] = None,
@@ -235,4 +274,6 @@ def create_app(
 
 def create_app_from_env() -> FastAPI:
     dsn = os.environ["PERSONA_DATABASE_URL"]
-    return create_app(store=PgStore(dsn), settings=Settings.from_env())
+    store = PgStore(dsn)
+    gmail = GmailService(store=store, cipher=TokenCipher.from_env(), oauth=GoogleOAuth.from_env())
+    return create_app(store=store, settings=Settings.from_env(), gmail=gmail)

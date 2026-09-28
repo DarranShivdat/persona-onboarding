@@ -1,0 +1,12 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages"
+  },
+  "response": {
+    "status": 200,
+    "json": {
+      "resultSizeEstimate": 0
+    }
+  }
+}

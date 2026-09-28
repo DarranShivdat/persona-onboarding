@@ -120,15 +120,17 @@ class SessionService:
 
         return self._run(session_id, "text_turn", "text", build, user_text=text, expected_version=expected_version)
 
-    def gmail_connected(self, session_id: str, *, email: str, google_sub: str, scopes: list[str]) -> TurnOutcome:
-        """Server-to-server from the OAuth callback: the only path that fills `gmail`."""
+    def gmail_connected(self, session_id: str, *, email: str, google_sub: str, scopes: list[str],
+                        sealed: Optional[dict] = None) -> TurnOutcome:
+        """Server-to-server from the OAuth callback: the only path that fills `gmail`.
+        `sealed` = GmailService.seal(...) output (ciphertext + token_status; never plaintext)."""
         state0 = self.store.load(session_id)
         channel: Channel = state0.active_channel or "text"
 
         def build(state: SessionState) -> Turn:
             return Turn(channel=channel, extraction=Extraction(slots={"gmail": email}), oauth_verified=True)
 
-        gmail = {"email": email, "google_sub": google_sub, "scopes": scopes}
+        gmail = {"email": email, "google_sub": google_sub, "scopes": scopes, **(sealed or {})}
         return self._run(session_id, "gmail_oauth", channel, build, gmail=gmail,
                          extra_pushes=[("gmail_connected", {"email": email})])
 
