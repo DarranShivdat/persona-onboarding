@@ -20,15 +20,30 @@ import threading
 from dataclasses import asdict, dataclass, field
 from typing import Any, Callable, Optional
 
-from ..brain import engine
+from ..brain import engine, home
 from ..brain.engine import Extraction, ResponsePlan, Turn
 from ..brain.spec import FlowSpec
 from ..brain.state import Channel, SessionState
 from ..brain.validators import AGENT_NAME_SUGGESTIONS  # spec §8 chat-agent-name chips
+from ..llm import templates as T
 from ..obs.meta import turn_metadata
 from ..obs.tracing import Tracer
 from ..store import CallLease, PgStore, VersionConflictError
 from .llm import TurnLlm
+
+
+class EditNotAllowed(Exception):
+    def __init__(self, reason: str):
+        super().__init__(reason)
+        self.reason = reason
+
+
+class EditRejected(Exception):
+    """The validator refused an edited value; nothing was committed."""
+
+    def __init__(self, slot: str, reason: str, message: str):
+        super().__init__(f"{slot}: {reason}")
+        self.slot, self.reason, self.message = slot, reason, message
 
 
 def hash_token(token: str) -> str:
@@ -172,6 +187,28 @@ class SessionService:
             out = self._run(session_id, "text_turn", "text", build, user_text=text,
                             expected_version=expected_version)
         return self._notify_listeners(session_id, out)
+
+    def edit(self, session_id: str, slot: str, value: str) -> TurnOutcome:
+        """Home tap-to-edit (GRAD-001): an explicit `change_answer` on one slot, decided by the
+        brain's validators (brain/home.py). A rejected value commits nothing and raises
+        `EditRejected` so the field can show the reason inline."""
+        def build(state: SessionState) -> Turn:
+            return Turn(channel="text", extraction=Extraction(slots={slot: value}, intents=["change_answer"]))
+
+        with self.session_lock(session_id):
+            state = self.store.load(session_id)
+            if not state.graduated:
+                raise EditNotAllowed("not_graduated")
+            if not home.editable(slot):
+                raise EditNotAllowed("slot_not_editable")
+            dry = engine.apply(self.spec, state, build(state))
+            if slot in dry.plan.rejected:
+                reason = dry.plan.rejected[slot]
+                raise EditRejected(slot, reason, T.HOME_REJECTED.get(reason, "That didn't work. Try another?"))
+            if not (dry.plan.changed or dry.plan.acknowledge):
+                return TurnOutcome(reply="", plan=dry.plan, snapshot=snapshot(self.spec, state, self.store.lease(session_id)),
+                                   trace_id="")
+            return self._run_locked(session_id, "home_edit", "text", build)
 
     def _notify_listeners(self, session_id: str, out: TurnOutcome) -> TurnOutcome:
         with self._locks_guard:

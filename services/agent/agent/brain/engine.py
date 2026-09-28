@@ -87,6 +87,10 @@ def apply(spec: FlowSpec, state: SessionState, turn: Turn) -> TurnResult:
     ev: list[dict] = []
     if st.graduated:
         # Returning after graduation lands in the main experience; onboarding never re-opens.
+        if turn.event is None:
+            # Home conversation (GRAD-001): edits through the same validators, honest answers.
+            from .home import apply_home
+            return apply_home(spec, state, turn)
         plan.graduate = True
         plan.deferred = list(st.deferred_prompts)
         return TurnResult(st, plan, ev)

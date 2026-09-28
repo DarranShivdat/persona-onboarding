@@ -29,6 +29,7 @@ from loguru import logger
 from ..brain.engine import Extraction, ResponsePlan
 from ..brain.spec import FlowSpec
 from ..brain.state import Channel, SessionState
+import copy
 import json
 import re
 
@@ -38,7 +39,7 @@ from ..llm.extract import Extractor, turn_context
 from ..llm.guard import guard
 from ..llm.phrase import Phraser, _ask_parts, critical_lines, template_reply
 from ..llm.prompts import approved_facts
-from .llm import naive_extract, template_phrase
+from .llm import home_ack, home_tail, is_home, naive_extract, template_phrase
 
 REACTION_MAX_TOKENS = 80
 REACTION_MAX_WORDS = 28
@@ -106,6 +107,8 @@ class ClaudeTurnLlm:
     def _react_then_ask(self, plan: ResponsePlan, state: SessionState) -> str:
         if plan.absorbed:
             return ""
+        if is_home(plan):
+            return self._home(plan, state)
         if plan.graduate:
             return T.graduation_summary(state, plan.deferred)
         crit = critical_lines(plan, state, "text")
@@ -126,6 +129,18 @@ class ClaudeTurnLlm:
         elif plan.resume:
             reaction = "Let's pick up where we left off."
         return " ".join(p for p in [reaction, *tail] if p).strip()
+
+    def _home(self, plan: ResponsePlan, state: SessionState) -> str:
+        """Home turn: a model reaction only for a name/need edit ("Nova, I like that."); the
+        rest (rejections, honesty about tasks, privacy, Gmail) is templated policy text."""
+        edits = [s for s in (*plan.acknowledge, *plan.changed) if s in ("agent_name", "user_name", "need")]
+        reaction = ""
+        if edits and not plan.rejected and "home_need_added" not in plan.respond_to:
+            p = copy.copy(plan)
+            p.respond_to, p.say = [], []
+            reaction = self._reaction(p, state)
+        ack = home_ack(state, plan, skip=edits if reaction else ())
+        return " ".join(x for x in [reaction, *ack, *home_tail(plan)] if x).strip()
 
     def _reaction(self, plan: ResponsePlan, state: SessionState) -> str:
         val = lambda s: state.slots[s].value if s in state.slots else None  # noqa: E731

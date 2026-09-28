@@ -337,9 +337,13 @@ def test_return_visit_resumes_at_first_missing_EC30(spec):
 def test_return_after_graduating_lands_in_main_experience_EC31(spec):
     st = at("gmail", agent_name="Nova", user_name="Dana", need="calendar")
     grad = apply(spec, st, say(intents=["refuse_slot"])).state
-    for t in (event("open"), say("hi", agent_name="Zed", intents=["change_answer"])):
-        r = apply(spec, grad, t)
-        assert r.state == grad and r.plan.graduate and r.plan.deferred == ["gmail"] and r.events == []
+    r = apply(spec, grad, event("open"))
+    assert r.state == grad and r.plan.graduate and r.plan.deferred == ["gmail"] and r.events == []
+    # GRAD-001: utterances after graduation are home turns (brain/home.py): onboarding never
+    # re-opens, but an explicit edit goes through the validator.
+    r = apply(spec, grad, say("hi", agent_name="Zed", intents=["change_answer"]))
+    assert r.state.graduated and r.state.node == "graduated" and r.plan.graduate and r.plan.deferred == ["gmail"]
+    assert r.state.slots["agent_name"].value == "Zed" and "transition" not in types(r)
 
 
 def test_open_with_everything_resolved_graduates(spec):
