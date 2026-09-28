@@ -5,7 +5,7 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **DEPLOYED — smoke running (owner EM executor)** |
+| STATE | **DEPLOYED — agent hotfix redeploying (owner EM executor)** |
 | OWNER | EM executor (claimed Sun Sep 27 8:34pm PT; re-claimed 10:36pm PT) — reconcile: do NOT `--apply` |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
@@ -18,7 +18,7 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 Anthropic PASS · Deepgram PASS · Cartesia PASS · Cloudflare TURN mint PASS ·
 **Postgres PASS** — Session pooler `aws-0-us-east-1.pooler.supabase.com:5432` (IPv4, user
 `postgres.<ref>`, password percent-encoded, `sslmode=require`); `select 1` OK from box and Mac.
-Fly: `fly auth whoami` — no token yet (Darran running `fly auth login`).
+Fly: `fly auth whoami` PASS (`darranshivdat1@gmail.com`).
 
 ## Order once unblocked
 supabase-db.sh --apply → fly-agent.sh --apply (sjc) → vercel-web.sh --apply → set
@@ -43,3 +43,6 @@ Vercel project `persona-onboarding-darran` (`persona-onboarding.vercel.app` is a
 - Sun 10:43PM PT — vercel-web.sh --apply (project persona-onboarding-darran, root apps/web)
 - Sun 10:44PM PT — Vercel web live at persona-onboarding-darran.vercel.app (/, /about, /privacy 200); setting GOOGLE_OAUTH_REDIRECT_URL + redeploy
 - Sun 10:46PM PT — Fly agent v2 (opencv libs fix) healthy, warmup ok; Vercel redeployed with GOOGLE_OAUTH_REDIRECT_URL
+- Sun 10:48PM PT — reconcile smoke.sh PASS (7/7): agent /health db ok (sha 67efd12), web / (build 406fb5c), session+turn via proxy, agent session+turn, ICE+TURN, OAuth start redirect
+- Sun 10:48PM PT — remaining Darran: Google Console test users + Branding homepage/privacy/authorized domain (URLs in this file); OAuth app may stay Testing
+- Sun 10:51PM PT — smoke.sh 7/7 PASS; hosted browser call connects+captions but hangup DELETE hung → teardown timeouts fix, redeploying agent
