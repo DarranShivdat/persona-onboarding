@@ -5,8 +5,8 @@ so the hourly reconcile and the EM never double-deploy. Only the OWNER may run `
 
 | Field | Value |
 |---|---|
-| STATE | **LIVE — agent ac6a1dd, web fc79338 (NAME-004 explicit yes settles the name read-back + chat shows the spoken voice line; VQA-002 approved answers on text at every node; plus HONEST-001/NAME-003; quick ack ON via Fly secret)** |
-| OWNER | EM executor (yes-loop/VQA fix) — deploy finished 1:50pm PT Mon; next batch (resume line/clipping/UI) starting |
+| STATE | **REDEPLOYING — agent+web 679a6e7 (CUTOFF-001 fresh call never says 'we got cut off'; CLIP-001 lead-in silence; RESET-002 Start over < 1s; RING-002/MUTE-002/FONT-001 UI). Last LIVE: agent ac6a1dd, web fc79338** |
+| OWNER | EM executor (cutoff/clip/UI batch) — started 2:10pm PT Mon |
 | Go-ahead | Darran, Sun Sep 27 8:09pm PT |
 
 ## Env files (gitignored, mode 600, values never committed/printed)
