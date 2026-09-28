@@ -25,7 +25,7 @@ from agent.llm.schema import TOOL_NAME, record_slots_tool  # noqa: E402
 from agent.llm.testing import MockLLM, tool_response  # noqa: E402
 from agent.llm.turn import run_turn  # noqa: E402
 from agent.voice.config import VoiceConfig  # noqa: E402
-from agent.voice.flows import LocalBrain, VoiceFlow, voice_tools  # noqa: E402
+from agent.voice.flows import _utterance, _utterance_since, LocalBrain, VoiceFlow, voice_tools  # noqa: E402
 
 SPEC = load_spec()
 
@@ -190,6 +190,28 @@ def test_handler_reads_utterance_from_llm_context():
     ctx.messages.append({"role": "user", "content": "I'm Sam, S-A-M"})
     _run(flow.handle_record_slots(_args("I'm Sam, S-A-M"), None))
     assert brain.events and any(e.get("type") == "slot_filled" for e in brain.events)
+
+
+def test_split_turn_fragments_are_one_utterance():
+    """LAT-002 live probe: Smart Turn ended the turn at each pause of a spelled name; the
+    brain must see the whole turn, not just the last fragment ("A. N." -> name "An")."""
+    ctx = _Ctx()
+    brain = LocalBrain(SPEC, _opened())
+    flow = VoiceFlow(SPEC, brain, context=ctx)
+    _run(flow.opening())
+    ctx.messages.append({"role": "assistant", "content": "What should I call you?"})
+    ctx.messages.append({"role": "user", "content": "My name is Darran. D. A."})
+    ctx.messages.append({"role": "user", "content": [{"type": "text", "text": "R. R."}]})
+    ctx.messages.append({"role": "user", "content": "A. N."})
+    assert _utterance(ctx) == "My name is Darran. D. A. R. R. A. N."
+    ctx.messages.append({"role": "user", "content": [{"type": "tool_result", "content": "{}"}]})
+    ctx.messages.append({"role": "user", "content": "Sam"})
+    assert _utterance(ctx) == "Sam"
+    # The handler joins every caller message since the last handled turn (no separator needed).
+    seen = len(ctx.messages)
+    ctx.messages += [{"role": "user", "content": "I'd like help"}, {"role": "user", "content": "with email."}]
+    assert _utterance_since(ctx, seen) == "I'd like help with email."
+    assert _utterance_since(ctx, len(ctx.messages) + 5) is None   # context was reset: fall back
 
 
 # --- text vs voice parity ------------------------------------------------------------

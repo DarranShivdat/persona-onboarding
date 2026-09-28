@@ -36,3 +36,6 @@ harness/convo/fixtures/recordings/*.raw
 .vercel/
 .vercel
 .env*
+
+# LAT latency probe caller audio (regenerate: scripts/latency-probe-wav.sh)
+apps/web/e2e/fixtures/latency-probe.wav

@@ -269,17 +269,51 @@ def voice_tools(spec: FlowSpec, node_id: str) -> list[str]:
     return [t for t in spec.nodes[node_id]["tools"] if t == TOOL_NAME]
 
 
+def _text_of(m: dict) -> str:
+    c = m.get("content")
+    if isinstance(c, str):
+        return c.strip()
+    if isinstance(c, list):
+        return " ".join(p.get("text", "") for p in c if isinstance(p, dict)).strip()
+    return ""
+
+
+def _is_spoken(m: Any) -> bool:
+    """A caller transcript message (not assistant/developer text or a tool result)."""
+    if not isinstance(m, dict) or m.get("role") != "user":
+        return False
+    c = m.get("content")
+    return isinstance(c, str) or (isinstance(c, list) and all(
+        isinstance(p, dict) and p.get("type", "text") == "text" for p in c))
+
+
+def _utterance_since(context: Any, seen: int) -> Optional[str]:
+    """Caller messages added since the last handled turn (message index `seen`), joined.
+    None when the context shrank (a reset) or holds nothing new: use `_utterance`."""
+    if context is None:
+        return None
+    msgs = context.get_messages()
+    if seen > len(msgs):
+        return None
+    text = " ".join(t for t in (_text_of(m) for m in msgs[seen:] if _is_spoken(m)) if t)
+    return text or None
+
+
 def _utterance(context: Any) -> str:
+    """The caller's latest turn. Smart Turn can end a turn at a short pause (a spelled name:
+    "My name is Darran. D. A." ... "R. R. A. N."), the reply is interrupted by the rest, and
+    the context then holds several consecutive user messages: join them (LAT-002 live probe:
+    the last fragment alone made the name "An")."""
     if context is None:
         return ""
+    parts: list[str] = []
     for m in reversed(context.get_messages()):
-        if isinstance(m, dict) and m.get("role") == "user":
-            c = m.get("content")
-            if isinstance(c, str):
-                return c.strip()
-            if isinstance(c, list):
-                return " ".join(p.get("text", "") for p in c if isinstance(p, dict)).strip()
-    return ""
+        if not _is_spoken(m):   # assistant / developer / tool result: the caller's turn starts after it
+            if parts:
+                break
+            continue
+        parts.append(_text_of(m))
+    return " ".join(p for p in reversed(parts) if p)
 
 
 class VoiceFlow:
@@ -295,6 +329,7 @@ class VoiceFlow:
         self.last: Optional[VoiceTurn] = None
         self._tool = record_slots_tool(spec, compact=True)   # LAT-001: ~1/3 the output tokens
         self._graduated_said = False
+        self._ctx_seen = 0                             # context messages already handled as turns
         self.stt_confidence: Optional[float] = None   # last final transcript's STT confidence
         self.node: Optional[str] = None               # the brain's current node on this call
         self.rejections: list[dict] = []              # rejected_tool_call records (GUARD-001)
@@ -339,6 +374,7 @@ class VoiceFlow:
     def reject_call(self, name: str, reason: str) -> tuple[dict, Optional["NodeConfig"]]:
         """No brain turn, no state change: log it and re-speak the current node's line."""
         rec = {"type": "rejected_tool_call", "function": name, "node": self.node, "reason": reason}
+        self._mark_seen()
         self.rejections.append(rec)
         logger.warning(f"voice LLM called {name!r} on node {self.node!r}: rejected ({reason})")
         line = self.last.line if self.last else ""
@@ -348,6 +384,9 @@ class VoiceFlow:
         if self.direct_speech and line:
             return result, self.node_config(self.node, self.last, speak=False, pre_say=line)
         return result, self.node_config(self.node, self.last, speak=True)
+
+    def _mark_seen(self) -> None:
+        self._ctx_seen = len(self.context.get_messages()) if self.context is not None else 0
 
     async def handle_unknown_function(self, params: Any) -> None:
         """Pipecat catch-all (`llm.register_function(None, ...)`): any function with no
@@ -376,7 +415,8 @@ class VoiceFlow:
         if self.timer is not None:
             self.timer.tool_call()
         started = time.perf_counter()
-        utterance = _utterance(self.context)
+        utterance = _utterance_since(self.context, self._ctx_seen) or _utterance(self.context)
+        self._mark_seen()
         x = parse(self.spec, args if isinstance(args, dict) else {})
         if self.stt_confidence is not None and NAME in x.slots:
             # The brain sees the weaker of the STT and extraction confidence for the name.
@@ -394,6 +434,7 @@ class VoiceFlow:
         opening verbatim, then wait for the caller. The brain's resume line ("we got cut
         off") is right for a reconnect inside the grace window; a fresh call that
         continues a chat says it is picking up from the chat instead."""
+        self._mark_seen()   # anything already in the context (e.g. chat history) is not a call turn
         vt = await self.brain.event("call_started")
         cut_off = T.RESUME[CHANNEL]
         if not reconnect and vt.plan.resume and vt.line.startswith(cut_off):
