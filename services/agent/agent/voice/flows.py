@@ -32,6 +32,13 @@ a typed email is acknowledged without spelling it back (spoken NATO capture was 
 typed/spoken email stays a `candidate` until OAuth), and out-of-band results reach the call
 through the session's turn listeners — `gmail_oauth` (connected; a partial grant is stated
 plainly) and `gmail_failed` (cancelled / closed consent: offer retry, type-it, or skip).
+
+Tool-call guard (GUARD-001): every Flows handler is wrapped so a function the brain's
+current node does not expose on the call (or any unknown function, via the LLM's
+catch-all `handle_unknown_function`) is rejected: no brain turn, no state change, a
+`rejected_tool_call` record + warning, and the node's line is re-spoken. The voice LLM
+is told to say the brain's line (shortened at most), and `speech_context` feeds the
+output guard (`speech_guard.py`) that screens what it actually says.
 """
 from __future__ import annotations
 
@@ -43,13 +50,16 @@ from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Protocol
 
 from ..brain import engine
 from ..brain.engine import Extraction, ResponsePlan, Turn
-from ..brain.spec import TERMINAL_NODE, FlowSpec
+from ..brain.spec import TERMINAL_NODE, TOOL_REGISTRY, FlowSpec
 from ..brain.state import SessionState
 from ..llm import templates as T
 from ..llm.extract import parse
 from ..llm.phrase import build_brief, critical_lines, template_reply
+from ..llm.prompts import approved_facts
 from ..llm.schema import TOOL_NAME, record_slots_tool
 from ..obs.tracing import NoopTracer, Tracer
+
+from loguru import logger
 
 if TYPE_CHECKING:  # pipecat is a runtime extra; the brain-level pieces import without it
     from pipecat_flows import FlowsFunctionSchema, NodeConfig
@@ -72,6 +82,8 @@ GMAIL_CAPABILITY = {
     "https://www.googleapis.com/auth/gmail.send": "send email",
 }
 OnGraduated = Callable[[str], Awaitable[None]]
+# GUARD-001: the voice LLM delivers the brain's line; it may shorten it, never extend it.
+SAY_LINE = ('Say this line; you may shorten it, but never add facts, questions or offers: "{line}"')
 
 ROLE = (
     "You are Persona, a friendly personal AI assistant on a short onboarding phone call. "
@@ -267,6 +279,9 @@ class VoiceFlow:
         self._tool = record_slots_tool(spec)
         self._graduated_said = False
         self.stt_confidence: Optional[float] = None   # last final transcript's STT confidence
+        self.node: Optional[str] = None               # the brain's current node on this call
+        self.rejections: list[dict] = []              # rejected_tool_call records (GUARD-001)
+        self._facts: Optional[str] = None
 
     def note_stt_confidence(self, confidence: Optional[float]) -> None:
         """Called by the pipeline with each final transcript's STT confidence (Deepgram)."""
@@ -280,7 +295,62 @@ class VoiceFlow:
         schema = self._tool["input_schema"]
         return FlowsFunctionSchema(name=TOOL_NAME, description=self._tool["description"],
                                    properties=schema["properties"], required=list(schema["required"]),
-                                   handler=self.handle_record_slots)
+                                   handler=self.guarded(TOOL_NAME, self.handle_record_slots))
+
+    # -- tool-call guard (GUARD-001) --
+
+    def call_rejection(self, name: str) -> Optional[str]:
+        """Why a call to `name` may not run now, or None. Scoped to the brain's current node:
+        Flows may keep earlier nodes' functions registered, so the advertised list alone is
+        not proof."""
+        if name not in TOOL_REGISTRY:
+            return "unknown_function"
+        if self.node is None:
+            return "no_active_node"
+        if name not in voice_tools(self.spec, self.node):
+            return "not_on_node"
+        return None
+
+    def guarded(self, name: str, handler: Callable[..., Awaitable[tuple[dict, Any]]]):
+        async def run(args: dict, flow_manager: Any = None) -> tuple[dict, Any]:
+            reason = self.call_rejection(name)
+            if reason is not None:
+                return self.reject_call(name, reason)
+            return await handler(args, flow_manager)
+        return run
+
+    def reject_call(self, name: str, reason: str) -> tuple[dict, Optional["NodeConfig"]]:
+        """No brain turn, no state change: log it and re-speak the current node's line."""
+        rec = {"type": "rejected_tool_call", "function": name, "node": self.node, "reason": reason}
+        self.rejections.append(rec)
+        logger.warning(f"voice LLM called {name!r} on node {self.node!r}: rejected ({reason})")
+        line = self.last.line if self.last else ""
+        result = {"rejected": True, "reason": reason, "node": self.node, "say": line}
+        if self.node is None or self.node == TERMINAL_NODE or self.last is None:
+            return result, None
+        return result, self.node_config(self.node, self.last, speak=True)
+
+    async def handle_unknown_function(self, params: Any) -> None:
+        """Pipecat catch-all (`llm.register_function(None, ...)`): any function with no
+        registered handler is rejected the same way instead of Pipecat's generic error."""
+        name = getattr(params, "function_name", "?")
+        result, _ = self.reject_call(name, self.call_rejection(name) or "no_handler")
+        await params.result_callback(result)
+
+    # -- output guard context --
+
+    def speech_context(self) -> Optional[dict]:
+        """What the voice LLM may say right now, for the output guard: the approved facts,
+        slot whys and values, and the brain's line/brief. None before the call opens."""
+        if self.last is None:
+            return None
+        if self._facts is None:
+            self._facts = approved_facts() + "\n" + "\n".join(d["why"] for d in self.spec.slots.values())
+        st = self.last.state
+        values = "\n".join(v.value for v in st.slots.values() if v.value)
+        brief = json.dumps(build_brief(self.last.plan, st, CHANNEL), sort_keys=True)
+        return {"allowed": "\n".join([self._facts, values, self.last.line, brief]),
+                "gmail_connected": st.filled("gmail"), "fallback": self.last.line}
 
     async def handle_record_slots(self, args: dict, flow_manager: Any = None) -> tuple[dict, "NodeConfig"]:
         """Flows handler: extraction in, brain-decided (result, next node) out."""
@@ -330,6 +400,7 @@ class VoiceFlow:
 
     async def _after(self, vt: VoiceTurn, *, opening: bool = False) -> tuple[dict, "NodeConfig"]:
         self.last = vt
+        self.node = TERMINAL_NODE if vt.plan.graduate else vt.plan.node
         plan = vt.plan
         result = {
             "node": plan.node,
@@ -371,7 +442,7 @@ class VoiceFlow:
             brief = build_brief(vt.plan, vt.state, CHANNEL)
             parts.append("What to say now, decided by the system: " + json.dumps(brief, sort_keys=True))
             if vt.line:
-                parts.append(f'Say this, in your own words if it sounds more natural, keeping every fact: "{vt.line}"')
+                parts.append(SAY_LINE.format(line=vt.line))
         elif vt is not None and vt.plan.absorbed:
             parts.append("The caller's last words were noise or a fragment: stay quiet and let them continue.")
         parts.append(f"When the caller speaks, call {TOOL_NAME} first.")

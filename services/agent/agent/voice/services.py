@@ -18,6 +18,12 @@ from .config import SAMPLE_RATE, VoiceConfig
 from .failover import OnSwitched, build_tts_switcher
 from .stub_llm import StubTurnLLM
 
+# GUARD-001: the voice LLM only says (a shortened) brain line or fills record_slots args.
+# 120 tokens covers a two-sentence line or one record_slots call; low temperature keeps it
+# on the line instead of improvising.
+VOICE_LLM_MAX_TOKENS = 120
+VOICE_LLM_TEMPERATURE = 0.3
+
 VOICE_SYSTEM_PROMPT = (
     "You are Persona, a friendly personal AI assistant on a short onboarding phone call. "
     "Speak in one or two short, natural sentences. No lists, markdown, or emoji. "
@@ -45,7 +51,8 @@ def build_llm(cfg: VoiceConfig) -> FrameProcessor:
     return AnthropicLLMService(
         api_key=cfg.anthropic_key,
         settings=AnthropicLLMService.Settings(
-            model=cfg.llm_model, max_tokens=300, enable_prompt_caching=True,
+            model=cfg.llm_model, max_tokens=VOICE_LLM_MAX_TOKENS, temperature=VOICE_LLM_TEMPERATURE,
+            enable_prompt_caching=True,
             system_instruction=VOICE_SYSTEM_PROMPT,
         ),
         retry_timeout_secs=5.0,
