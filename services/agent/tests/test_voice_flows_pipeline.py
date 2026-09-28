@@ -19,12 +19,13 @@ from pipecat.frames.frames import (  # noqa: E402
     LLMFullResponseStartFrame,
     LLMMessagesAppendFrame,
     LLMTextFrame,
+    TTSSpeakFrame,
 )
 from pipecat.pipeline.pipeline import Pipeline  # noqa: E402
 from pipecat.pipeline.worker import PipelineParams, PipelineWorker  # noqa: E402
 from pipecat.processors.aggregators.llm_context import LLMContext  # noqa: E402
 from pipecat.processors.aggregators.llm_response_universal import LLMContextAggregatorPair  # noqa: E402
-from pipecat.processors.frame_processor import FrameDirection  # noqa: E402
+from pipecat.processors.frame_processor import FrameDirection, FrameProcessor  # noqa: E402
 from pipecat.services.llm_service import LLMService  # noqa: E402
 from pipecat.workers.runner import WorkerRunner  # noqa: E402
 from pipecat_flows import FlowManager  # noqa: E402
@@ -74,11 +75,26 @@ class ScriptedFlowsLLM(LLMService):
             await self.push_frame(LLMFullResponseEndFrame())
 
 
-async def _drive(state: SessionState, utterances: list[str]):
+class TTSSink(FrameProcessor):
+    """Stands in for TTS: records what reaches it as a direct say (TTSSpeakFrame)."""
+
+    def __init__(self):
+        super().__init__()
+        self.said: list[str] = []
+
+    async def process_frame(self, frame, direction):
+        await super().process_frame(frame, direction)
+        if isinstance(frame, TTSSpeakFrame):
+            self.said.append(frame.text)
+        await self.push_frame(frame, direction)
+
+
+async def _drive(state: SessionState, utterances: list[str], *, direct_speech: bool = True, sink=None):
     context = LLMContext()
     aggs = LLMContextAggregatorPair(context)
     llm = ScriptedFlowsLLM()
-    worker = PipelineWorker(Pipeline([aggs.user(), llm, aggs.assistant()]),
+    tts = sink if sink is not None else TTSSink()
+    worker = PipelineWorker(Pipeline([aggs.user(), llm, tts, aggs.assistant()]),
                             params=PipelineParams(), idle_timeout_secs=None)
     brain = LocalBrain(SPEC, state)
     graduated: list[str] = []
@@ -86,7 +102,7 @@ async def _drive(state: SessionState, utterances: list[str]):
     async def on_grad(line):
         graduated.append(line)
 
-    flow = VoiceFlow(SPEC, brain, context=context, on_graduated=on_grad)
+    flow = VoiceFlow(SPEC, brain, context=context, on_graduated=on_grad, direct_speech=direct_speech)
     fm = FlowManager(llm=llm, context_aggregator=aggs, worker=worker)
     runner = WorkerRunner(handle_sigint=False)
     await runner.add_workers(worker)
@@ -115,13 +131,26 @@ async def _drive(state: SessionState, utterances: list[str]):
 def test_flow_manager_pipeline_drives_the_shared_brain():
     st = apply(SPEC, SessionState(session_id="p1"), Turn(channel="text", event="open")).state
     st, fm, llm, graduated = asyncio.run(_drive(st, ["I'm Sam, S-A-M", "uh", "help me triage my inbox every morning",
-                                                    "just let me in"]))
+                                                    "just let me in"], direct_speech=False))
     assert st.graduated and st.active_channel == "voice"
     assert st.slot("user_name").value == "Sam" and st.slot("need").status == "filled"
     assert st.deferred_prompts == ["agent_name", "gmail"]
     assert fm.current_node == "graduated"
     assert len(graduated) == 1
     assert any("help with" in s for s in llm.spoken)   # the brain's ask for `need`, phrased by the LLM slot
+
+
+def test_direct_speech_skips_the_phrasing_llm_run():
+    """LAT-001: the brain's line is final, so TTS says it verbatim and the LLM never runs
+    a phrasing turn (it only extracts via record_slots)."""
+    st = apply(SPEC, SessionState(session_id="p3"), Turn(channel="text", event="open")).state
+    sink = TTSSink()
+    st, fm, llm, graduated = asyncio.run(_drive(st, ["I'm Sam, S-A-M", "uh", "help me triage my inbox every morning",
+                                                    "just let me in"], sink=sink))
+    assert st.graduated and fm.current_node == "graduated" and len(graduated) == 1
+    assert llm.spoken == []                                   # no LLM #2 on any turn
+    assert any("help with" in s for s in sink.said)           # the need ask went straight to TTS
+    assert len(sink.said) >= 3                                # opening + one line per non-absorbed turn
 
 
 def test_pipeline_matches_direct_handler_state():

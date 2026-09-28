@@ -83,6 +83,7 @@ class TurnOutcome:
     trace_id: str
     source: str = "text"            # what committed it, for turn listeners: text | gmail_oauth | gmail_failed
     data: dict = field(default_factory=dict)
+    state: Optional[SessionState] = field(default=None, repr=False)  # committed state (no re-load, LAT-001)
 
 
 def snapshot(spec: FlowSpec, state: SessionState, lease: Optional[CallLease]) -> dict[str, Any]:
@@ -263,10 +264,9 @@ class SessionService:
 
     def _run_locked(self, session_id, name, channel, build, *, user_text=None, expected_version=None,
                     gmail=None, extra_pushes=()) -> TurnOutcome:
-        state = self.store.load(session_id)
+        state, lease = self.store.load_for_turn(session_id)  # one round trip (LAT-001)
         if expected_version is not None and expected_version != state.version:
             raise VersionConflictError(session_id, expected_version)
-        lease = self.store.lease(session_id)
         tid = self.tracer.start_trace(session_id=session_id, channel=channel, name=name,
                                       metadata=turn_metadata(self.spec, state.node, version=state.version))
         turn = build(state)
@@ -311,10 +311,11 @@ class SessionService:
         if result.plan.graduate and not state.graduated:
             push("graduate", {"deferred": list(result.plan.deferred)})
 
-        self.store.commit(new, expected_version=state.version, events=ev, gmail=gmail)
+        new.version = self.store.commit(new, expected_version=state.version, events=ev, gmail=gmail)
+        new.call_lease_holder = state.call_lease_holder
         self.notifier.notify(session_id)
         self.tracer.flush()
-        return TurnOutcome(reply=reply, plan=result.plan, snapshot=snap, trace_id=tid)
+        return TurnOutcome(reply=reply, plan=result.plan, snapshot=snap, trace_id=tid, state=new)
 
     # --- call lease ----------------------------------------------------------
 
@@ -365,7 +366,8 @@ class SessionService:
         """A session still on voice with no live lease lost its call without a clean end
         (process restart, grace timer lost): finish it now so chat is never stuck."""
         with self.session_lock(session_id):
-            if self.store.load(session_id).active_channel != "voice" or self.store.lease(session_id):
+            state, lease = self.store.load_for_turn(session_id)
+            if state.active_channel != "voice" or lease:
                 return None
             holder = self.store.lease_holder(session_id)
             if holder:

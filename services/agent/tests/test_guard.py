@@ -141,7 +141,8 @@ def test_out_of_node_tool_call_is_rejected_and_state_unchanged():
     result, node = _run(handler({"slots": {"gmail": "sam@gmail.com"}, "intents": ["insist_graduate"]}))
     assert _run(brain.current()) == before                                  # no brain turn at all
     assert result["rejected"] and result["reason"] == "not_on_node" and result["say"] == line
-    assert node["name"] == "user_name" and line in node["task_messages"][0]["content"]  # line re-spoken
+    assert node["name"] == "user_name" and node["pre_actions"] == [{"type": "tts_say", "text": line}]  # re-spoken
+    assert node["respond_immediately"] is False                              # verbatim, no LLM run (LAT-001)
     assert flow.rejections == [{"type": "rejected_tool_call", "function": "push_gmail_connect",
                                 "node": "user_name", "reason": "not_on_node"}]
 

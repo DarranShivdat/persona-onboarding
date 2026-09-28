@@ -1,11 +1,18 @@
-"""psycopg (v3, sync) store. FastAPI runs these calls in its threadpool."""
+"""psycopg (v3, sync) store. FastAPI runs these calls in its threadpool.
+
+Latency (LAT-001): the agent sits far from the database (~65 ms RTT), so the turn path
+counts round trips. Pooled connections are autocommit (a plain read is one round trip,
+not BEGIN + SELECT + COMMIT); `load_for_turn` reads state + live lease in one select; and
+`commit` writes the version-checked state update and its events in one statement.
+Multi-statement work (lease acquire, gmail upsert) still uses explicit transactions."""
 from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable, Optional
+from contextlib import contextmanager
+from typing import Any, Iterable, Iterator, Optional
 
 import psycopg
 from psycopg.rows import dict_row
@@ -13,6 +20,7 @@ from psycopg.types.json import Jsonb
 from psycopg_pool import ConnectionPool
 
 from ..brain.state import SessionState
+from . import perf
 from .codec import BRAIN_COLUMNS, state_from_row, state_to_columns
 
 MIGRATIONS_DIR = Path(__file__).resolve().parents[4] / "infra" / "supabase" / "migrations"
@@ -84,23 +92,33 @@ def _uuid(session_id: str) -> uuid.UUID:
         raise NotFoundError(session_id) from None
 
 
+def _event_json(e: dict) -> dict:
+    return {"channel": e.get("channel"), "kind": e["kind"], "payload": e.get("payload") or {},
+            "trace_id": e.get("trace_id")}
+
+
 class PgStore:
     def __init__(self, dsn: str, *, min_size: int = 1, max_size: int = 10):
         self.pool = ConnectionPool(
-            dsn, min_size=min_size, max_size=max_size, kwargs={"row_factory": dict_row}, open=True
+            dsn, min_size=min_size, max_size=max_size, kwargs={"row_factory": dict_row, "autocommit": True}, open=True
         )
+
+    @contextmanager
+    def _conn(self) -> Iterator[psycopg.Connection]:
+        with perf.measure(), self.pool.connection() as conn:
+            yield conn
 
     def close(self) -> None:
         self.pool.close()
 
     def ping(self) -> bool:
-        with self.pool.connection() as conn:
+        with self._conn() as conn:
             return conn.execute("select 1 as ok").fetchone()["ok"] == 1
 
     # --- sessions ----------------------------------------------------------
 
     def create_session(self, *, flow_version: int, token_hash: str) -> SessionState:
-        with self.pool.connection() as conn:
+        with self._conn() as conn:
             row = conn.execute(
                 "insert into sessions (flow_version, token_hash) values (%s, %s) returning *",
                 (flow_version, token_hash),
@@ -110,12 +128,24 @@ class PgStore:
     def load(self, session_id: str) -> SessionState:
         return state_from_row(self._row(session_id))
 
+    def load_for_turn(self, session_id: str) -> tuple[SessionState, Optional[CallLease]]:
+        """State + live call lease in one round trip (the turn path's only read)."""
+        with self._conn() as conn:
+            row = conn.execute(
+                "select *, call_lease_expires_at > now() as lease_live from sessions where id = %s",
+                (_uuid(session_id),),
+            ).fetchone()
+        if row is None:
+            raise NotFoundError(session_id)
+        lease = CallLease(row["call_lease_holder"], row["call_lease_expires_at"]) if row["lease_live"] else None
+        return state_from_row(row), lease
+
     def token_hash(self, session_id: str) -> Optional[str]:
         return self._row(session_id)["token_hash"]
 
     def lease(self, session_id: str) -> Optional[CallLease]:
         """The live call lease, if any (expired leases are treated as free)."""
-        with self.pool.connection() as conn:
+        with self._conn() as conn:
             row = conn.execute(
                 "select call_lease_holder, call_lease_expires_at, call_lease_expires_at > now() as live"
                 " from sessions where id = %s",
@@ -126,7 +156,7 @@ class PgStore:
         return CallLease(row["call_lease_holder"], row["call_lease_expires_at"]) if row["live"] else None
 
     def _row(self, session_id: str) -> dict[str, Any]:
-        with self.pool.connection() as conn:
+        with self._conn() as conn:
             row = conn.execute("select * from sessions where id = %s", (_uuid(session_id),)).fetchone()
         if row is None:
             raise NotFoundError(session_id)
@@ -153,22 +183,41 @@ class PgStore:
             "node_attempts": Jsonb(cols["node_attempts"]),
             "id": sid,
             "expected": expected_version,
+            "events": Jsonb([_event_json(e) for e in events]),
         }
-        with self.pool.connection() as conn, conn.transaction():
-            row = conn.execute(
-                f"update sessions set {sets}, version = version + 1, updated_at = now(),"
-                " graduated_at = case when %(status)s::session_status = 'graduated' then coalesce(graduated_at, now()) end"
-                " where id = %(id)s and version = %(expected)s returning version",
-                params,
-            ).fetchone()
+        update = (
+            f"update sessions set {sets}, version = version + 1, updated_at = now(),"
+            " graduated_at = case when %(status)s::session_status = 'graduated' then coalesce(graduated_at, now()) end"
+            " where id = %(id)s and version = %(expected)s returning version"
+        )
+        if gmail is None:
+            # Hot path: one statement = one round trip, atomic without BEGIN/COMMIT. Events are
+            # inserted only if the version-checked update matched (the join on `upd`).
+            with self._conn() as conn:
+                row = conn.execute(
+                    f"with upd as ({update}), ins as ("
+                    " insert into session_events (session_id, channel, kind, payload, trace_id)"
+                    " select %(id)s, (e->>'channel')::channel, e->>'kind', e->'payload', e->>'trace_id'"
+                    " from upd, jsonb_array_elements(%(events)s) with ordinality as x(e, n) order by n)"
+                    " select version from upd",
+                    params,
+                ).fetchone()
+                if row is None:
+                    self._raise_missed(conn, sid, state.session_id, expected_version)
+            return row["version"]
+        with self._conn() as conn, conn.transaction():
+            row = conn.execute(update, params).fetchone()
             if row is None:
-                if conn.execute("select 1 from sessions where id = %s", (sid,)).fetchone() is None:
-                    raise NotFoundError(state.session_id)
-                raise VersionConflictError(state.session_id, expected_version)
+                self._raise_missed(conn, sid, state.session_id, expected_version)
             self._insert_events(conn, sid, events)
-            if gmail is not None:
-                self._upsert_gmail(conn, sid, gmail)
+            self._upsert_gmail(conn, sid, gmail)
         return row["version"]
+
+    @staticmethod
+    def _raise_missed(conn, sid: uuid.UUID, session_id: str, expected: int) -> None:
+        if conn.execute("select 1 from sessions where id = %s", (sid,)).fetchone() is None:
+            raise NotFoundError(session_id)
+        raise VersionConflictError(session_id, expected)
 
     # --- gmail connection ----------------------------------------------------
 
@@ -198,7 +247,7 @@ class PgStore:
         )
 
     def gmail_connection(self, session_id: str) -> Optional[GmailConnection]:
-        with self.pool.connection() as conn:
+        with self._conn() as conn:
             row = conn.execute(
                 "select * from gmail_connections where session_id = %s", (_uuid(session_id),)).fetchone()
         if row is None:
@@ -208,20 +257,20 @@ class PgStore:
         return GmailConnection(**row)
 
     def mark_gmail_refreshed(self, session_id: str) -> None:
-        with self.pool.connection() as conn:
+        with self._conn() as conn:
             conn.execute("update gmail_connections set last_refresh_at = now(), last_error = null"
                          " where session_id = %s", (_uuid(session_id),))
 
     def mark_gmail_invalid(self, session_id: str, *, error: str) -> None:
         """Google rejected the refresh token (invalid_grant / revoked): drop it, ask for reconnect."""
-        with self.pool.connection() as conn:
+        with self._conn() as conn:
             conn.execute("update gmail_connections set token_status = 'invalid', refresh_token_enc = null,"
                          " token_key_id = null, last_error = %s where session_id = %s and token_status <> 'revoked'",
                          (error[:64], _uuid(session_id)))
 
     def revoke_gmail(self, session_id: str) -> bool:
         """Clear tokens + set revoked_at. Idempotent: returns True only on the first revoke."""
-        with self.pool.connection() as conn:
+        with self._conn() as conn:
             row = conn.execute(
                 "update gmail_connections set refresh_token_enc = null, token_key_id = null,"
                 " token_status = 'revoked', revoked_at = coalesce(revoked_at, now())"
@@ -234,7 +283,7 @@ class PgStore:
 
     def append_events(self, session_id: str, events: Iterable[dict]) -> None:
         """Events that don't change brain state (e.g. call lease bookkeeping)."""
-        with self.pool.connection() as conn, conn.transaction():
+        with self._conn() as conn, conn.transaction():
             self._insert_events(conn, _uuid(session_id), events)
 
     @staticmethod
@@ -261,7 +310,7 @@ class PgStore:
             args.append(kinds)
         q += " order by id limit %s"
         args.append(limit)
-        with self.pool.connection() as conn:
+        with self._conn() as conn:
             return [StoredEvent(**r) for r in conn.execute(q, args).fetchall()]
 
     # --- call lease ----------------------------------------------------------
@@ -270,7 +319,7 @@ class PgStore:
         """New call + lease. A live lease blocks (LeaseHeldError) unless `take_over`, which
         ends the old call (`taken_over`) and hands the lease to the new one atomically."""
         sid = _uuid(session_id)
-        with self.pool.connection() as conn, conn.transaction():
+        with self._conn() as conn, conn.transaction():
             row = conn.execute(
                 "select call_lease_holder, call_lease_expires_at > now() as live from sessions"
                 " where id = %s for update",
@@ -301,7 +350,7 @@ class PgStore:
         """Heartbeat / grace / reconnect: set the lease to expire `ttl_s` from now iff
         `call_id` still holds a live lease. None = lost (taken over, released, expired)."""
         sid = _uuid(session_id)
-        with self.pool.connection() as conn, conn.transaction():
+        with self._conn() as conn, conn.transaction():
             got = conn.execute(
                 "update sessions set call_lease_expires_at = now() + make_interval(secs => %s)"
                 " where id = %s and call_lease_holder = %s and call_lease_expires_at > now()"
@@ -319,7 +368,7 @@ class PgStore:
 
     def release_call_lease(self, session_id: str, call_id: str, *, reason: str) -> bool:
         sid = _uuid(session_id)
-        with self.pool.connection() as conn, conn.transaction():
+        with self._conn() as conn, conn.transaction():
             held = conn.execute(
                 "update sessions set call_lease_holder = null, call_lease_expires_at = null"
                 " where id = %s and call_lease_holder = %s returning id",

@@ -39,12 +39,19 @@ catch-all `handle_unknown_function`) is rejected: no brain turn, no state change
 `rejected_tool_call` record + warning, and the node's line is re-spoken. The voice LLM
 is told to say the brain's line (shortened at most), and `speech_context` feeds the
 output guard (`speech_guard.py`) that screens what it actually says.
+
+Latency (LAT-001): with `direct_speech` (default) the brain's templated line is final, so
+after `record_slots` it is spoken straight through TTS (`tts_say` pre-action, same path as
+the opening) and the node does not re-run the LLM: the LLM is used only for extraction.
+Barge-in is unchanged (a TTS say is interruptible like LLM speech). `timer` (timing.py)
+receives the handler span and the store's round trips for the per-turn timing line.
 """
 from __future__ import annotations
 
 import asyncio
 import copy
 import json
+import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Protocol
 
@@ -58,6 +65,7 @@ from ..llm.phrase import build_brief, critical_lines, template_reply
 from ..llm.prompts import approved_facts
 from ..llm.schema import TOOL_NAME, record_slots_tool
 from ..obs.tracing import NoopTracer, Tracer
+from .timing import TurnTimer
 
 from loguru import logger
 
@@ -214,6 +222,7 @@ class ServiceBrain:
     def __init__(self, service: Any, session_id: str):
         self.service, self.session_id = service, session_id
         self._lock = asyncio.Lock()
+        self.last_db: Optional[Any] = None    # store.perf.DbTiming of the last turn (LAT-001)
 
     async def turn(self, utterance: str, extraction: Extraction) -> VoiceTurn:
         return await self._run("voice_turn", lambda _s: Turn(channel=CHANNEL, utterance=utterance,
@@ -231,16 +240,21 @@ class ServiceBrain:
         return self.service.add_text_listener(self.session_id, lambda _sid, out: cb(out))
 
     async def _run(self, name: str, build: Callable[[SessionState], Turn], **kw: Any) -> VoiceTurn:
-        from ..store import VersionConflictError  # lazy: psycopg only where a store exists
+        from ..store import VersionConflictError, perf  # lazy: psycopg only where a store exists
+
+        def run() -> tuple[Any, Any]:
+            with perf.collect() as db:
+                try:
+                    return self.service._run(self.session_id, name, CHANNEL, build, **kw), db
+                except VersionConflictError:
+                    # Another process committed first (in-process turns queue on the service's
+                    # session lock). Nothing of ours was written: re-apply on the fresh state.
+                    return self.service._run(self.session_id, name, CHANNEL, build, **kw), db
 
         async with self._lock:
-            try:
-                out = await asyncio.to_thread(self.service._run, self.session_id, name, CHANNEL, build, **kw)
-            except VersionConflictError:
-                # Another process committed first (in-process turns queue on the service's
-                # session lock). Nothing of ours was written: re-apply on the fresh state.
-                out = await asyncio.to_thread(self.service._run, self.session_id, name, CHANNEL, build, **kw)
-            state = await self.current()
+            out, self.last_db = await asyncio.to_thread(run)
+            # The service hands back the state it committed: no re-load round trip (LAT-001).
+            state = out.state if out.state is not None else await self.current()
             return VoiceTurn(state, out.plan, voice_line(self.service.spec, out.plan, state))
 
 
@@ -272,9 +286,12 @@ class VoiceFlow:
     """Builds Flows nodes from the spec and routes `record_slots` into the brain."""
 
     def __init__(self, spec: FlowSpec, brain: BrainPort, *, context: Any = None,
-                 on_graduated: Optional[OnGraduated] = None):
+                 on_graduated: Optional[OnGraduated] = None, direct_speech: bool = True,
+                 timer: Optional[TurnTimer] = None):
         self.spec, self.brain, self.context = spec, brain, context
         self.on_graduated = on_graduated
+        self.direct_speech = direct_speech            # speak the brain's line via TTS, skip LLM #2
+        self.timer = timer
         self.last: Optional[VoiceTurn] = None
         self._tool = record_slots_tool(spec)
         self._graduated_said = False
@@ -328,6 +345,8 @@ class VoiceFlow:
         result = {"rejected": True, "reason": reason, "node": self.node, "say": line}
         if self.node is None or self.node == TERMINAL_NODE or self.last is None:
             return result, None
+        if self.direct_speech and line:
+            return result, self.node_config(self.node, self.last, speak=False, pre_say=line)
         return result, self.node_config(self.node, self.last, speak=True)
 
     async def handle_unknown_function(self, params: Any) -> None:
@@ -354,12 +373,20 @@ class VoiceFlow:
 
     async def handle_record_slots(self, args: dict, flow_manager: Any = None) -> tuple[dict, "NodeConfig"]:
         """Flows handler: extraction in, brain-decided (result, next node) out."""
+        if self.timer is not None:
+            self.timer.tool_call()
+        started = time.perf_counter()
         utterance = _utterance(self.context)
         x = parse(self.spec, args if isinstance(args, dict) else {})
         if self.stt_confidence is not None and NAME in x.slots:
             # The brain sees the weaker of the STT and extraction confidence for the name.
             x.confidences[NAME] = min(self.stt_confidence, x.confidences.get(NAME, 1.0))
         vt = await self.brain.turn(utterance, x)
+        if self.timer is not None:
+            db = getattr(self.brain, "last_db", None)
+            self.timer.handler_done(handler_ms=(time.perf_counter() - started) * 1000, node=vt.plan.node,
+                                    direct=self.direct_speech and bool(vt.line) and not vt.plan.absorbed,
+                                    db_ms=db.ms if db else None, db_calls=db.calls if db else None)
         return await self._after(vt)
 
     async def opening(self, *, reconnect: bool = False) -> "NodeConfig":
@@ -414,7 +441,8 @@ class VoiceFlow:
                 self._graduated_said = True
                 await self.on_graduated(vt.line)
             return result, self.node_config(TERMINAL_NODE, vt, speak=False)
-        if opening:
+        if opening or (self.direct_speech and vt.line and not plan.absorbed):
+            # The brain's line is final: TTS says it verbatim, no phrasing LLM run (LAT-001).
             return result, self.node_config(plan.node, vt, speak=False, pre_say=vt.line)
         return result, self.node_config(plan.node, vt, speak=not plan.absorbed)
 

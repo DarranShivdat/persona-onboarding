@@ -51,6 +51,7 @@ from .playout import PlayoutObserver
 from .services import build_llm, build_stt, build_tts
 from .speech_guard import build_speech_guard
 from .silence import SilenceFloor, SilenceObserver, SilencePolicy, run_silence_floor, silence_line
+from .timing import TurnTimer, build_timing_observer
 
 OnEnded = Callable[[str], Awaitable[None]]
 Heartbeat = Callable[[], Awaitable[Optional[bool]]]
@@ -137,6 +138,7 @@ class CallSession:
         self._ending = False
         self._pending_reason: Optional[str] = None
         self.teardown = CallTeardown()
+        self.timer = TurnTimer()   # LAT-001: one `voice_turn_timing` log line per caller turn
 
     # --- control -----------------------------------------------------------------
 
@@ -224,7 +226,8 @@ class CallSession:
             pipeline,
             params=PipelineParams(audio_in_sample_rate=SAMPLE_RATE, audio_out_sample_rate=SAMPLE_RATE,
                                   enable_metrics=True),
-            observers=[self._playout] + ([SilenceObserver(self.silence)] if self.silence else []),
+            observers=[self._playout, build_timing_observer(self.timer)]
+            + ([SilenceObserver(self.silence)] if self.silence else []),
             idle_timeout_secs=None,  # per-node spoken silence floors (VOICE-003) + max duration cap calls
             **tracing_kwargs(self.cfg, call_id=self.stats.call_id),
         )
@@ -283,7 +286,8 @@ class CallSession:
         async def graduated(line: str) -> None:
             await self.say_goodbye(line, "graduated")
 
-        self.flow = VoiceFlow(spec, brain, context=context, on_graduated=graduated)
+        self.flow = VoiceFlow(spec, brain, context=context, on_graduated=graduated,
+                              direct_speech=self.cfg.direct_speech, timer=self.timer)
         # GUARD-001: any function call with no handler is rejected by the flow (logged, line re-spoken).
         llm.register_function(None, self.flow.handle_unknown_function)
         self._flow_manager = FlowManager(llm=llm, context_aggregator=aggregators, worker=self._worker)
